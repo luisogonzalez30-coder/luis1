@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function esFuncionarioAutenticado() {
+      return request.auth != null &&
+        firestore.exists(/databases/(default)/documents/usuarios_municipales/$(request.auth.uid));
+    }
+
+    function esImagenValida() {
+      return request.resource.size < 8 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    // Foto "antes": la sube el ciudadano al crear el reporte (sin login).
+    match /incidencias/{incidenciaId}/antes/{archivo} {
+      allow read: if true; // se muestra en el Dashboard público de la app de funcionarios
+      allow write: if esImagenValida();
+    }
+
+    // Foto "después": solo la sube la cuadrilla autenticada al cerrar la incidencia.
+    match /incidencias/{incidenciaId}/despues/{archivo} {
+      allow read: if true;
+      allow write: if esFuncionarioAutenticado() && esImagenValida();
+    }
+  }
+}

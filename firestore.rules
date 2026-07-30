@@ -1,0 +1,108 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Perfil del funcionario municipal que hizo login (null si no hay sesión).
+    function perfilFuncionario() {
+      return get(/databases/$(database)/documents/usuarios_municipales/$(request.auth.uid)).data;
+    }
+
+    function esFuncionarioAutenticado() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/usuarios_municipales/$(request.auth.uid));
+    }
+
+    function esAdmin() {
+      return esFuncionarioAutenticado() && perfilFuncionario().rol == 'ADMIN';
+    }
+
+    // Multi-tenant: el funcionario solo puede operar sobre datos de SU PROPIA
+    // municipalidad, sin importar su rol.
+    function esDelMismoMunicipio(municipioId) {
+      return esFuncionarioAutenticado() && perfilFuncionario().municipio_id == municipioId;
+    }
+
+    // --- Municipalidades (tenants) ---
+    // Catálogo público: la Vista Ciudadano (sin login) necesita leerlo para resolver
+    // /:slug y aplicar el tema. Sin UI de creación todavía: se gestiona a mano desde
+    // la consola de Firebase.
+    match /municipalidades/{municipioId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // --- Incidencias ---
+    // Cualquier ciudadano (sin login) puede CREAR un reporte para su municipalidad.
+    // Solo funcionarios autenticados de ESA MISMA municipalidad pueden leer/actualizar/borrar.
+    match /incidencias/{incidenciaId} {
+      allow read: if esDelMismoMunicipio(resource.data.municipio_id);
+
+      allow create: if request.resource.data.keys().hasAll(
+                        ['categoria', 'coordenadas', 'estado', 'fecha_creacion', 'municipio_id']
+                      ) &&
+                      request.resource.data.estado == 'Pendiente' &&
+                      request.resource.data.categoria is string &&
+                      request.resource.data.municipio_id is string &&
+                      request.resource.data.municipio_id.size() > 0 &&
+                      exists(/databases/$(database)/documents/municipalidades/$(request.resource.data.municipio_id)) &&
+                      request.resource.data.coordenadas.lat is number &&
+                      request.resource.data.coordenadas.lng is number &&
+                      // Triage automático: si el cliente manda nivel_gravedad, debe ser
+                      // uno de los 3 valores válidos (evita que alguien mande basura ahí).
+                      (!('nivel_gravedad' in request.resource.data) ||
+                        request.resource.data.nivel_gravedad in ['Alta', 'Media', 'Baja']);
+
+      allow update: if esDelMismoMunicipio(resource.data.municipio_id);
+
+      allow delete: if esAdmin() && esDelMismoMunicipio(resource.data.municipio_id);
+    }
+
+    // --- Tickets públicos ---
+    // Vista de solo-consulta para que el ciudadano vea el estado de su reporte sin
+    // login, con SOLO campos no sensibles (nada de nombre/contacto/coordenadas).
+    // El ID de documento es el numero_ticket: como Firestore clasifica un setDoc
+    // sobre un doc ya existente como "update" (no "create") sin importar el método
+    // usado en el cliente, y aquí no hay "allow update" para anónimos, un intento
+    // de crear un ticket con un número ya usado por OTRO reporte es rechazado con
+    // permission-denied — ese rechazo es el mecanismo real de unicidad (ver
+    // registrarTicketPublico en ticketsPublicosService.js, que regenera el número
+    // y reintenta cuando pasa esto).
+    match /tickets_publicos/{ticketId} {
+      allow get: if true;
+      allow list: if false;
+
+      allow create: if request.resource.data.keys().hasAll(
+                        ['incidencia_id', 'municipio_id', 'categoria', 'estado', 'fecha_creacion']
+                      ) &&
+                      request.resource.data.estado == 'Pendiente' &&
+                      request.resource.data.categoria is string &&
+                      request.resource.data.municipio_id is string &&
+                      request.resource.data.municipio_id.size() > 0 &&
+                      exists(/databases/$(database)/documents/municipalidades/$(request.resource.data.municipio_id)) &&
+                      (!('nivel_gravedad' in request.resource.data) ||
+                        request.resource.data.nivel_gravedad in ['Alta', 'Media', 'Baja']);
+
+      // Solo el funcionario del mismo municipio puede reflejar cambios de estado
+      // (asignar cuadrilla / marcar resuelto) en el ticket público.
+      allow update: if esDelMismoMunicipio(resource.data.municipio_id);
+
+      allow delete: if false;
+    }
+
+    // --- Usuarios municipales ---
+    // Nadie puede crearse a sí mismo un perfil con rol (evita que un ciudadano se
+    // autoasigne ADMIN). Los perfiles los crea un ADMIN existente (de la MISMA
+    // municipalidad) o se cargan manualmente desde la consola de Firebase.
+    match /usuarios_municipales/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read: if esAdmin() && esDelMismoMunicipio(resource.data.municipio_id);
+
+      // En "create" el documento todavía no existe, así que no hay "resource.data":
+      // se valida contra el municipio del propio admin que está creando el perfil.
+      allow create: if esAdmin() && request.resource.data.municipio_id == perfilFuncionario().municipio_id;
+
+      allow update, delete: if esAdmin() && esDelMismoMunicipio(resource.data.municipio_id);
+    }
+  }
+}
