@@ -1,6 +1,6 @@
 // Muestra el logo y nombre de la municipalidad activa (tenant), o el título genérico
 // de la app si aún no hay municipio cargado (ej. mientras carga, o en la landing).
-export default function EncabezadoMunicipio({ municipio, tituloDefecto = 'Reporte de Incidencias Urbanas' }) {
+export default function EncabezadoMunicipio({ municipio, tituloDefecto = 'TuMuniAquí' }) {
   if (!municipio) {
     return <h1 className="text-xl font-bold text-gray-900">{tituloDefecto}</h1>
   }

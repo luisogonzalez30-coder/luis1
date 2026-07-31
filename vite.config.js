@@ -7,6 +7,6 @@ export default defineConfig({
   server: {
     // Necesario para poder probar la Geolocalización (GPS) desde otros dispositivos en red local (ej. celular real)
     host: true,
-    port: 5173
+    port: Number(process.env.PORT) || 5173
   }
 })

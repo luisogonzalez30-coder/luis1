@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
-import L from 'leaflet'
 import { aplicarFixIconosLeaflet } from '../../utils/leafletIconFix'
+import { crearIconoPin } from '../../utils/iconoPin'
 
 aplicarFixIconosLeaflet()
 
@@ -32,21 +32,6 @@ function CentradorMapa({ incidencias, seleccionadaId }) {
   return null
 }
 
-function crearIconoColor(color) {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="${color}" stroke="white" stroke-width="1.5">
-      <path d="M12 22s8-7.58 8-13a8 8 0 1 0-16 0c0 5.42 8 13 8 13z"/>
-      <circle cx="12" cy="9" r="2.7" fill="white" />
-    </svg>`
-  return L.divIcon({
-    html: svg,
-    className: '',
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -26],
-  })
-}
-
 export default function MapaIncidencias({ incidencias, incidenciaSeleccionadaId, onSeleccionar, centro }) {
   // react-leaflet solo lee "center" al montar el mapa (no re-centra si cambia después),
   // así que el llamador debe esperar a tener el centro real antes de montar este componente.
@@ -73,7 +58,7 @@ export default function MapaIncidencias({ incidencias, incidenciaSeleccionadaId,
             <Marker
               key={inc.id}
               position={[inc.coordenadas.lat, inc.coordenadas.lng]}
-              icon={crearIconoColor(inc.color_pin || COLOR_SIN_GRAVEDAD)}
+              icon={crearIconoPin(inc.color_pin || COLOR_SIN_GRAVEDAD)}
               eventHandlers={{ click: () => onSeleccionar(inc.id) }}
               opacity={opacidad}
             >

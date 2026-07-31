@@ -1,9 +1,14 @@
 import { useState } from 'react'
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
 import { Satellite, Map as MapIcon } from 'lucide-react'
 import { aplicarFixIconosLeaflet } from '../../utils/leafletIconFix'
+import { crearIconoPin } from '../../utils/iconoPin'
+import { COLOR_POR_GRAVEDAD } from '../../utils/gravedad'
+import PopupVotoIncidencia from './PopupVotoIncidencia'
 
 aplicarFixIconosLeaflet()
+
+const COLOR_SIN_GRAVEDAD = '#6B7280'
 
 // Centro por defecto: Plaza de Armas de Santiago, Chile (se usa solo si la
 // municipalidad no tiene centro_mapa configurado).
@@ -35,7 +40,10 @@ function ManejadorClicksMapa({ onSeleccionar }) {
 // Mapa interactivo para que el ciudadano fije su ubicación a mano: tocando en
 // cualquier punto, o arrastrando el marcador una vez que ya hay uno puesto.
 // Complementa (no reemplaza) el botón de GPS automático.
-export default function MapaSeleccionUbicacion({ coordenadas, centroPorDefecto, onCambiar }) {
+// `incidenciasCercanas` (opcional) pinta además los reportes activos de la
+// municipalidad — estilo Waze: tocar uno abre un popup con la opción de votar
+// "+1" en vez de crear un reporte duplicado (ver PopupVotoIncidencia.jsx).
+export default function MapaSeleccionUbicacion({ coordenadas, centroPorDefecto, onCambiar, incidenciasCercanas = [] }) {
   const [capa, setCapa] = useState('calle')
 
   const centroInicial = coordenadas
@@ -52,6 +60,21 @@ export default function MapaSeleccionUbicacion({ coordenadas, centroPorDefecto, 
       <MapContainer key={coordenadas ? 'con-ubicacion' : 'sin-ubicacion'} center={centroInicial} zoom={coordenadas ? 16 : 13} className="h-full w-full">
         <TileLayer key={capa} attribution={CAPAS[capa].attribution} url={CAPAS[capa].url} />
         <ManejadorClicksMapa onSeleccionar={onCambiar} />
+
+        {incidenciasCercanas
+          .filter((t) => t.coordenadas?.lat && t.coordenadas?.lng)
+          .map((t) => (
+            <Marker
+              key={t.id}
+              position={[t.coordenadas.lat, t.coordenadas.lng]}
+              icon={crearIconoPin(COLOR_POR_GRAVEDAD[t.nivel_gravedad] || COLOR_SIN_GRAVEDAD)}
+            >
+              <Popup>
+                <PopupVotoIncidencia ticket={t} />
+              </Popup>
+            </Marker>
+          ))}
+
         {coordenadas && (
           <Marker
             position={[coordenadas.lat, coordenadas.lng]}

@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Users } from 'lucide-react'
 import { suscribirIncidencias } from '../services/incidenciasService'
 import { useMunicipio } from '../hooks/useMunicipio'
 import { ORDEN_GRAVEDAD } from '../utils/gravedad'
+import { DEPARTAMENTOS } from '../utils/departamento'
 import { CATEGORIAS, agruparCategorias } from '../utils/categorias'
 import MapaIncidencias from '../components/dashboard/MapaIncidencias'
 import ListaIncidencias from '../components/dashboard/ListaIncidencias'
 import PanelAsignacion from '../components/dashboard/PanelAsignacion'
+import MetricasPorDepartamento from '../components/dashboard/MetricasPorDepartamento'
+import ResumenGastoMensual from '../components/dashboard/ResumenGastoMensual'
 import EstadisticasRapidas from '../components/dashboard/EstadisticasRapidas'
 import EncabezadoMunicipio from '../components/common/EncabezadoMunicipio'
 import Spinner from '../components/common/Spinner'
@@ -14,12 +19,17 @@ import { useAuth } from '../context/AuthContext'
 const FILTROS_GRAVEDAD = ['Todas', 'Alta', 'Media', 'Baja']
 const GRUPOS_CATEGORIAS = agruparCategorias(CATEGORIAS)
 
-export default function DashboardPage() {
+// Dashboard del Alcalde ("modo dios"): ve todas las incidencias del municipio,
+// de todos los departamentos, más una fila de métricas comparativas para
+// fiscalizar atraso por departamento. Solo rol ALCALDE_ADMIN — ver §RBAC en
+// ESTADO_PROYECTO.md.
+export default function DashboardGeneralPage() {
   const [incidencias, setIncidencias] = useState([])
   const [seleccionadaId, setSeleccionadaId] = useState(null)
   const [filtroGravedad, setFiltroGravedad] = useState('Todas')
   const [filtroCategoria, setFiltroCategoria] = useState('Todas')
   const [filtroCuadrilla, setFiltroCuadrilla] = useState('Todas')
+  const [filtroDepartamento, setFiltroDepartamento] = useState('Todas')
   const [vista, setVista] = useState('mapa')
   const { perfil, cerrarSesion } = useAuth()
   const { municipio, cargando, noEncontrado } = useMunicipio(perfil?.municipio_id)
@@ -47,14 +57,16 @@ export default function DashboardPage() {
     )
   }
 
-  // Los 3 filtros aplican tanto al mapa como a la lista, para que ambos muestren
+  // Los filtros aplican tanto al mapa como a la lista, para que ambos muestren
   // siempre el mismo subconjunto — la lista además siempre se acota a "Pendiente"
   // (es la cola de trabajo por hacer), el mapa mantiene todos los estados (vista
-  // de situación completa).
+  // de situación completa). Las métricas de arriba (MetricasPorDepartamento) son
+  // a propósito independientes de estos filtros: comparan TODOS los departamentos.
   const incidenciasFiltradas = incidencias
     .filter((inc) => filtroGravedad === 'Todas' || inc.nivel_gravedad === filtroGravedad)
     .filter((inc) => filtroCategoria === 'Todas' || inc.categoria === filtroCategoria)
     .filter((inc) => filtroCuadrilla === 'Todas' || inc.cuadrilla_asignada === filtroCuadrilla)
+    .filter((inc) => filtroDepartamento === 'Todas' || inc.departamento === filtroDepartamento)
 
   const pendientes = incidenciasFiltradas
     .filter((inc) => inc.estado === 'Pendiente')
@@ -67,13 +79,13 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
-        <div className="flex items-center gap-4">
-          <EncabezadoMunicipio municipio={municipio} tituloDefecto="Dashboard DOM — Incidencias Urbanas" />
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <EncabezadoMunicipio municipio={municipio} tituloDefecto="Dashboard General — Incidencias Urbanas" />
           <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
             {[
               { id: 'mapa', etiqueta: 'Mapa' },
-              { id: 'estadisticas', etiqueta: 'Estadísticas Rápidas' },
+              { id: 'estadisticas', etiqueta: 'Estadísticas' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -87,18 +99,24 @@ export default function DashboardPage() {
           </div>
         </div>
         {perfil && (
-          <div className="flex items-center gap-3 text-sm text-gray-500">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+            <Link to="/dashboard/funcionarios" className="flex items-center gap-1 text-primary hover:underline">
+              <Users size={16} /> Funcionarios
+            </Link>
             <span>{perfil.nombre} ({perfil.rol})</span>
             <button onClick={cerrarSesion} className="text-primary hover:underline">Cerrar sesión</button>
           </div>
         )}
       </header>
 
+      <ResumenGastoMensual incidencias={incidencias} />
+      <MetricasPorDepartamento incidencias={incidencias} municipioId={municipio.id} />
+
       {vista === 'estadisticas' ? (
         <EstadisticasRapidas incidencias={incidencias} />
       ) : (
-        <div className="relative flex flex-1 overflow-hidden">
-          <div className="w-[60%] h-full">
+        <div className="relative flex flex-1 flex-col overflow-hidden md:flex-row">
+          <div className="h-[45vh] w-full shrink-0 md:h-full md:w-[60%]">
             <MapaIncidencias
               incidencias={incidenciasFiltradas}
               incidenciaSeleccionadaId={seleccionadaId}
@@ -107,7 +125,7 @@ export default function DashboardPage() {
             />
           </div>
 
-          <div className="w-[40%] h-full border-l border-gray-200 bg-gray-50">
+          <div className="flex-1 overflow-y-auto border-t border-gray-200 bg-gray-50 md:h-full md:w-[40%] md:border-l md:border-t-0">
             <div className="border-b border-gray-200 p-3">
               <h2 className="font-semibold text-gray-700">Pendientes ({pendientes.length})</h2>
 
@@ -148,6 +166,19 @@ export default function DashboardPage() {
                   <option value="Todas">Todas las cuadrillas</option>
                   {cuadrillasMunicipio.map((c) => (
                     <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mt-2">
+                <select
+                  value={filtroDepartamento}
+                  onChange={(e) => setFiltroDepartamento(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs"
+                >
+                  <option value="Todas">Todos los departamentos</option>
+                  {DEPARTAMENTOS.map((dep) => (
+                    <option key={dep} value={dep}>{dep}</option>
                   ))}
                 </select>
               </div>

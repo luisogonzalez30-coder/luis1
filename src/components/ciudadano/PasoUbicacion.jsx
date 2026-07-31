@@ -2,7 +2,7 @@ import { MapPin, CheckCircle2, AlertTriangle } from 'lucide-react'
 import Boton from '../common/Boton'
 import MapaSeleccionUbicacion from './MapaSeleccionUbicacion'
 
-export default function PasoUbicacion({ coordenadas, cargando, error, onObtenerUbicacion, onCambiarCoordenadas, centroPorDefecto }) {
+export default function PasoUbicacion({ coordenadas, cargando, error, onObtenerUbicacion, onCambiarCoordenadas, centroPorDefecto, incidenciasCercanas }) {
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -10,6 +10,11 @@ export default function PasoUbicacion({ coordenadas, cargando, error, onObtenerU
         <p className="text-sm text-gray-500">
           Usa tu GPS, o toca directamente el mapa para marcar el lugar exacto.
         </p>
+        {incidenciasCercanas?.length > 0 && (
+          <p className="mt-1 text-xs text-gray-400">
+            Los pines de colores son reportes activos de otros vecinos — tócalos para ver el detalle y sumarte si te afecta a ti también.
+          </p>
+        )}
       </div>
 
       <Boton onClick={onObtenerUbicacion} cargando={cargando} className="w-full">
@@ -21,6 +26,7 @@ export default function PasoUbicacion({ coordenadas, cargando, error, onObtenerU
         coordenadas={coordenadas}
         centroPorDefecto={centroPorDefecto}
         onCambiar={onCambiarCoordenadas}
+        incidenciasCercanas={incidenciasCercanas}
       />
 
       {coordenadas ? (

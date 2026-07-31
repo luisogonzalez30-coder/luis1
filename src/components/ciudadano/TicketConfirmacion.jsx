@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
-import { CheckCircle2, CloudOff } from 'lucide-react'
+import { CheckCircle2, CloudOff, ThumbsUp } from 'lucide-react'
 import Boton from '../common/Boton'
 
-export default function TicketConfirmacion({ numeroTicket, pendienteSincronizar, onReportarOtra }) {
+export default function TicketConfirmacion({ numeroTicket, pendienteSincronizar, esVotoExistente, onReportarOtra }) {
   return (
     <div className="flex flex-col items-center gap-4 text-center">
       {pendienteSincronizar ? (
@@ -12,6 +12,14 @@ export default function TicketConfirmacion({ numeroTicket, pendienteSincronizar,
           <p className="text-gray-500">
             Se guardó en tu dispositivo y se enviará automáticamente la próxima vez que abras la app con señal.
             Guarda este número para hacer seguimiento a tu solicitud:
+          </p>
+        </>
+      ) : esVotoExistente ? (
+        <>
+          <ThumbsUp size={56} className="text-primary" />
+          <h2 className="text-xl font-semibold text-gray-900">¡Te sumaste al reporte!</h2>
+          <p className="text-gray-500">
+            No hacía falta crear uno nuevo — este es el ticket al que te sumaste, guárdalo para hacer seguimiento:
           </p>
         </>
       ) : (

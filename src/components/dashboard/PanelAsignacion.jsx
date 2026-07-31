@@ -3,6 +3,7 @@ import { X, User } from 'lucide-react'
 import BadgeEstado from '../common/BadgeEstado'
 import BadgeGravedad from '../common/BadgeGravedad'
 import EnlaceGoogleMaps from '../common/EnlaceGoogleMaps'
+import GaleriaFotos from '../common/GaleriaFotos'
 import Boton from '../common/Boton'
 import { asignarCuadrilla } from '../../services/incidenciasService'
 import { conTimeout } from '../../utils/timeout'
@@ -61,13 +62,7 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
         </div>
       )}
 
-      {incidencia.foto_antes_url && (
-        <img
-          src={incidencia.foto_antes_url}
-          alt="Foto reportada por el ciudadano"
-          className="mt-3 max-h-56 w-full rounded-lg object-cover"
-        />
-      )}
+      <GaleriaFotos urls={incidencia.fotos_antes_urls} alt="Foto reportada por el ciudadano" className="mt-3" />
 
       <div className="mt-5">
         <label className="mb-1 block text-sm font-medium text-gray-700">Cuadrilla asignada</label>

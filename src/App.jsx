@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import RutaProtegida from './components/common/RutaProtegida'
 import Spinner from './components/common/Spinner'
 import LandingPage from './pages/LandingPage'
@@ -10,11 +10,36 @@ import CuadrillaPage from './pages/CuadrillaPage'
 import ConsultaTicketPage from './pages/ConsultaTicketPage'
 import { useSincronizacionOffline } from './hooks/useSincronizacionOffline'
 
-// Carga perezosa: el Dashboard trae recharts (gráficos) que solo usa el ADMIN.
-// Sin esto, ese peso extra se descargaría también en el flujo del ciudadano
-// (/:municipioSlug), justo lo que queremos evitar para adopción rural con
-// señal débil y celulares de gama baja.
-const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+// Carga perezosa: los dashboards traen recharts/mapas que solo usan los
+// funcionarios. Sin esto, ese peso extra se descargaría también en el flujo
+// del ciudadano (/:municipioSlug), justo lo que queremos evitar para
+// adopción rural con señal débil y celulares de gama baja.
+const DashboardGeneralPage = lazy(() => import('./pages/DashboardGeneralPage'))
+const DashboardDepartamentoPage = lazy(() => import('./pages/DashboardDepartamentoPage'))
+const GestionFuncionariosPage = lazy(() => import('./pages/GestionFuncionariosPage'))
+
+const conSuspenso = (elemento) => (
+  <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Spinner /></div>}>
+    {elemento}
+  </Suspense>
+)
+
+// "/dashboard" a secas no es una vista propia: una vez que RutaProtegida
+// garantiza que hay perfil cargado, manda a cada rol a SU dashboard según
+// utils/departamento.js — ver RBAC en ESTADO_PROYECTO.md.
+function RedirectorDashboard() {
+  const { perfil } = useAuth()
+
+  if (perfil.rol === 'ALCALDE_ADMIN') return <Navigate to="/dashboard/general" replace />
+  if (perfil.rol === 'JEFE_DEPARTAMENTO') return <Navigate to="/dashboard/departamento" replace />
+  if (perfil.rol === 'TERRENO') return <Navigate to="/cuadrilla" replace />
+
+  return (
+    <div className="flex min-h-screen items-center justify-center px-4 text-center text-gray-500">
+      Tu rol ("{perfil.rol}") no está reconocido. Contacta al administrador.
+    </div>
+  )
+}
 
 function App() {
   // A nivel raíz, sin importar la ruta: sincroniza reportes guardados offline
@@ -34,26 +59,45 @@ function App() {
 
           {/* Acceso funcionarios: el tenant sale de perfil.municipio_id tras login, no de la URL */}
           <Route path="/login" element={<LoginPage />} />
+
+          {/* RBAC: 3 roles — ALCALDE_ADMIN (todo el municipio + métricas),
+              JEFE_DEPARTAMENTO (acotado a perfil.departamento), TERRENO (cuadrilla). */}
           <Route
             path="/dashboard"
             element={
-              <RutaProtegida rolesPermitidos={['ADMIN']}>
-                <Suspense
-                  fallback={
-                    <div className="flex min-h-screen items-center justify-center">
-                      <Spinner />
-                    </div>
-                  }
-                >
-                  <DashboardPage />
-                </Suspense>
+              <RutaProtegida>
+                <RedirectorDashboard />
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/dashboard/general"
+            element={
+              <RutaProtegida rolesPermitidos={['ALCALDE_ADMIN']}>
+                {conSuspenso(<DashboardGeneralPage />)}
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/dashboard/funcionarios"
+            element={
+              <RutaProtegida rolesPermitidos={['ALCALDE_ADMIN']}>
+                {conSuspenso(<GestionFuncionariosPage />)}
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/dashboard/departamento"
+            element={
+              <RutaProtegida rolesPermitidos={['JEFE_DEPARTAMENTO']}>
+                {conSuspenso(<DashboardDepartamentoPage />)}
               </RutaProtegida>
             }
           />
           <Route
             path="/cuadrilla"
             element={
-              <RutaProtegida rolesPermitidos={['TERRENO', 'ADMIN']}>
+              <RutaProtegida rolesPermitidos={['TERRENO', 'ALCALDE_ADMIN']}>
                 <CuadrillaPage />
               </RutaProtegida>
             }

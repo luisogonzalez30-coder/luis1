@@ -4,7 +4,7 @@ const VAR_PRIMARIO = '--color-primary-rgb'
 const VAR_PRIMARIO_OSCURO = '--color-primary-dark-rgb'
 const DEFAULT_PRIMARIO = '29 78 216' // #1D4ED8
 const DEFAULT_PRIMARIO_OSCURO = '30 58 138' // #1E3A8A
-const TITULO_DEFECTO = 'Reporte de Incidencias Urbanas'
+const TITULO_DEFECTO = 'TuMuniAquí'
 const COLOR_DEFECTO = '#1D4ED8'
 
 function hexARgbTriple(hex) {
@@ -22,7 +22,7 @@ export function aplicarTema(municipio) {
     VAR_PRIMARIO_OSCURO,
     hexARgbTriple(municipio?.color_primario_oscuro) || DEFAULT_PRIMARIO_OSCURO
   )
-  document.title = municipio?.nombre ? `Reporte de Incidencias — ${municipio.nombre}` : TITULO_DEFECTO
+  document.title = municipio?.nombre ? `TuMuniAquí — ${municipio.nombre}` : TITULO_DEFECTO
 
   const meta = document.querySelector('meta[name="theme-color"]')
   if (meta) meta.setAttribute('content', municipio?.color_primario || COLOR_DEFECTO)

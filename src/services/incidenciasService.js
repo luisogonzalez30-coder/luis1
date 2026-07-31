@@ -1,6 +1,8 @@
 import {
+  arrayUnion,
   collection,
   doc,
+  increment,
   onSnapshot,
   orderBy,
   query,
@@ -13,7 +15,12 @@ import { db, COLECCIONES } from '../firebase/firebase'
 import { subirImagen } from './storageService'
 import { generarNumeroTicket } from '../utils/ticket'
 import { calcularGravedad } from '../utils/gravedad'
-import { registrarTicketPublico, actualizarEstadoTicketPublico } from './ticketsPublicosService'
+import { calcularDepartamento } from '../utils/departamento'
+import {
+  registrarTicketPublico,
+  actualizarEstadoTicketPublico,
+  incrementarUpvotesTicketPublico,
+} from './ticketsPublicosService'
 
 const incidenciasRef = collection(db, COLECCIONES.INCIDENCIAS)
 
@@ -45,10 +52,11 @@ export async function crearIncidencia({
   coordenadas,
   direccionTexto,
   detallesAdicionales,
-  fotoAntes,
+  fotosAntes,
   municipioId,
   nombreCiudadano,
   contactoCiudadano,
+  rutCiudadano,
   esAnonimo,
   idDocumento,
   numeroTicketExistente,
@@ -59,6 +67,7 @@ export async function crearIncidencia({
 
   const docRef = idDocumento ? doc(db, COLECCIONES.INCIDENCIAS, idDocumento) : doc(incidenciasRef)
   const { nivel_gravedad, color_pin } = calcularGravedad(categoria)
+  const departamento = calcularDepartamento(categoria)
 
   // Registra (o confirma) el ticket público ANTES de escribir la incidencia: si
   // numeroTicketExistente choca con el ticket de otro reporte, hay que resolver
@@ -75,6 +84,7 @@ export async function crearIncidencia({
         municipioId,
         categoria,
         nivelGravedad: nivel_gravedad,
+        coordenadas,
         esRetry,
       })
       break
@@ -98,26 +108,43 @@ export async function crearIncidencia({
     municipio_id: municipioId,
     nivel_gravedad,
     color_pin,
+    departamento,
     nombre_ciudadano: nombreCiudadano || '',
     contacto_ciudadano: contactoCiudadano || '',
+    rut_ciudadano: rutCiudadano || '',
     es_anonimo: esAnonimo ?? true,
-    foto_antes_url: '',
+    fotos_antes_urls: [],
     foto_despues_url: '',
     estado: 'Pendiente',
     cuadrilla_asignada: '',
+    upvotes: 1,
+    usuarios_afectados: [],
+    presupuesto_estimado: null,
+    gasto_real: null,
+    notificado_whatsapp: false, // el bot de WhatsApp (whatsapp-bot/) lo pone en true tras avisar al vecino
     fecha_creacion: serverTimestamp(),
+    fecha_asignacion: null,
     fecha_cierre: null,
   })
 
-  if (fotoAntes) {
+  if (fotosAntes?.length) {
     // Sin "await": la incidencia ya quedó registrada, así que el ticket se muestra de
-    // inmediato. La foto sube en segundo plano; si falla (ej. Storage no habilitado en
-    // el proyecto, o mala conexión) no debe dejar al ciudadano esperando ni bloquear el ticket.
-    subirImagen(fotoAntes, `incidencias/${docRef.id}/antes`)
-      .then((url) => updateDoc(doc(db, COLECCIONES.INCIDENCIAS, docRef.id), { foto_antes_url: url }))
-      .catch((error) => {
-        console.error('[incidenciasService] Incidencia creada pero falló la subida de foto:', error)
-      })
+    // inmediato. Cada foto sube en segundo plano por separado (hasta 3, opcional) —
+    // arrayUnion() porque pueden terminar en cualquier orden y no deben pisarse entre sí.
+    // Si alguna falla (ej. Cloudinary no configurado, mala conexión) no debe dejar al
+    // ciudadano esperando ni bloquear el ticket; las demás siguen su curso igual.
+    fotosAntes.forEach((archivo, indice) => {
+      subirImagen(archivo, `incidencias/${docRef.id}/antes`)
+        .then((url) => {
+          updateDoc(doc(db, COLECCIONES.INCIDENCIAS, docRef.id), { fotos_antes_urls: arrayUnion(url) })
+          // Best-effort, igual que el resto de la sincronización con el ticket público:
+          // así el mapa ciudadano también puede mostrar la foto en el pin.
+          updateDoc(doc(db, COLECCIONES.TICKETS_PUBLICOS, numeroTicket), { fotos_antes_urls: arrayUnion(url) }).catch(() => {})
+        })
+        .catch((error) => {
+          console.error(`[incidenciasService] Incidencia creada pero falló la subida de la foto ${indice + 1}:`, error)
+        })
+    })
   }
 
   return { id: docRef.id, numeroTicket }
@@ -151,32 +178,48 @@ export function suscribirIncidencias(callback, estado = null, municipioId = null
   )
 }
 
-// Usado por el Dashboard DOM: asigna una cuadrilla y cambia el estado a "Asignado".
+// Asigna una cuadrilla y cambia el estado a "En Proceso" (antes "Asignado").
 // Recibe la incidencia completa (no solo el id) porque necesita numero_ticket para
 // reflejar el cambio en el ticket público de consulta.
-export async function asignarCuadrilla(incidencia, cuadrilla) {
+// presupuestoEstimado es opcional: solo lo llena el Jefe de Departamento vía
+// ModalPresupuesto (ver PanelGestionDepartamento.jsx) — cuando asigna el Alcalde
+// desde el Dashboard General (PanelAsignacion.jsx) se omite, y presupuesto_estimado
+// queda en null (ver Órdenes de Trabajo y Costeo en ESTADO_PROYECTO.md).
+// fecha_asignacion se guarda siempre (la asigne quien la asigne) — es lo que
+// permite calcular el "tiempo de reacción" (fecha_asignacion - fecha_creacion).
+export async function asignarCuadrilla(incidencia, cuadrilla, presupuestoEstimado = null) {
   if (!cuadrilla) {
     throw new Error('Debes indicar el nombre de la cuadrilla.')
   }
 
-  await updateDoc(doc(db, COLECCIONES.INCIDENCIAS, incidencia.id), {
-    estado: 'Asignado',
+  const cambios = {
+    estado: 'En Proceso',
     cuadrilla_asignada: cuadrilla,
-  })
+    fecha_asignacion: serverTimestamp(),
+  }
+  if (presupuestoEstimado) {
+    cambios.presupuesto_estimado = presupuestoEstimado
+  }
 
-  actualizarEstadoTicketPublico(incidencia.numero_ticket, { estado: 'Asignado' })
+  await updateDoc(doc(db, COLECCIONES.INCIDENCIAS, incidencia.id), cambios)
+
+  actualizarEstadoTicketPublico(incidencia.numero_ticket, { estado: 'En Proceso' })
 }
 
-// Usado por la Vista Cuadrilla Terreno: cierra la incidencia y, si se adjuntó, sube
-// la foto de "después". La foto es opcional (igual que en el reporte del ciudadano)
-// para no bloquear el cierre si Storage no está disponible en el proyecto.
+// Usado por la Vista Cuadrilla Terreno y por el Jefe de Departamento (cuando resuelve
+// directo): cierra la incidencia y, si se adjuntó, sube la foto de "después". La foto
+// es opcional (igual que en el reporte del ciudadano) para no bloquear el cierre si
+// Storage no está disponible; gastoReal SÍ es obligatorio (horas_reales/costo_final)
+// — alimenta el KPI financiero del Alcalde (ResumenGastoMensual.jsx), así que ambas
+// vistas de cierre validan estos campos en el formulario antes de llamar a esta función.
 // Recibe la incidencia completa (no solo el id) por la misma razón que asignarCuadrilla.
-export async function marcarResuelto(incidencia, fotoDespues) {
+export async function marcarResuelto(incidencia, fotoDespues, gastoReal) {
   const fechaCierre = serverTimestamp()
 
   await updateDoc(doc(db, COLECCIONES.INCIDENCIAS, incidencia.id), {
     estado: 'Resuelto',
     fecha_cierre: fechaCierre,
+    gasto_real: gastoReal,
   })
 
   actualizarEstadoTicketPublico(incidencia.numero_ticket, { estado: 'Resuelto', fecha_cierre: fechaCierre })
@@ -190,4 +233,22 @@ export async function marcarResuelto(incidencia, fotoDespues) {
         console.error('[incidenciasService] Incidencia resuelta pero falló la subida de foto:', error)
       })
   }
+}
+
+// Voto ciudadano tipo "+1 / a mí también me afecta" (ver §RBAC... no, ver
+// AvisoPosibleDuplicado.jsx / MapaSeleccionUbicacion.jsx). Sin login, así que
+// dispositivoId es un ID generado en el navegador (utils/dispositivo.js), no
+// un usuario real — evita el doble-click y el doble voto desde el mismo
+// dispositivo, no es una garantía a prueba de abuso (ver ese archivo).
+// Usa increment()/arrayUnion() (atómico) en vez de leer-sumar-escribir, que se
+// rompe con votos simultáneos. firestore.rules exige que este update SOLO
+// toque upvotes/usuarios_afectados y que ambos avancen en exactamente 1 — así
+// un voto no puede además alterar categoria, estado, etc.
+export async function votarIncidencia({ incidenciaId, numeroTicket, dispositivoId }) {
+  await updateDoc(doc(db, COLECCIONES.INCIDENCIAS, incidenciaId), {
+    upvotes: increment(1),
+    usuarios_afectados: arrayUnion(dispositivoId),
+  })
+
+  incrementarUpvotesTicketPublico(numeroTicket)
 }

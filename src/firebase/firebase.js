@@ -2,7 +2,7 @@
 // Se centraliza aquí para que el resto del código importe siempre desde este único archivo
 // (facilita cambiar de proyecto de Firebase o mockear en tests).
 
-import { initializeApp } from 'firebase/app'
+import { initializeApp, getApps } from 'firebase/app'
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
 import { connectStorageEmulator, getStorage } from 'firebase/storage'
 import { connectAuthEmulator, getAuth } from 'firebase/auth'
@@ -40,6 +40,15 @@ export const db = getFirestore(app)
 export const storage = getStorage(app)
 export const auth = getAuth(app)
 
+// App secundaria, solo para que un Alcalde cree cuentas de otros funcionarios
+// (funcionariosService.js). createUserWithEmailAndPassword inicia sesión
+// automáticamente como el usuario recién creado; sin una app separada, eso
+// desloguearía al Alcalde de su propia sesión cada vez que crea a alguien.
+// getApps() evita el error "app ya existe" en Hot Module Reload de Vite.
+const appSecundaria = getApps().find((a) => a.name === 'secundaria')
+  || initializeApp(firebaseConfig, 'secundaria')
+export const authSecundario = getAuth(appSecundaria)
+
 // Modo emulador: para desarrollo local con el Firebase Emulator Suite, sin tocar
 // datos de un proyecto real. Se activa con VITE_USE_FIREBASE_EMULATORS=true en .env
 // (ver README de emuladores). Se guarda una bandera en window para evitar reconectar
@@ -59,6 +68,8 @@ export const COLECCIONES = {
   USUARIOS_MUNICIPALES: 'usuarios_municipales',
   MUNICIPALIDADES: 'municipalidades',
   TICKETS_PUBLICOS: 'tickets_publicos',
+  TRABAJADORES: 'trabajadores',
+  UBICACIONES_CUADRILLA: 'ubicaciones_cuadrilla',
 }
 
 export default app

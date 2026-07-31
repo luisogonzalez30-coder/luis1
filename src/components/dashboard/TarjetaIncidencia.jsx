@@ -33,12 +33,19 @@ export default function TarjetaIncidencia({ incidencia, seleccionada, onClick })
         {incidencia.cuadrilla_asignada && <span>· Cuadrilla: {incidencia.cuadrilla_asignada}</span>}
       </div>
 
-      {incidencia.foto_antes_url && (
-        <img
-          src={incidencia.foto_antes_url}
-          alt="Foto de la incidencia"
-          className="mt-2 h-24 w-full rounded-lg object-cover"
-        />
+      {incidencia.fotos_antes_urls?.[0] && (
+        <div className="relative mt-2">
+          <img
+            src={incidencia.fotos_antes_urls[0]}
+            alt="Foto de la incidencia"
+            className="h-24 w-full rounded-lg object-cover"
+          />
+          {incidencia.fotos_antes_urls.length > 1 && (
+            <span className="absolute bottom-1 right-1 rounded-full bg-black/60 px-1.5 py-0.5 text-xs text-white">
+              +{incidencia.fotos_antes_urls.length - 1}
+            </span>
+          )}
+        </div>
       )}
     </button>
   )

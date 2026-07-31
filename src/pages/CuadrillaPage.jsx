@@ -14,7 +14,7 @@ export default function CuadrillaPage() {
 
   useEffect(() => {
     if (!municipio) return
-    const unsubscribe = suscribirIncidencias(setTareas, 'Asignado', municipio.id)
+    const unsubscribe = suscribirIncidencias(setTareas, 'En Proceso', municipio.id)
     return unsubscribe
   }, [municipio])
 

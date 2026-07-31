@@ -66,7 +66,7 @@ export default function EstadisticasRapidas({ incidencias }) {
     return {
       total: filtradas.length,
       pendientes: filtradas.filter((i) => i.estado === 'Pendiente').length,
-      asignadas: filtradas.filter((i) => i.estado === 'Asignado').length,
+      asignadas: filtradas.filter((i) => i.estado === 'En Proceso').length,
       resueltas: filtradas.filter((i) => i.estado === 'Resuelto').length,
       datosGravedad: NIVELES.map((nivel) => ({
         nivel,
@@ -104,7 +104,7 @@ export default function EstadisticasRapidas({ incidencias }) {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <TarjetaStat etiqueta={`Total (${etiquetaPeriodo})`} valor={total} />
             <TarjetaStat etiqueta="Pendientes" valor={pendientes} porcentaje={porcentaje(pendientes)} />
-            <TarjetaStat etiqueta="Asignadas" valor={asignadas} porcentaje={porcentaje(asignadas)} />
+            <TarjetaStat etiqueta="En proceso" valor={asignadas} porcentaje={porcentaje(asignadas)} />
             <TarjetaStat etiqueta="Resueltas" valor={resueltas} porcentaje={porcentaje(resueltas)} />
           </div>
 

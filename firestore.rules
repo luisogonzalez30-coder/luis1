@@ -13,14 +13,50 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/usuarios_municipales/$(request.auth.uid));
     }
 
-    function esAdmin() {
-      return esFuncionarioAutenticado() && perfilFuncionario().rol == 'ADMIN';
+    // RBAC (3 roles): ALCALDE_ADMIN ve/gestiona todo el municipio (antes se
+    // llamaba ADMIN); JEFE_DEPARTAMENTO está acotado a su propio departamento;
+    // TERRENO no tiene función de rol propia acá (se acota por cuadrilla, a
+    // nivel de UI, igual que antes de este cambio).
+    function esAlcalde() {
+      return esFuncionarioAutenticado() && perfilFuncionario().rol == 'ALCALDE_ADMIN';
     }
 
     // Multi-tenant: el funcionario solo puede operar sobre datos de SU PROPIA
     // municipalidad, sin importar su rol.
     function esDelMismoMunicipio(municipioId) {
       return esFuncionarioAutenticado() && perfilFuncionario().municipio_id == municipioId;
+    }
+
+    // Un Jefe de Departamento solo puede gestionar incidencias de SU propio
+    // departamento (además de ser del mismo municipio); Alcalde y Terreno no
+    // tienen esa restricción adicional.
+    function puedeGestionarIncidencia(incidenciaData) {
+      return esDelMismoMunicipio(incidenciaData.municipio_id) &&
+        (perfilFuncionario().rol != 'JEFE_DEPARTAMENTO' ||
+          perfilFuncionario().departamento == incidenciaData.departamento);
+    }
+
+    // Roster de trabajadores (Órdenes de Trabajo y Costeo, ver ESTADO_PROYECTO.md):
+    // a diferencia de incidencias, acá SOLO el Jefe de Departamento de ESE
+    // departamento puede escribir (ni el Alcalde ni otro Jefe) — es su propia
+    // planilla de asistencia. El Alcalde igual puede leer (ver la tarjeta de
+    // cualquier departamento desde el Dashboard General).
+    function puedeGestionarTrabajador(trabajadorData) {
+      return esDelMismoMunicipio(trabajadorData.municipio_id) &&
+        perfilFuncionario().rol == 'JEFE_DEPARTAMENTO' &&
+        perfilFuncionario().departamento == trabajadorData.departamento;
+    }
+
+    // Voto ciudadano ("+1", sin login): el update SOLO puede tocar upvotes y
+    // usuarios_afectados, y ambos deben avanzar en exactamente 1 — así un voto
+    // no puede además cambiar categoria/estado/cuadrilla/etc. Se usa .get(campo,
+    // default) porque incidencias creadas antes de este cambio no tienen estos
+    // campos todavía.
+    function esVotoValidoIncidencia(antes, despues) {
+      return request.auth == null &&
+        despues.diff(antes).affectedKeys().hasOnly(['upvotes', 'usuarios_afectados']) &&
+        despues.upvotes == antes.get('upvotes', 1) + 1 &&
+        despues.usuarios_afectados.size() == antes.get('usuarios_afectados', []).size() + 1;
     }
 
     // --- Municipalidades (tenants) ---
@@ -51,26 +87,41 @@ service cloud.firestore {
                       // Triage automático: si el cliente manda nivel_gravedad, debe ser
                       // uno de los 3 valores válidos (evita que alguien mande basura ahí).
                       (!('nivel_gravedad' in request.resource.data) ||
-                        request.resource.data.nivel_gravedad in ['Alta', 'Media', 'Baja']);
+                        request.resource.data.nivel_gravedad in ['Alta', 'Media', 'Baja']) &&
+                      // Derivación automática por departamento: mismo criterio de
+                      // validación que nivel_gravedad (ver utils/departamento.js).
+                      (!('departamento' in request.resource.data) ||
+                        request.resource.data.departamento in [
+                          'Dirección de Obras (DOM)', 'Tránsito', 'Operaciones',
+                          'Aseo y Ornato', 'Medio Ambiente', 'Seguridad Ciudadana',
+                          'Oficina de Partes'
+                        ]);
 
-      allow update: if esDelMismoMunicipio(resource.data.municipio_id);
+      allow update: if puedeGestionarIncidencia(resource.data) ||
+                      esVotoValidoIncidencia(resource.data, request.resource.data);
 
-      allow delete: if esAdmin() && esDelMismoMunicipio(resource.data.municipio_id);
+      allow delete: if esAlcalde() && esDelMismoMunicipio(resource.data.municipio_id);
     }
 
     // --- Tickets públicos ---
-    // Vista de solo-consulta para que el ciudadano vea el estado de su reporte sin
-    // login, con SOLO campos no sensibles (nada de nombre/contacto/coordenadas).
+    // Vista pública para que el ciudadano vea el estado de su reporte sin login,
+    // Y alimenta el mapa tipo Waze (pines de reportes activos + chequeo de
+    // proximidad) — por eso SOLO tiene campos no sensibles (nada de
+    // nombre/contacto del ciudadano; sí lleva coordenadas y foto porque esas no
+    // identifican a una persona, y son necesarias para el mapa).
     // El ID de documento es el numero_ticket: como Firestore clasifica un setDoc
     // sobre un doc ya existente como "update" (no "create") sin importar el método
-    // usado en el cliente, y aquí no hay "allow update" para anónimos, un intento
-    // de crear un ticket con un número ya usado por OTRO reporte es rechazado con
-    // permission-denied — ese rechazo es el mecanismo real de unicidad (ver
-    // registrarTicketPublico en ticketsPublicosService.js, que regenera el número
-    // y reintenta cuando pasa esto).
+    // usado en el cliente, y aquí no hay "allow update" para anónimos fuera del
+    // voto (ver el allow update de abajo), un intento de crear un ticket con un número
+    // ya usado por OTRO reporte es rechazado con permission-denied — ese rechazo
+    // es el mecanismo real de unicidad (ver registrarTicketPublico en
+    // ticketsPublicosService.js, que regenera el número y reintenta cuando pasa esto).
     match /tickets_publicos/{ticketId} {
       allow get: if true;
-      allow list: if false;
+      // Antes era "if false" (evitar escanear todos los tickets) — ahora se
+      // necesita listar para pintar el mapa ciudadano, y ya no hay nada sensible
+      // que proteger en este documento.
+      allow list: if true;
 
       allow create: if request.resource.data.keys().hasAll(
                         ['incidencia_id', 'municipio_id', 'categoria', 'estado', 'fecha_creacion']
@@ -81,28 +132,68 @@ service cloud.firestore {
                       request.resource.data.municipio_id.size() > 0 &&
                       exists(/databases/$(database)/documents/municipalidades/$(request.resource.data.municipio_id)) &&
                       (!('nivel_gravedad' in request.resource.data) ||
-                        request.resource.data.nivel_gravedad in ['Alta', 'Media', 'Baja']);
+                        request.resource.data.nivel_gravedad in ['Alta', 'Media', 'Baja']) &&
+                      (!('coordenadas' in request.resource.data) ||
+                        (request.resource.data.coordenadas.lat is number &&
+                          request.resource.data.coordenadas.lng is number));
 
-      // Solo el funcionario del mismo municipio puede reflejar cambios de estado
-      // (asignar cuadrilla / marcar resuelto) en el ticket público.
-      allow update: if esDelMismoMunicipio(resource.data.municipio_id);
+      // El funcionario del mismo municipio refleja cambios de estado (asignar
+      // cuadrilla / marcar resuelto); cualquier ciudadano (sin login) puede votar
+      // "+1", pero ESE update solo puede tocar upvotes, en exactamente +1.
+      allow update: if esDelMismoMunicipio(resource.data.municipio_id) ||
+                      (request.auth == null &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes']) &&
+                        request.resource.data.upvotes == resource.data.get('upvotes', 1) + 1);
 
       allow delete: if false;
     }
 
     // --- Usuarios municipales ---
     // Nadie puede crearse a sí mismo un perfil con rol (evita que un ciudadano se
-    // autoasigne ADMIN). Los perfiles los crea un ADMIN existente (de la MISMA
+    // autoasigne un rol). Los perfiles los crea un Alcalde existente (de la MISMA
     // municipalidad) o se cargan manualmente desde la consola de Firebase.
     match /usuarios_municipales/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
-      allow read: if esAdmin() && esDelMismoMunicipio(resource.data.municipio_id);
+      allow read: if esAlcalde() && esDelMismoMunicipio(resource.data.municipio_id);
 
       // En "create" el documento todavía no existe, así que no hay "resource.data":
-      // se valida contra el municipio del propio admin que está creando el perfil.
-      allow create: if esAdmin() && request.resource.data.municipio_id == perfilFuncionario().municipio_id;
+      // se valida contra el municipio del propio Alcalde que está creando el perfil.
+      // No se permite crear otro ALCALDE_ADMIN desde esta vía (solo JEFE_DEPARTAMENTO
+      // o TERRENO) — evita que la UI de autogestión sirva para autoescalar privilegios;
+      // crear otro Alcalde sigue siendo una acción manual desde la consola.
+      allow create: if esAlcalde()
+                      && request.resource.data.municipio_id == perfilFuncionario().municipio_id
+                      && request.resource.data.rol in ['JEFE_DEPARTAMENTO', 'TERRENO'];
 
-      allow update, delete: if esAdmin() && esDelMismoMunicipio(resource.data.municipio_id);
+      allow update, delete: if esAlcalde() && esDelMismoMunicipio(resource.data.municipio_id);
+    }
+
+    // --- Trabajadores (roster de asistencia por departamento) ---
+    // Sin cuenta de acceso propia (a diferencia de usuarios_municipales) — es
+    // una lista simple que administra el Jefe de Departamento, similar a como
+    // "cuadrillas" es hoy un array de strings en municipalidades/{slug}.
+    match /trabajadores/{trabajadorId} {
+      allow read: if esDelMismoMunicipio(resource.data.municipio_id);
+
+      allow create: if esFuncionarioAutenticado()
+                      && request.resource.data.municipio_id == perfilFuncionario().municipio_id
+                      && perfilFuncionario().rol == 'JEFE_DEPARTAMENTO'
+                      && perfilFuncionario().departamento == request.resource.data.departamento;
+
+      allow update, delete: if puedeGestionarTrabajador(resource.data);
+    }
+
+    // --- Ubicación manual de cuadrillas ---
+    // "Ubicación en tiempo real" pedida por el usuario, pero manual (ver §17):
+    // el Jefe de Departamento marca a mano dónde está trabajando una cuadrilla
+    // ahora mismo (no hay GPS real — los trabajadores no tienen cuenta ni
+    // dispositivo propio). Cualquier funcionario del municipio puede leer (así
+    // el Alcalde ve el link "Ver ubicación exacta" desde el Dashboard General).
+    match /ubicaciones_cuadrilla/{ubicacionId} {
+      allow read: if esDelMismoMunicipio(resource.data.municipio_id);
+      allow write: if esFuncionarioAutenticado()
+                      && request.resource.data.municipio_id == perfilFuncionario().municipio_id
+                      && perfilFuncionario().rol == 'JEFE_DEPARTAMENTO';
     }
   }
 }
