@@ -17,6 +17,7 @@ import { useSincronizacionOffline } from './hooks/useSincronizacionOffline'
 const DashboardGeneralPage = lazy(() => import('./pages/DashboardGeneralPage'))
 const DashboardDepartamentoPage = lazy(() => import('./pages/DashboardDepartamentoPage'))
 const GestionFuncionariosPage = lazy(() => import('./pages/GestionFuncionariosPage'))
+const TransparenciaPage = lazy(() => import('./pages/TransparenciaPage'))
 
 const conSuspenso = (elemento) => (
   <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Spinner /></div>}>
@@ -102,6 +103,11 @@ function App() {
               </RutaProtegida>
             }
           />
+
+          {/* Transparencia pública por municipalidad, sin login — ver TransparenciaPage.jsx.
+              Ruta de 2 segmentos: no choca con /:municipioSlug (1 segmento), React
+              Router los distingue por profundidad sin importar el orden acá. */}
+          <Route path="/:municipioSlug/transparencia" element={conSuspenso(<TransparenciaPage />)} />
 
           {/* Vista ciudadano pública, sin login, específica de cada municipalidad */}
           <Route path="/:municipioSlug" element={<CiudadanoPage />} />

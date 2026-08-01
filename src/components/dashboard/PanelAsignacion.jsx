@@ -4,6 +4,7 @@ import BadgeEstado from '../common/BadgeEstado'
 import BadgeGravedad from '../common/BadgeGravedad'
 import EnlaceGoogleMaps from '../common/EnlaceGoogleMaps'
 import GaleriaFotos from '../common/GaleriaFotos'
+import ListaSeguimientos from '../common/ListaSeguimientos'
 import Boton from '../common/Boton'
 import { asignarCuadrilla } from '../../services/incidenciasService'
 import { conTimeout } from '../../utils/timeout'
@@ -63,6 +64,7 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
       )}
 
       <GaleriaFotos urls={incidencia.fotos_antes_urls} alt="Foto reportada por el ciudadano" className="mt-3" />
+      <ListaSeguimientos incidenciaId={incidencia.id} />
 
       <div className="mt-5">
         <label className="mb-1 block text-sm font-medium text-gray-700">Cuadrilla asignada</label>

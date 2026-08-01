@@ -22,6 +22,14 @@ export function formatearDuracion(desde, hasta) {
   return `${minutos}min`
 }
 
+// Horas transcurridas desde un Timestamp de Firestore hasta ahora. Usado para
+// las alertas de SLA (MetricasPorDepartamento.jsx) — cuánto lleva esperando
+// una incidencia sin asignar.
+export function horasDesde(timestamp) {
+  if (!timestamp?.toDate) return 0
+  return (Date.now() - timestamp.toDate().getTime()) / 3_600_000
+}
+
 // Usado para el KPI de gasto mensual (ResumenGastoMensual.jsx, MetricasPorDepartamento.jsx).
 export function esDelMesActual(timestamp) {
   if (!timestamp?.toDate) return false

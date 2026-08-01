@@ -20,6 +20,7 @@ import {
   registrarTicketPublico,
   actualizarEstadoTicketPublico,
   incrementarUpvotesTicketPublico,
+  actualizarCalificacionTicketPublico,
 } from './ticketsPublicosService'
 
 const incidenciasRef = collection(db, COLECCIONES.INCIDENCIAS)
@@ -121,7 +122,13 @@ export async function crearIncidencia({
     usuarios_afectados: [],
     presupuesto_estimado: null,
     gasto_real: null,
-    notificado_whatsapp: false, // el bot de WhatsApp (whatsapp-bot/) lo pone en true tras avisar al vecino
+    calificacion_ciudadano: null, // 1-5, la pone el ciudadano desde /estado una vez Resuelto (ver calificarIncidencia)
+    // Las 3 banderas de notificado_whatsapp_* las pone en true el bot (whatsapp-bot/)
+    // tras avisar al vecino por WhatsApp en cada momento del ciclo de vida —
+    // creación, asignación de cuadrilla, y resuelto (ver ESTADO_PROYECTO.md §23).
+    notificado_whatsapp_creacion: false,
+    notificado_whatsapp_asignacion: false,
+    notificado_whatsapp: false,
     fecha_creacion: serverTimestamp(),
     fecha_asignacion: null,
     fecha_cierre: null,
@@ -251,4 +258,19 @@ export async function votarIncidencia({ incidenciaId, numeroTicket, dispositivoI
   })
 
   incrementarUpvotesTicketPublico(numeroTicket)
+}
+
+// Calificación ciudadana post-resolución (1-5 estrellas), desde /estado, sin
+// login. Mismo mecanismo que votarIncidencia: el ciudadano nunca leyó
+// incidencias/{id} directamente (no tiene permiso), pero SÍ conoce su id
+// porque tickets_publicos.{numeroTicket}.incidencia_id es público — construye
+// el update a ciegas contra ese id. firestore.rules (esCalificacionValida)
+// exige que la incidencia ya esté Resuelto, que no tuviera calificación previa,
+// y que el update toque solo este campo con un valor entre 1 y 5.
+export async function calificarIncidencia({ incidenciaId, numeroTicket, calificacion }) {
+  await updateDoc(doc(db, COLECCIONES.INCIDENCIAS, incidenciaId), {
+    calificacion_ciudadano: calificacion,
+  })
+
+  actualizarCalificacionTicketPublico(numeroTicket, calificacion)
 }

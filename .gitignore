@@ -5,3 +5,5 @@ dist
 *.log
 emulator-data
 .firebase
+serviceAccountKey.json
+backups/

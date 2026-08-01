@@ -3,6 +3,7 @@ import { ChevronLeft, Camera, AlertTriangle } from 'lucide-react'
 import BadgeEstado from '../common/BadgeEstado'
 import EnlaceGoogleMaps from '../common/EnlaceGoogleMaps'
 import GaleriaFotos from '../common/GaleriaFotos'
+import ListaSeguimientos from '../common/ListaSeguimientos'
 import Boton from '../common/Boton'
 import { marcarResuelto } from '../../services/incidenciasService'
 import { conTimeout } from '../../utils/timeout'
@@ -73,6 +74,8 @@ export default function DetalleTarea({ incidencia, onVolver }) {
           <GaleriaFotos urls={incidencia.fotos_antes_urls} alt="Antes" />
         </div>
       )}
+
+      <ListaSeguimientos incidenciaId={incidencia.id} />
 
       {resuelto ? (
         <div className="mt-6 rounded-xl bg-green-50 p-4 text-center text-green-800">

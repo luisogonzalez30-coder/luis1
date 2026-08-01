@@ -1,6 +1,6 @@
 # TuMuniAquí — Resumen técnico maestro
 
-> Documento generado para continuar el trabajo en una nueva conversación. Refleja el estado real del código al 31-jul-2026 (actualizado tras implementar consulta pública de ticket, despliegue a Hosting, PWA, derivación automática por departamento, RBAC de 3 roles, agrupación de reportes estilo Waze con upvotes/detección de duplicados, autoservicio de creación de funcionarios, migración de subida de fotos de Firebase Storage a Cloudinary por falta de tarjeta para Blaze, el módulo de Órdenes de Trabajo y Costeo, roster de trabajadores/asistencia por departamento, un arreglo de responsividad mobile en ambos Dashboards, hasta 3 fotos por reporte, RUT opcional del ciudadano con consulta de tickets por RUT, y un bot de WhatsApp no oficial (`whatsapp-bot/`) que notifica al ciudadano cuando su reporte queda Resuelto — implementado y verificado end-to-end el 31-jul-2026, ver §23). Si algo acá no coincide con el código, **confía en el código** (esto es una foto, no la fuente de verdad).
+> Documento generado para continuar el trabajo en una nueva conversación. Refleja el estado real del código al 31-jul-2026 (actualizado tras implementar consulta pública de ticket, despliegue a Hosting, PWA, derivación automática por departamento, RBAC de 3 roles, agrupación de reportes estilo Waze con upvotes/detección de duplicados, autoservicio de creación de funcionarios, migración de subida de fotos de Firebase Storage a Cloudinary por falta de tarjeta para Blaze, el módulo de Órdenes de Trabajo y Costeo, roster de trabajadores/asistencia por departamento, un arreglo de responsividad mobile en ambos Dashboards, hasta 3 fotos por reporte, RUT opcional del ciudadano con consulta de tickets por RUT, y un bot de WhatsApp no oficial (`whatsapp-bot/`) que notifica al ciudadano en 3 momentos del ciclo de vida y responde consultas de estado — ver §23; más, en la misma sesión, búsqueda/exportar CSV/alertas de SLA en los Dashboards, calificación y seguimiento ciudadano post-reporte, una página pública de transparencia por comuna, y un script de respaldo diario de Firestore — ver §24 y §25). Si algo acá no coincide con el código, **confía en el código** (esto es una foto, no la fuente de verdad).
 
 ## 1. Qué es esta app
 
@@ -41,6 +41,7 @@ src/
 │   ├── funcionariosService.js     # Alta/baja de funcionarios, solo Alcalde (ver §5)
 │   ├── trabajadoresService.js     # Roster de asistencia por departamento (ver §17)
 │   ├── ubicacionesCuadrillaService.js # Ubicación manual de cuadrillas (ver §17)
+│   ├── seguimientosService.js     # Comentario/foto ciudadano a un reporte existente (ver §24)
 │   └── storageService.js         # Subida de fotos a Cloudinary (no Firebase Storage), ver §19
 ├── utils/
 │   ├── categorias.js              # Catálogo de 58 categorías + agruparCategorias()
@@ -48,7 +49,7 @@ src/
 │   ├── departamento.js            # Derivación automática por departamento (ver §8)
 │   ├── ticket.js                  # generarNumeroTicket()
 │   ├── timeout.js                 # conTimeout() — ver §10
-│   ├── tiempo.js                  # formatearFecha/Duracion, esDelMesActual (ver §17)
+│   ├── tiempo.js                  # formatearFecha/Duracion, esDelMesActual, horasDesde (ver §17, §24)
 │   ├── costeo.js                  # calcularCostoManoObra (ver §17)
 │   ├── rut.js                     # Validación RUT chileno (ver §11)
 │   ├── colaOffline.js             # Cola de reportes pendientes en localStorage
@@ -56,6 +57,8 @@ src/
 │   ├── distancia.js               # distanciaMetros() — Haversine, para el chequeo de duplicados (ver §16)
 │   ├── iconoPin.js                # crearIconoPin() — ícono Leaflet compartido por los mapas
 │   ├── tema.js                    # Aplica colores del tenant vía CSS custom properties
+│   ├── busqueda.js                # coincideTexto() — búsqueda libre en los Dashboards (ver §24)
+│   ├── exportarCsv.js             # exportarIncidenciasCsv() (ver §24)
 │   └── leafletIconFix.js          # Fix de íconos Leaflet+Vite (compartido por los 2 mapas)
 ├── pages/
 │   ├── LandingPage.jsx            # "/" — neutra, sin tenant
@@ -65,7 +68,8 @@ src/
 │   ├── DashboardDepartamentoPage.jsx # "/dashboard/departamento" (JEFE_DEPARTAMENTO) — lazy-loaded, ver §13
 │   ├── GestionFuncionariosPage.jsx # "/dashboard/funcionarios" (ALCALDE_ADMIN) — lazy-loaded, ver §5
 │   ├── CuadrillaPage.jsx          # "/cuadrilla" (TERRENO/ALCALDE_ADMIN)
-│   └── ConsultaTicketPage.jsx     # "/estado" — consulta pública sin login (ver §15)
+│   ├── ConsultaTicketPage.jsx     # "/estado" — consulta pública sin login (ver §15), + calificación y seguimiento (§24)
+│   └── TransparenciaPage.jsx      # "/:municipioSlug/transparencia" — pública, lazy-loaded (ver §24)
 └── components/
     ├── ciudadano/                 # Wizard de 3 pasos (ver §11) + PopupVotoIncidencia.jsx,
     │                               # AvisoPosibleDuplicado.jsx (ver §16)
@@ -74,7 +78,8 @@ src/
     │                               # ModalTrabajadoresDepartamento (ver §12, §13, §17), estadísticas
     ├── cuadrilla/                 # Lista de tareas + detalle
     └── common/                    # Badges, botones, EncabezadoMunicipio, EnlaceGoogleMaps,
-                                    # RutaProtegida, Modal (ver §17), GaleriaFotos (ver §11)
+                                    # RutaProtegida, Modal (ver §17), GaleriaFotos (ver §11),
+                                    # EstrellasCalificacion, ListaSeguimientos (ver §24)
 ```
 
 ## 4. Multi-tenant — cómo funciona
@@ -176,11 +181,17 @@ src/
     horas_reales: number,
     costo_final: number,           // mismo criterio que costo_aprox: total a ojo, mano de obra se calcula aparte
   } | null,
+  calificacion_ciudadano: number | null,  // 1-5, la pone el ciudadano desde /estado una vez Resuelto (ver §24), solo una vez
+  notificado_whatsapp_creacion: boolean,   // banderas del bot de WhatsApp (§23), independientes entre sí
+  notificado_whatsapp_asignacion: boolean, // — cada una se pone en true cuando el bot avisa ESE momento del ciclo
+  notificado_whatsapp: boolean,            // (esta última es específicamente la de "Resuelto", nombre sin sufijo por compatibilidad histórica)
   fecha_creacion: Timestamp,       // serverTimestamp()
   fecha_asignacion: Timestamp | null,  // null hasta que se asigna cuadrilla — usado para "tiempo de reacción" (ver §17)
   fecha_cierre: Timestamp | null,
 }
 ```
+
+**Subcolección `incidencias/{id}/seguimientos/{id}`** (nueva, ver §24): `{texto: string, foto_url: string, autor: 'ciudadano', fecha: Timestamp}` — comentarios/fotos que el ciudadano agrega a un reporte ya creado, sin login, desde `/estado`.
 
 **Funciones en `src/services/incidenciasService.js`:**
 - `generarIdIncidencia()` — genera un ID de documento sin escribir (para poder reusarlo en reintentos, ver §10).
@@ -430,6 +441,8 @@ Excluidos a propósito: direccion_texto, detalles_adicionales, nombre/contacto/*
 
 ## 18. Reglas de seguridad (`firestore.rules`) — contenido actual completo
 
+Regenerado desde el archivo real el 01-ago-2026 (agrega `esCalificacionValida` y la subcolección `seguimientos` respecto de la versión anterior — ver §24):
+
 ```
 rules_version = '2';
 service cloud.firestore {
@@ -457,6 +470,16 @@ service cloud.firestore {
         despues.upvotes == antes.get('upvotes', 1) + 1 &&
         despues.usuarios_afectados.size() == antes.get('usuarios_afectados', []).size() + 1;
     }
+    // Calificación ciudadana (1-5, sin login, ver §24): SOLO calificacion_ciudadano,
+    // solo si Resuelto, solo una vez (no se puede pisar una calificación ya puesta).
+    function esCalificacionValida(antes, despues) {
+      return request.auth == null &&
+        despues.diff(antes).affectedKeys().hasOnly(['calificacion_ciudadano']) &&
+        antes.estado == 'Resuelto' &&
+        antes.get('calificacion_ciudadano', null) == null &&
+        despues.calificacion_ciudadano is int &&
+        despues.calificacion_ciudadano >= 1 && despues.calificacion_ciudadano <= 5;
+    }
 
     match /municipalidades/{municipioId} {
       allow read: if true;
@@ -476,8 +499,24 @@ service cloud.firestore {
                             'Dirección de Obras (DOM)', 'Tránsito', 'Operaciones',
                             'Aseo y Ornato', 'Medio Ambiente', 'Seguridad Ciudadana', 'Oficina de Partes'
                           ]);
-      allow update: if puedeGestionarIncidencia(resource.data) || esVotoValidoIncidencia(resource.data, request.resource.data);
+      allow update: if puedeGestionarIncidencia(resource.data) || esVotoValidoIncidencia(resource.data, request.resource.data)
+                      || esCalificacionValida(resource.data, request.resource.data);
       allow delete: if esAlcalde() && esDelMismoMunicipio(resource.data.municipio_id);
+    }
+
+    // Seguimientos (ver §24): comentario/foto que el ciudadano agrega a un
+    // reporte YA creado, sin login — acceso "a ciegas" igual que la calificación
+    // (conoce incidenciaId porque tickets_publicos lo expone), solo escribe
+    // (create), no puede leer lo que mandó ni lo de nadie más.
+    match /incidencias/{incidenciaId}/seguimientos/{seguimientoId} {
+      allow read: if esDelMismoMunicipio(get(/databases/$(database)/documents/incidencias/$(incidenciaId)).data.municipio_id);
+      allow create: if request.auth == null
+                      && request.resource.data.keys().hasOnly(['texto', 'foto_url', 'autor', 'fecha'])
+                      && request.resource.data.autor == 'ciudadano'
+                      && request.resource.data.texto is string && request.resource.data.texto.size() <= 1000
+                      && request.resource.data.foto_url is string
+                      && request.resource.data.fecha == request.time;
+      allow update, delete: if false;
     }
 
     // tickets_publicos: alimenta /estado Y el mapa tipo Waze (pines + chequeo de
@@ -497,11 +536,17 @@ service cloud.firestore {
                       && (!('nivel_gravedad' in request.resource.data) || request.resource.data.nivel_gravedad in ['Alta','Media','Baja'])
                       && (!('coordenadas' in request.resource.data) || (request.resource.data.coordenadas.lat is number && request.resource.data.coordenadas.lng is number));
       // Funcionario del mismo municipio refleja cambios de estado; cualquier
-      // ciudadano sin login puede votar "+1", pero solo puede tocar upvotes.
+      // ciudadano sin login puede votar "+1" (solo upvotes) o reflejar su
+      // calificación ya puesta en incidencias/{id} (solo una vez).
       allow update: if esDelMismoMunicipio(resource.data.municipio_id) ||
                       (request.auth == null &&
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes']) &&
-                        request.resource.data.upvotes == resource.data.get('upvotes', 1) + 1);
+                        request.resource.data.upvotes == resource.data.get('upvotes', 1) + 1) ||
+                      (request.auth == null &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['calificacion_ciudadano']) &&
+                        resource.data.get('calificacion_ciudadano', null) == null &&
+                        request.resource.data.calificacion_ciudadano is int &&
+                        request.resource.data.calificacion_ciudadano >= 1 && request.resource.data.calificacion_ciudadano <= 5);
       allow delete: if false;
     }
 
@@ -592,9 +637,15 @@ Luego: `http://localhost:5173/demo` (ciudadano), `http://localhost:5173/login` (
 
 **Importante para cambios futuros que toquen roles**: si alguna vez se agrega o renombra un rol de nuevo, migrar primero cualquier usuario real con el rol viejo (editar su doc en `usuarios_municipales` desde la consola) ANTES de desplegar reglas/frontend — si no, ese usuario queda momentáneamente sin acceso a su dashboard hasta migrar. Así se hizo con la migración `ADMIN` → `ALCALDE_ADMIN` del 30-jul-2026 (ver §5, §19).
 
+**Otros procesos que corren aparte del frontend** (ninguno se despliega con `firebase deploy`, corren localmente en esta PC):
+- Bot de WhatsApp: `cd whatsapp-bot && node index.js` — ver §23.
+- Respaldo de Firestore: `npm run backup` (o la tarea programada diaria, si ya se creó) — ver §25.
+
+**Verificar que un deploy de `hosting` realmente llegó** (lección aprendida en §23 — el código commiteado no es lo mismo que lo desplegado): `curl -s "https://app-incidencias-urbanas.web.app/demo?v=$(date +%s)" | grep -oE 'src="[^"]*\.js"'` da el nombre del bundle realmente servido; compararlo contra `ls dist/assets/index-*.js` después de un `npm run build` reciente. Si no coinciden, faltó desplegar o el navegador está probando con caché vieja (usar ventana de incógnito para descartar esto último).
+
 Para build de producción: `npm run build` (verificar que `recharts` quede en chunks separados — `DashboardGeneralPage-*.js` y `DashboardDepartamentoPage-*.js` —, no en el `index-*.js` principal — code-splitting ya configurado en `App.jsx` con `React.lazy`).
 
-## 23. Bot de WhatsApp — notificación al resolver (implementado 31-jul-2026)
+## 23. Bot de WhatsApp — notificaciones + consulta conversacional (implementado 31-jul/01-ago-2026)
 
 **Ubicación**: `whatsapp-bot/` en la raíz del proyecto (junto a `src/`, no dentro) — proyecto Node **independiente**, con su propio `package.json`/`node_modules`, no se bundlea con Vite ni forma parte del build del front. Decisiones de diseño (vía no oficial, número, hosting manual) documentadas en §21 — acá va el cómo quedó construido.
 
@@ -602,10 +653,11 @@ Para build de producción: `npm run build` (verificar que `recharts` quede en ch
 1. Inicia sesión con Firebase Auth (`signInWithEmailAndPassword`, client SDK — no Admin SDK) usando una cuenta de funcionario **`TERRENO` dedicada exclusivamente al bot** (creada desde `/dashboard/funcionarios`, ver §5). TERRENO alcanza porque lee/escribe incidencias de todo el municipio sin restricción de departamento (`puedeGestionarIncidencia` en `firestore.rules` solo restringe por departamento a `JEFE_DEPARTAMENTO`).
 2. Lee `usuarios_municipales/{uid}` para saber `municipio_id`, y `municipalidades/{municipio_id}` para el nombre real (usado en el mensaje) — ambos leídos una sola vez al arrancar, no en cada mensaje.
 3. Se conecta a WhatsApp con Baileys (sesión persistida en `whatsapp-bot/auth_info/`, gitignored — solo hace falta escanear el QR una vez; reconecta solo si se corta).
-4. Escucha `incidencias` con `onSnapshot` filtrando `municipio_id`, `estado=='Resuelto'`, `notificado_whatsapp==false` (3 igualdades, sin `orderBy` — no requiere índice compuesto). Usa `snapshot.docChanges()` y solo procesa tipo `'added'` (evita reprocesar lo ya notificado en cada evento del listener).
-5. Si `contacto_ciudadano` no tiene forma de teléfono (vacío o con `@`) marca `notificado_whatsapp: true` igual (nada que enviar) y lo loguea. Si parece teléfono, normaliza anteponiendo `56` si hace falta, confirma con `sock.onWhatsApp()` que el número existe en WhatsApp, y envía foto (`foto_despues_url` o, si no hay, la primera de `fotos_antes_urls`; si no hay ninguna, manda solo texto) + mensaje personalizado.
+4. **3 momentos del ciclo de vida notificados, cada uno con su propia bandera** (ver `TIPOS_NOTIFICACION` en el código — agregado 01-ago-2026, antes solo notificaba "Resuelto"): al **crear** (`notificado_whatsapp_creacion`, sin filtro de estado — confirma el ticket con la foto "antes"), al **asignar cuadrilla** (`notificado_whatsapp_asignacion`, filtra `estado=='En Proceso'`), y al **resolver** (`notificado_whatsapp`, filtra `estado=='Resuelto'`, con la foto "después"). Cada tipo tiene su propio `onSnapshot` filtrando `municipio_id` + (opcionalmente `estado`) + su bandera `==false` (igualdades sin `orderBy` — no requiere índice compuesto). Usa `snapshot.docChanges()` y solo procesa tipo `'added'` (evita reprocesar lo ya notificado en cada evento del listener).
+5. Si `contacto_ciudadano` no tiene forma de teléfono (vacío o con `@`) marca la bandera correspondiente en `true` igual (nada que enviar) y lo loguea. Si parece teléfono, normaliza anteponiendo `56` si hace falta, confirma con `sock.onWhatsApp()` que el número existe en WhatsApp, y envía el mensaje de ese tipo (+ foto si corresponde).
 6. **Mensaje**: saludo con `nombre_ciudadano` si el ciudadano lo dejó, categoría con su etiqueta legible (reusa `CATEGORIAS` de `src/utils/categorias.js` vía import relativo — **no se duplicó el catálogo**, así que si se agregan categorías nuevas el bot las toma solas), nombre real de la municipalidad, número de ticket, y link a `/estado`.
-7. Si el envío falla (ej. WhatsApp desconectado en ese instante), **no** se marca `notificado_whatsapp` — la incidencia vuelve a aparecer como `'added'` la próxima vez que el bot arranque y se reintenta sola, sin acción manual.
+7. Si el envío falla (ej. WhatsApp desconectado en ese instante), **no** se marca la bandera — la incidencia vuelve a aparecer como `'added'` la próxima vez que el bot arranque y se reintenta sola, sin acción manual.
+8. **Consulta conversacional (nuevo, 01-ago-2026)**: el bot también escucha `messages.upsert` (mensajes ENTRANTES, no solo enviar). Si un ciudadano le escribe directo al número `+56977701624` un texto que contenga algo con forma de ticket (`INC-YYYYMMDD-XXXX`, regex insensible a mayúsculas), el bot busca ese número en `tickets_publicos` (lectura pública, sin necesitar sesión) y responde categoría/estado/fechas — sin pasar por `/estado`. Ignora grupos/difusión (solo chats 1 a 1) y cualquier mensaje sin forma de ticket (no contesta ruido).
 
 **Dependencia crítica — versión de Baileys fijada, no usar `^`**: `package.json` fija `"@whiskeysockets/baileys": "6.7.24"` **exacto, sin caret**. La versión `6.17.16` (numéricamente mayor, y la que un rango `^6.x` resolvería) tiene una **vulnerabilidad de día cero que permite falsificar mensajes** ([GHSA-qvv5-jq5g-4cgg](https://github.com/WhiskeySockets/Baileys/security/advisories/GHSA-qvv5-jq5g-4cgg)) — confirmado con `npm view ... deprecated` al instalar. `6.7.24` y `7.0.0-rc12+` están limpias. Si en el futuro se actualiza esta dependencia, revisar `npm view @whiskeysockets/baileys@<version> deprecated` antes de fijar una versión nueva.
 
@@ -613,7 +665,7 @@ Para build de producción: `npm run build` (verificar que `recharts` quede en ch
 
 **Segundo hallazgo durante la verificación — caché del navegador**: incluso después del deploy, una pestaña ya abierta desde antes siguió corriendo el bundle viejo en memoria. Hubo que probar en una **ventana de incógnito nueva** para garantizar que cargara la versión recién desplegada (mismo gotcha ya documentado en §20.6, confirmado de nuevo acá).
 
-**Verificado end-to-end en producción (31-jul-2026)**: reporte de prueba creado en `/demo` (con foto, nombre, y número de WhatsApp real) → asignado desde el Dashboard → marcado Resuelto → el bot lo detectó al instante, mandó la foto + mensaje personalizado (`Hola {nombre}, tu reporte de "{categoría legible}" (ticket {N}) fue resuelto por {nombre municipio}...`), y quedó recibido en el WhatsApp real del ciudadano de prueba.
+**Verificado end-to-end en producción (31-jul-2026, notificación de Resuelto)**: reporte de prueba creado en `/demo` (con foto, nombre, y número de WhatsApp real) → asignado desde el Dashboard → marcado Resuelto → el bot lo detectó al instante, mandó la foto + mensaje personalizado (`Hola {nombre}, tu reporte de "{categoría legible}" (ticket {N}) fue resuelto por {nombre municipio}...`), y quedó recibido en el WhatsApp real del ciudadano de prueba. Las notificaciones de creación/asignación y la consulta conversacional (01-ago-2026) se desplegaron y el bot se reinició para tomarlas, pero no se verificó cada una end-to-end por separado con captura — si algo no llega, revisar primero que el bot esté corriendo la versión desplegada más reciente y que el navegador no esté sirviendo un build viejo en caché (mismo patrón de bug que ya pasó una vez, ver arriba).
 
 **Cómo correrlo día a día** (decisión del usuario: manual, no PM2):
 ```bash
@@ -624,4 +676,45 @@ Deja esa ventana abierta — mientras esté corriendo, notifica en tiempo real; 
 
 **Archivos**: `whatsapp-bot/package.json`, `whatsapp-bot/index.js`, `whatsapp-bot/.env.example` (plantilla) y `whatsapp-bot/.env` (real, gitignored — tiene la config de Firebase del proyecto, no sensible, más `BOT_FUNCIONARIO_EMAIL`/`BOT_FUNCIONARIO_PASSWORD` de la cuenta dedicada, sensible). `whatsapp-bot/auth_info/` (sesión de WhatsApp) también gitignored — si se borra, hay que volver a escanear el QR.
 
-**Riesgo aceptado, sin resolver**: la cuenta `TERRENO` del bot se creó con una contraseña simple durante la prueba inicial — recomendado cambiarla por una robusta desde Firebase Console (Authentication) y actualizar `whatsapp-bot/.env` a la par, ya que esa cuenta tiene permiso de escritura sobre incidencias en producción.
+**Riesgo aceptado, sin resolver**: la cuenta `TERRENO` del bot se creó con una contraseña simple durante la prueba inicial — recomendado cambiarla por una robusta desde Firebase Console (Authentication) y actualizar `whatsapp-bot/.env` a la par, ya que esa cuenta tiene permiso de escritura sobre incidencias en producción. Sigue sin cambiarse al momento de escribir esto.
+
+## 24. Mejoras de gestión y participación ciudadana (01-ago-2026)
+
+Tanda grande implementada de una sola vez a pedido del usuario ("realiza todas las sugerencias que me dijiste", sobre una lista de ideas propuestas en el chat). Todo desplegado a producción (`firestore:rules` + `hosting`) y compilado sin errores; lo que requería sesión de funcionario lo verificó el usuario manualmente (mismo criterio que siempre, ver §20.5).
+
+**Dashboards (Alcalde y Jefe de Departamento) — `src/pages/DashboardGeneralPage.jsx` y `DashboardDepartamentoPage.jsx`:**
+- **Búsqueda de texto libre** (`src/utils/busqueda.js`, `coincideTexto`): filtra por ticket, dirección, categoría (etiqueta legible) y cuadrilla — no por datos del ciudadano. Se combina con los filtros existentes (gravedad/categoría/cuadrilla/departamento).
+- **Exportar a CSV** (`src/utils/exportarCsv.js`, sin librerías nuevas): botón junto al encabezado de la lista, exporta las incidencias **ya filtradas** (respeta búsqueda + filtros activos). Incluye BOM UTF-8 para que Excel en Windows no rompa tildes/ñ.
+- **Alertas de SLA** (`src/components/dashboard/MetricasPorDepartamento.jsx`, solo Dashboard del Alcalde): `SLA_HORAS_ALTA_SIN_ASIGNAR = 4` — una incidencia de gravedad Alta que lleva más de 4h en "Pendiente" sin cuadrilla asignada se marca en rojo, tanto en un banner resumen arriba de las tarjetas como en la tarjeta del departamento afectado (`horasDesde(timestamp)`, nuevo en `src/utils/tiempo.js`). Umbral ajustable en el código, no en UI.
+
+**Calificación ciudadana (1-5 estrellas) — post-resolución, desde `/estado`:**
+- Campo nuevo `incidencias.calificacion_ciudadano: number | null` (1-5), y mirror en `tickets_publicos.{numero}.calificacion_ciudadano` (best-effort, igual criterio que `upvotes`).
+- **Mecanismo de acceso "a ciegas"**: el ciudadano en `/estado` nunca tuvo permiso de LEER `incidencias/{id}` — pero `calificarIncidencia()` (`incidenciasService.js`) puede escribir directo a ese id porque lo conoce vía `tickets_publicos.{numero}.incidencia_id` (campo ya público). Mismo patrón exacto que `votarIncidencia()` (el voto "+1" ya funcionaba así desde §16).
+- `firestore.rules`: `esCalificacionValida()` — solo anónimo, solo si `estado=='Resuelto'`, solo si no había calificación previa (no se puede pisar), valor entero 1-5. Regla espejo en el `allow update` de `tickets_publicos` para el mirror.
+- UI: `src/components/common/EstrellasCalificacion.jsx` (widget reusable, un clic = envío inmediato, sin botón "guardar" — mismo criterio de un-clic que la asistencia de trabajadores). Se muestra en `ConsultaTicketPage.jsx` cuando el ticket está Resuelto; si ya se calificó, muestra el puntaje en modo solo lectura.
+
+**Seguimiento ciudadano — agregar comentario/foto a un reporte ya creado, sin login:**
+- Subcolección nueva `incidencias/{id}/seguimientos/{id}`: `{texto, foto_url, autor: 'ciudadano', fecha}`. Mismo mecanismo de acceso "a ciegas" que la calificación — el ciudadano solo puede `create`, nunca `read` (ni siquiera lo que él mismo mandó: la confirmación en `/estado` es optimista del lado del cliente, no una relectura).
+- `src/services/seguimientosService.js`: `agregarSeguimiento(incidenciaId, {texto, fotoUrl})` (ciudadano) y `suscribirSeguimientos(incidenciaId, callback)` (funcionario, orden cronológico).
+- UI ciudadano: formulario colapsable dentro de `TarjetaResultado` en `ConsultaTicketPage.jsx` — texto (hasta 1000 caracteres) + foto opcional (reusa `subirImagen` de `storageService.js`, mismo Cloudinary que el resto de la app). Disponible en cualquier estado del ticket, no solo Resuelto.
+- UI funcionario: `src/components/common/ListaSeguimientos.jsx` (solo lectura), insertado en los 3 paneles de gestión — `PanelAsignacion.jsx` (Alcalde), `PanelGestionDepartamento.jsx` (Jefe de Departamento), `DetalleTarea.jsx` (Terreno). A diferencia del contacto del ciudadano (oculto para Terreno por privacidad, ver §11), los seguimientos SÍ se muestran en los 3 — es información operativa sobre el problema, no un dato de contacto.
+- `firestore.rules`: `match /incidencias/{incidenciaId}/seguimientos/{seguimientoId}` — `create` anónimo validado por forma (autor obligatorio `'ciudadano'`, texto ≤1000 chars, `fecha` debe ser el `serverTimestamp()` real, no uno inventado por el cliente); `read` solo funcionario del mismo municipio (usa `get()` sobre el documento padre para conocer `municipio_id`, ya que la subcolección no lo tiene directamente); `update`/`delete` siempre `false`.
+- **Riesgo aceptado, mismo nivel que el voto ciudadano**: como `tickets_publicos` es listable (`allow list: if true`), cualquiera puede enumerar `incidencia_id`s y mandar seguimientos a incidencias ajenas sin ser quien reportó — no hay forma de probar "sos el mismo ciudadano" sin login. Se aceptó este riesgo porque es el mismo nivel de exposición que ya tenía el voto "+1" desde §16 (documentado ahí como "no es una garantía a prueba de abuso"), no una categoría de riesgo nueva.
+
+**Página pública de transparencia — `src/pages/TransparenciaPage.jsx`, ruta `/:municipioSlug/transparencia`:**
+- Sin login, calculada sobre `tickets_publicos` (colección ya pública, sin datos que identifiquen a nadie) — mismo criterio de privacidad que `/estado`.
+- Ruta de 2 segmentos (`/demo/transparencia`) — no choca con `/:municipioSlug` (1 segmento) ni con los slugs reservados de §4, React Router los distingue por profundidad de ruta.
+- Muestra: total de reportes, % resueltos, tiempo promedio de resolución (`fecha_cierre - fecha_creacion` de los Resueltos), desglose por gravedad y las 8 categorías más reportadas — con barras en CSS puro, **sin `recharts`** a propósito (página pública, mismo criterio de "liviano para celulares de gama baja/zonas rurales" que el resto del flujo ciudadano). Cargada con `React.lazy`, igual que los Dashboards.
+- **Pendiente**: no hay ningún link de entrada a esta página todavía desde `CiudadanoPage.jsx`/`LandingPage.jsx` — solo se llega escribiendo la URL a mano (`/<slug>/transparencia`). Agregar un enlace visible queda como mejora menor futura.
+
+## 25. Respaldo de Firestore (implementado 01-ago-2026)
+
+**`scripts/backup.js`** (agregado al `package.json` raíz como `npm run backup`): usa **Admin SDK** (`firebase-admin`, ya era devDependency) con una cuenta de servicio — a diferencia de todo lo demás en este proyecto, esto bypassa `firestore.rules` por completo (acceso total de lectura). Exporta `incidencias`, `usuarios_municipales`, `municipalidades`, `tickets_publicos`, `trabajadores`, `ubicaciones_cuadrilla`, y la subcolección `seguimientos` (vía `collectionGroup`, una sola consulta para todas las incidencias) a un único JSON con Timestamps convertidos a texto ISO legible. Guarda en `backups/backup-YYYY-MM-DD_HHmm.json` y conserva como máximo los últimos 14 archivos (borra los más viejos solo).
+
+**Credencial**: `serviceAccountKey.json` en la raíz del proyecto (descargada por el usuario desde Firebase Console > Configuración del proyecto > Cuentas de servicio > Generar nueva clave privada — el agente no puede generarla, requiere su sesión). **Da acceso total a la base de datos sin pasar por ninguna regla** — gitignored (`serviceAccountKey.json` y `backups/` agregados a `.gitignore`), nunca debe compartirse ni commitearse.
+
+**Probado manualmente el 01-ago-2026**: `npm run backup` corrió sin errores contra el proyecto real, exportó 89 incidencias / 5 usuarios_municipales / 1 municipalidad / 73 tickets_publicos / 47 trabajadores / 1 ubicación_cuadrilla / 0 seguimientos, archivo de 146 KB.
+
+**Automatización — tarea programada de Windows**: el usuario pidió que corriera solo todos los días. **El agente NO pudo crear la tarea** (`Register-ScheduledTask` y `schtasks /create` fallan con "Acceso denegado" en el entorno sandboxeado donde corre — limitación del entorno del agente, no de la PC del usuario). Se le dieron instrucciones paso a paso para crearla a mano desde el Programador de tareas de Windows (GUI): programa `C:\Program Files\nodejs\node.exe`, argumento `scripts\backup.js`, "Iniciar en" `C:\Users\Administrador\Desktop\kpop\reporte-incidencias`, diaria a las 3:00 a.m. **No confirmado si el usuario efectivamente la creó** — verificar en una próxima sesión (`Get-ScheduledTask -TaskName "RespaldoTuMuniAqui"` debería listarla si existe, ese fue el nombre sugerido) o preguntarle directamente.
+
+**Riesgo/limitación aceptada**: igual que el bot de WhatsApp, el respaldo solo corre si la PC está prendida a esa hora — si está apagada, ese día no hay respaldo nuevo (no hay reintento automático). Sin respaldo en la nube (fuera de esta PC); si el disco falla, se pierden también los backups locales junto con todo lo demás. Mejora futura posible: subir el JSON resultante a algún storage externo (Google Drive, etc.) — no implementado.

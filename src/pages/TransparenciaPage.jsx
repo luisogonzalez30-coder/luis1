@@ -1,0 +1,146 @@
+import { useEffect, useState } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
+import { useMunicipio } from '../hooks/useMunicipio'
+import { suscribirTicketsPublicos } from '../services/ticketsPublicosService'
+import { CATEGORIAS } from '../utils/categorias'
+import { COLOR_POR_GRAVEDAD } from '../utils/gravedad'
+import EncabezadoMunicipio from '../components/common/EncabezadoMunicipio'
+import Spinner from '../components/common/Spinner'
+
+const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
+
+function promedioResolucionHoras(tickets) {
+  const resueltos = tickets.filter((t) => t.estado === 'Resuelto' && t.fecha_creacion?.toDate && t.fecha_cierre?.toDate)
+  if (resueltos.length === 0) return null
+  const totalHoras = resueltos.reduce((acc, t) => acc + (t.fecha_cierre.toDate() - t.fecha_creacion.toDate()) / 3_600_000, 0)
+  return totalHoras / resueltos.length
+}
+
+function formatearHoras(horas) {
+  if (horas == null) return '—'
+  return horas < 24 ? `${Math.round(horas)}h` : `${Math.round(horas / 24)}d`
+}
+
+function BarraConteo({ etiqueta, cantidad, maximo, color }) {
+  const porcentaje = maximo > 0 ? Math.max((cantidad / maximo) * 100, 4) : 0
+  return (
+    <div className="mb-2">
+      <div className="mb-0.5 flex justify-between text-xs text-gray-600">
+        <span>{etiqueta}</span>
+        <span className="font-medium">{cantidad}</span>
+      </div>
+      <div className="h-2 rounded-full bg-gray-100">
+        <div className="h-2 rounded-full" style={{ width: `${porcentaje}%`, backgroundColor: color || 'var(--color-primario, #1D4ED8)' }} />
+      </div>
+    </div>
+  )
+}
+
+// Página pública ("/:municipioSlug/transparencia"), sin login: estadísticas
+// agregadas de gestión municipal, calculadas sobre tickets_publicos (colección
+// ya pública, sin datos que identifiquen a nadie — mismo criterio de privacidad
+// que /estado). Deliberadamente liviana (sin recharts, con barras en CSS puro)
+// para no pesarle al mismo público rural/celulares de gama baja que el
+// formulario ciudadano.
+export default function TransparenciaPage() {
+  const { municipioSlug } = useParams()
+  const { municipio, cargando: cargandoMunicipio, noEncontrado } = useMunicipio(municipioSlug)
+  const [tickets, setTickets] = useState([])
+
+  useEffect(() => {
+    if (!municipio) return
+    return suscribirTicketsPublicos(setTickets, municipio.id)
+  }, [municipio])
+
+  if (cargandoMunicipio) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner />
+      </div>
+    )
+  }
+
+  if (noEncontrado) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4 text-center text-gray-500">
+        No encontramos esta municipalidad.
+      </div>
+    )
+  }
+
+  const total = tickets.length
+  const resueltos = tickets.filter((t) => t.estado === 'Resuelto').length
+  const enProceso = tickets.filter((t) => t.estado === 'En Proceso').length
+  const pendientes = tickets.filter((t) => t.estado === 'Pendiente').length
+  const porcentajeResueltos = total > 0 ? Math.round((resueltos / total) * 100) : 0
+  const promedioHoras = promedioResolucionHoras(tickets)
+
+  const conteoPorGravedad = ['Alta', 'Media', 'Baja'].map((g) => ({
+    etiqueta: g,
+    cantidad: tickets.filter((t) => t.nivel_gravedad === g).length,
+    color: COLOR_POR_GRAVEDAD[g],
+  }))
+
+  const conteoPorCategoria = Object.entries(
+    tickets.reduce((acc, t) => {
+      acc[t.categoria] = (acc[t.categoria] || 0) + 1
+      return acc
+    }, {})
+  )
+    .map(([categoria, cantidad]) => ({ etiqueta: ETIQUETA_POR_VALOR[categoria] || categoria, cantidad }))
+    .sort((a, b) => b.cantidad - a.cantidad)
+    .slice(0, 8)
+
+  const maximoCategoria = Math.max(...conteoPorCategoria.map((c) => c.cantidad), 1)
+  const maximoGravedad = Math.max(...conteoPorGravedad.map((c) => c.cantidad), 1)
+
+  return (
+    <div className="mx-auto min-h-screen max-w-2xl px-4 py-6">
+      <Link to={`/${municipioSlug}`} className="mb-4 flex items-center gap-1 text-sm text-gray-500">
+        <ArrowLeft size={16} /> Volver al inicio
+      </Link>
+
+      <EncabezadoMunicipio municipio={municipio} tituloDefecto="Transparencia" />
+      <p className="mt-1 text-sm text-gray-500">Así vamos gestionando los reportes ciudadanos de la comuna.</p>
+
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { etiqueta: 'Reportes totales', valor: total },
+          { etiqueta: 'Resueltos', valor: `${resueltos} (${porcentajeResueltos}%)` },
+          { etiqueta: 'En proceso', valor: enProceso },
+          { etiqueta: 'Tiempo promedio', valor: formatearHoras(promedioHoras) },
+        ].map((tarjeta) => (
+          <div key={tarjeta.etiqueta} className="rounded-xl border border-gray-200 p-3">
+            <p className="text-xs text-gray-500">{tarjeta.etiqueta}</p>
+            <p className="mt-1 text-xl font-bold text-gray-900">{tarjeta.valor}</p>
+          </div>
+        ))}
+      </div>
+
+      {total === 0 ? (
+        <p className="mt-8 text-center text-sm text-gray-400">Todavía no hay reportes en esta municipalidad.</p>
+      ) : (
+        <>
+          <div className="mt-6">
+            <h2 className="mb-2 text-sm font-semibold text-gray-700">Por gravedad</h2>
+            {conteoPorGravedad.map((c) => (
+              <BarraConteo key={c.etiqueta} etiqueta={c.etiqueta} cantidad={c.cantidad} maximo={maximoGravedad} color={c.color} />
+            ))}
+          </div>
+
+          <div className="mt-6">
+            <h2 className="mb-2 text-sm font-semibold text-gray-700">Categorías más reportadas</h2>
+            {conteoPorCategoria.map((c) => (
+              <BarraConteo key={c.etiqueta} etiqueta={c.etiqueta} cantidad={c.cantidad} maximo={maximoCategoria} />
+            ))}
+          </div>
+
+          <p className="mt-6 text-xs text-gray-400">
+            {pendientes} reportes están pendientes de asignar cuadrilla. Datos en tiempo real, sin incluir información que identifique a quien reportó.
+          </p>
+        </>
+      )}
+    </div>
+  )
+}

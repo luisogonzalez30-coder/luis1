@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Users } from 'lucide-react'
+import { Users, Download, Search } from 'lucide-react'
 import { suscribirIncidencias } from '../services/incidenciasService'
 import { useMunicipio } from '../hooks/useMunicipio'
 import { ORDEN_GRAVEDAD } from '../utils/gravedad'
 import { CATEGORIAS, agruparCategorias } from '../utils/categorias'
+import { exportarIncidenciasCsv } from '../utils/exportarCsv'
+import { coincideTexto } from '../utils/busqueda'
 import MapaIncidencias from '../components/dashboard/MapaIncidencias'
 import ListaIncidencias from '../components/dashboard/ListaIncidencias'
 import PanelGestionDepartamento from '../components/dashboard/PanelGestionDepartamento'
@@ -24,6 +26,7 @@ export default function DashboardDepartamentoPage() {
   const [filtroGravedad, setFiltroGravedad] = useState('Todas')
   const [filtroCategoria, setFiltroCategoria] = useState('Todas')
   const [filtroCuadrilla, setFiltroCuadrilla] = useState('Todas')
+  const [filtroTexto, setFiltroTexto] = useState('')
   const [mostrarEquipo, setMostrarEquipo] = useState(false)
   const { perfil, cerrarSesion } = useAuth()
   const { municipio, cargando, noEncontrado } = useMunicipio(perfil?.municipio_id)
@@ -56,6 +59,7 @@ export default function DashboardDepartamentoPage() {
     .filter((inc) => filtroGravedad === 'Todas' || inc.nivel_gravedad === filtroGravedad)
     .filter((inc) => filtroCategoria === 'Todas' || inc.categoria === filtroCategoria)
     .filter((inc) => filtroCuadrilla === 'Todas' || inc.cuadrilla_asignada === filtroCuadrilla)
+    .filter((inc) => coincideTexto(inc, filtroTexto))
 
   // A diferencia del Dashboard del Alcalde (donde "pendientes" es solo la cola
   // sin asignar), acá el Jefe también resuelve, así que su cola de trabajo
@@ -100,7 +104,27 @@ export default function DashboardDepartamentoPage() {
 
         <div className="flex-1 overflow-y-auto border-t border-gray-200 bg-gray-50 md:h-full md:w-[40%] md:border-l md:border-t-0">
           <div className="border-b border-gray-200 p-3">
-            <h2 className="font-semibold text-gray-700">Por hacer ({porHacer.length})</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-semibold text-gray-700">Por hacer ({porHacer.length})</h2>
+              <button
+                onClick={() => exportarIncidenciasCsv(incidenciasFiltradas, `incidencias-${perfil.departamento}.csv`)}
+                className="flex items-center gap-1 rounded-lg border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100"
+                title="Exportar las incidencias filtradas a CSV (Excel)"
+              >
+                <Download size={13} /> Exportar CSV
+              </button>
+            </div>
+
+            <div className="relative mt-2">
+              <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={filtroTexto}
+                onChange={(e) => setFiltroTexto(e.target.value)}
+                placeholder="Buscar por ticket, dirección, categoría..."
+                className="w-full rounded-lg border border-gray-300 py-1.5 pl-8 pr-2 text-xs"
+              />
+            </div>
 
             <div className="mt-2 flex gap-1.5">
               {FILTROS_GRAVEDAD.map((nivel) => (

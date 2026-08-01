@@ -43,6 +43,7 @@ export async function registrarTicketPublico({
       upvotes: 1,
       fotos_antes_urls: [],
       estado: 'Pendiente',
+      calificacion_ciudadano: null,
       fecha_creacion: serverTimestamp(),
       fecha_cierre: null,
     })
@@ -86,6 +87,19 @@ export function incrementarUpvotesTicketPublico(numeroTicket) {
 
   updateDoc(doc(db, COLECCIONES.TICKETS_PUBLICOS, numeroTicket), { upvotes: increment(1) }).catch((error) => {
     console.error('[ticketsPublicosService] No se pudo sincronizar el voto en el ticket público:', error)
+  })
+}
+
+// Refleja la calificación ciudadana (1-5) en el ticket público, para que la
+// propia página /estado sepa que ya se calificó sin tener que releer
+// incidencias (a la que el ciudadano no tiene acceso de lectura). Best-effort,
+// mismo criterio que incrementarUpvotesTicketPublico: la calificación real ya
+// quedó guardada en incidencias/{id} (ver calificarIncidencia).
+export function actualizarCalificacionTicketPublico(numeroTicket, calificacion) {
+  if (!numeroTicket) return
+
+  updateDoc(doc(db, COLECCIONES.TICKETS_PUBLICOS, numeroTicket), { calificacion_ciudadano: calificacion }).catch((error) => {
+    console.error('[ticketsPublicosService] No se pudo sincronizar la calificación en el ticket público:', error)
   })
 }
 

@@ -4,6 +4,7 @@ import BadgeEstado from '../common/BadgeEstado'
 import BadgeGravedad from '../common/BadgeGravedad'
 import EnlaceGoogleMaps from '../common/EnlaceGoogleMaps'
 import GaleriaFotos from '../common/GaleriaFotos'
+import ListaSeguimientos from '../common/ListaSeguimientos'
 import Boton from '../common/Boton'
 import ModalPresupuesto from './ModalPresupuesto'
 import MapaSeleccionUbicacion from '../ciudadano/MapaSeleccionUbicacion'
@@ -139,6 +140,7 @@ export default function PanelGestionDepartamento({ incidencia, cuadrillas = [], 
       )}
 
       <GaleriaFotos urls={incidencia.fotos_antes_urls} alt="Foto reportada por el ciudadano" className="mt-3" />
+      <ListaSeguimientos incidenciaId={incidencia.id} />
 
       {error && (
         <div className="mt-4 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">

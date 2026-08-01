@@ -1,23 +1,128 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, AlertTriangle, ArrowLeft } from 'lucide-react'
+import { Search, AlertTriangle, ArrowLeft, Camera, MessageSquare, Check } from 'lucide-react'
 import { buscarTicketPublico } from '../services/ticketsPublicosService'
+import { calificarIncidencia } from '../services/incidenciasService'
+import { agregarSeguimiento } from '../services/seguimientosService'
+import { subirImagen } from '../services/storageService'
 import { buscarTicketsPorRutLocal } from '../utils/dispositivo'
 import { limpiarRut } from '../utils/rut'
+import { CATEGORIAS } from '../utils/categorias'
 import BadgeEstado from '../components/common/BadgeEstado'
 import BadgeGravedad from '../components/common/BadgeGravedad'
 import Boton from '../components/common/Boton'
+import EstrellasCalificacion from '../components/common/EstrellasCalificacion'
+
+const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
 
 function formatearFecha(timestamp) {
   if (!timestamp?.toDate) return '—'
   return timestamp.toDate().toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })
 }
 
-function TarjetaResultado({ resultado }) {
+// Formulario para que el ciudadano agregue más información a un reporte que ya
+// existe (ej. "el problema empeoró"). No requiere login — ver agregarSeguimiento.
+// Al no poder releer lo enviado (el ciudadano no tiene permiso de lectura sobre
+// incidencias), la confirmación es puramente del lado del cliente tras el envío.
+function FormularioSeguimiento({ incidenciaId }) {
+  const [abierto, setAbierto] = useState(false)
+  const [texto, setTexto] = useState('')
+  const [archivo, setArchivo] = useState(null)
+  const [enviando, setEnviando] = useState(false)
+  const [enviado, setEnviado] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function manejarEnvio(e) {
+    e.preventDefault()
+    if (!texto.trim() && !archivo) return
+
+    setEnviando(true)
+    setError(null)
+    try {
+      const fotoUrl = archivo ? await subirImagen(archivo, `incidencias/${incidenciaId}/seguimientos`) : ''
+      await agregarSeguimiento(incidenciaId, { texto: texto.trim(), fotoUrl })
+      setEnviado(true)
+      setTexto('')
+      setArchivo(null)
+    } catch (err) {
+      console.error('[ConsultaTicketPage] Error al agregar seguimiento:', err)
+      setError(err.message || 'No se pudo enviar. Intenta nuevamente.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  if (enviado) {
+    return (
+      <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-green-50 p-2 text-sm text-green-700">
+        <Check size={16} /> ¡Gracias! Se agregó tu información al reporte.
+      </p>
+    )
+  }
+
+  if (!abierto) {
+    return (
+      <button
+        onClick={() => setAbierto(true)}
+        className="mt-3 flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+      >
+        <MessageSquare size={15} /> Agregar información a este reporte
+      </button>
+    )
+  }
+
+  return (
+    <form onSubmit={manejarEnvio} className="mt-3 rounded-lg border border-gray-200 p-3">
+      <label className="mb-1 block text-xs font-medium text-gray-700">¿Hay algo más que quieras contarnos?</label>
+      <textarea
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        rows={2}
+        maxLength={1000}
+        placeholder="Ej: El problema empeoró, ahora también..."
+        className="w-full rounded-lg border border-gray-300 p-2 text-sm"
+      />
+
+      <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-xs text-gray-500">
+        <Camera size={14} />
+        {archivo ? archivo.name : 'Adjuntar una foto (opcional)'}
+        <input type="file" accept="image/*" capture="environment" onChange={(e) => setArchivo(e.target.files?.[0] || null)} className="hidden" />
+      </label>
+
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+
+      <div className="mt-2 flex gap-2">
+        <Boton type="submit" cargando={enviando} disabled={!texto.trim() && !archivo} className="flex-1">
+          Enviar
+        </Boton>
+        <button type="button" onClick={() => setAbierto(false)} className="px-2 text-sm text-gray-500">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function TarjetaResultado({ resultado, onCalificado }) {
+  const [enviandoCalificacion, setEnviandoCalificacion] = useState(false)
+
+  async function calificar(estrellas) {
+    if (enviandoCalificacion) return
+    setEnviandoCalificacion(true)
+    try {
+      await calificarIncidencia({ incidenciaId: resultado.incidencia_id, numeroTicket: resultado.id, calificacion: estrellas })
+      onCalificado(resultado.id, estrellas)
+    } catch (err) {
+      console.error('[ConsultaTicketPage] Error al calificar:', err)
+    } finally {
+      setEnviandoCalificacion(false)
+    }
+  }
+
   return (
     <div className="mt-5 rounded-xl border border-gray-200 p-4">
       <div className="flex items-start justify-between gap-2">
-        <h2 className="font-semibold text-gray-900">{resultado.categoria}</h2>
+        <h2 className="font-semibold text-gray-900">{ETIQUETA_POR_VALOR[resultado.categoria] || resultado.categoria}</h2>
         <BadgeEstado estado={resultado.estado} />
       </div>
 
@@ -37,6 +142,24 @@ function TarjetaResultado({ resultado }) {
           </div>
         )}
       </dl>
+
+      {resultado.estado === 'Resuelto' && (
+        <div className="mt-4 border-t border-gray-100 pt-3">
+          {resultado.calificacion_ciudadano ? (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">Tu calificación:</p>
+              <EstrellasCalificacion valor={resultado.calificacion_ciudadano} soloLectura />
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">¿Quedó bien resuelto?</p>
+              <EstrellasCalificacion valor={0} onSeleccionar={calificar} />
+            </div>
+          )}
+        </div>
+      )}
+
+      <FormularioSeguimiento incidenciaId={resultado.incidencia_id} />
     </div>
   )
 }
@@ -114,6 +237,14 @@ export default function ConsultaTicketPage() {
     }
   }
 
+  // Actualización optimista tras calificar: evita releer el ticket completo
+  // (el ciudadano no tiene permiso de lectura sobre incidencias, y el mirror en
+  // tickets_publicos es best-effort/asíncrono, no conviene esperarlo para pintar).
+  function manejarCalificado(ticketId, calificacion) {
+    setResultado((actual) => (actual?.id === ticketId ? { ...actual, calificacion_ciudadano: calificacion } : actual))
+    setResultadosRut((actual) => actual?.map((r) => (r.id === ticketId ? { ...r, calificacion_ciudadano: calificacion } : r)) ?? actual)
+  }
+
   function buscarOtro() {
     setNumeroTicket('')
     setResultado(null)
@@ -174,7 +305,7 @@ export default function ConsultaTicketPage() {
 
           {resultado && (
             <>
-              <TarjetaResultado resultado={resultado} />
+              <TarjetaResultado resultado={resultado} onCalificado={manejarCalificado} />
               <Boton variante="secundario" className="mt-4 w-full" onClick={buscarOtro}>
                 Consultar otro ticket
               </Boton>
@@ -206,7 +337,7 @@ export default function ConsultaTicketPage() {
             </p>
           )}
 
-          {resultadosRut?.map((r) => <TarjetaResultado key={r.id} resultado={r} />)}
+          {resultadosRut?.map((r) => <TarjetaResultado key={r.id} resultado={r} onCalificado={manejarCalificado} />)}
 
           {resultadosRut?.length > 0 && (
             <Boton variante="secundario" className="mt-4 w-full" onClick={buscarOtro}>

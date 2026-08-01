@@ -59,6 +59,19 @@ service cloud.firestore {
         despues.usuarios_afectados.size() == antes.get('usuarios_afectados', []).size() + 1;
     }
 
+    // Calificación ciudadana ("¿quedó bien resuelto?", 1-5 estrellas, sin login):
+    // mismo espíritu que el voto — el update SOLO puede tocar calificacion_ciudadano,
+    // solo si la incidencia ya está Resuelto, solo una vez (no se puede pisar una
+    // calificación ya puesta), y el valor debe ser un entero entre 1 y 5.
+    function esCalificacionValida(antes, despues) {
+      return request.auth == null &&
+        despues.diff(antes).affectedKeys().hasOnly(['calificacion_ciudadano']) &&
+        antes.estado == 'Resuelto' &&
+        antes.get('calificacion_ciudadano', null) == null &&
+        despues.calificacion_ciudadano is int &&
+        despues.calificacion_ciudadano >= 1 && despues.calificacion_ciudadano <= 5;
+    }
+
     // --- Municipalidades (tenants) ---
     // Catálogo público: la Vista Ciudadano (sin login) necesita leerlo para resolver
     // /:slug y aplicar el tema. Sin UI de creación todavía: se gestiona a mano desde
@@ -98,9 +111,31 @@ service cloud.firestore {
                         ]);
 
       allow update: if puedeGestionarIncidencia(resource.data) ||
-                      esVotoValidoIncidencia(resource.data, request.resource.data);
+                      esVotoValidoIncidencia(resource.data, request.resource.data) ||
+                      esCalificacionValida(resource.data, request.resource.data);
 
       allow delete: if esAlcalde() && esDelMismoMunicipio(resource.data.municipio_id);
+    }
+
+    // Seguimientos: comentario/foto que el ciudadano agrega a un reporte YA
+    // creado, sin login (ver ConsultaTicketPage.jsx) — mismo criterio de acceso
+    // "a ciegas" que la calificación: el ciudadano conoce incidenciaId porque
+    // tickets_publicos.{numero}.incidencia_id es público, pero no tiene permiso
+    // de leer la incidencia ni esta subcolección (solo el funcionario del mismo
+    // municipio puede leer, vía ListaSeguimientos.jsx en los paneles de gestión).
+    match /incidencias/{incidenciaId}/seguimientos/{seguimientoId} {
+      allow read: if esDelMismoMunicipio(
+        get(/databases/$(database)/documents/incidencias/$(incidenciaId)).data.municipio_id
+      );
+
+      allow create: if request.auth == null &&
+                      request.resource.data.keys().hasOnly(['texto', 'foto_url', 'autor', 'fecha']) &&
+                      request.resource.data.autor == 'ciudadano' &&
+                      request.resource.data.texto is string && request.resource.data.texto.size() <= 1000 &&
+                      request.resource.data.foto_url is string &&
+                      request.resource.data.fecha == request.time;
+
+      allow update, delete: if false;
     }
 
     // --- Tickets públicos ---
@@ -139,11 +174,17 @@ service cloud.firestore {
 
       // El funcionario del mismo municipio refleja cambios de estado (asignar
       // cuadrilla / marcar resuelto); cualquier ciudadano (sin login) puede votar
-      // "+1", pero ESE update solo puede tocar upvotes, en exactamente +1.
+      // "+1" (solo upvotes, +1 exacto) o reflejar su calificación ya puesta en
+      // incidencias/{id} (solo una vez, mismo criterio que esCalificacionValida).
       allow update: if esDelMismoMunicipio(resource.data.municipio_id) ||
                       (request.auth == null &&
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes']) &&
-                        request.resource.data.upvotes == resource.data.get('upvotes', 1) + 1);
+                        request.resource.data.upvotes == resource.data.get('upvotes', 1) + 1) ||
+                      (request.auth == null &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['calificacion_ciudadano']) &&
+                        resource.data.get('calificacion_ciudadano', null) == null &&
+                        request.resource.data.calificacion_ciudadano is int &&
+                        request.resource.data.calificacion_ciudadano >= 1 && request.resource.data.calificacion_ciudadano <= 5);
 
       allow delete: if false;
     }
