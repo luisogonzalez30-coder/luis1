@@ -12,6 +12,7 @@ import MapaIncidencias from '../components/dashboard/MapaIncidencias'
 import ListaIncidencias from '../components/dashboard/ListaIncidencias'
 import PanelAsignacion from '../components/dashboard/PanelAsignacion'
 import MetricasPorDepartamento from '../components/dashboard/MetricasPorDepartamento'
+import PanelIndicadores from '../components/dashboard/PanelIndicadores'
 import ResumenGastoMensual from '../components/dashboard/ResumenGastoMensual'
 import EstadisticasRapidas from '../components/dashboard/EstadisticasRapidas'
 import EncabezadoMunicipio from '../components/common/EncabezadoMunicipio'
@@ -81,9 +82,13 @@ export default function DashboardGeneralPage() {
   const seleccionada = incidencias.find((inc) => inc.id === seleccionadaId) || null
   const cuadrillasMunicipio = municipio.cuadrillas || []
 
+  // La página hace scroll normal (min-h-screen), NO se fija a la altura de la
+  // pantalla. Antes era "h-screen + overflow-hidden": con el panel de
+  // indicadores y las métricas arriba, al mapa y a la lista les quedaban unos
+  // pocos cientos de píxeles y se veían cortados, sin forma de desplazarse.
   return (
-    <div className="flex h-screen flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3">
+    <div className="min-h-screen bg-gray-50">
+      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur">
         <div className="flex flex-wrap items-center gap-3">
           <EncabezadoMunicipio municipio={municipio} tituloDefecto="Dashboard General — Incidencias Urbanas" />
           <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
@@ -113,14 +118,17 @@ export default function DashboardGeneralPage() {
         )}
       </header>
 
+      <PanelIndicadores incidencias={incidencias} municipioId={municipio.id} />
       <ResumenGastoMensual incidencias={incidencias} />
       <MetricasPorDepartamento incidencias={incidencias} municipioId={municipio.id} />
 
       {vista === 'estadisticas' ? (
         <EstadisticasRapidas incidencias={incidencias} />
       ) : (
-        <div className="relative flex flex-1 flex-col overflow-hidden md:flex-row">
-          <div className="h-[45vh] w-full shrink-0 md:h-full md:w-[60%]">
+        // Altura propia y generosa en vez de "lo que sobre": así el mapa y la
+        // lista siempre son usables, y cada uno tiene su propio scroll interno.
+        <div className="flex flex-col md:h-[calc(100vh-4rem)] md:min-h-[520px] md:flex-row">
+          <div className="h-[55vh] w-full shrink-0 md:h-full md:w-[60%]">
             <MapaIncidencias
               incidencias={incidenciasFiltradas}
               incidenciaSeleccionadaId={seleccionadaId}

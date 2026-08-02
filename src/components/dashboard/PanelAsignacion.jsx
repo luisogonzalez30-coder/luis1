@@ -32,7 +32,11 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
   }
 
   return (
-    <div className="absolute inset-y-0 right-0 z-[1000] w-full max-w-sm border-l border-gray-200 bg-white p-4 shadow-xl">
+    // "fixed" (no "absolute"): así ocupa siempre el alto completo de la pantalla
+    // y tiene su propio scroll. Antes quedaba encajado en el contenedor del
+    // mapa y, si ese contenedor era bajo, el panel se cortaba y no se podía
+    // llegar al botón de asignar.
+    <div className="fixed inset-y-0 right-0 z-[1000] flex w-full max-w-sm flex-col overflow-y-auto border-l border-gray-200 bg-white p-4 shadow-2xl">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">{incidencia.categoria}</h3>

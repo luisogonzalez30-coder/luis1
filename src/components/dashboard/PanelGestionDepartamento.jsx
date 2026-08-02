@@ -101,7 +101,10 @@ export default function PanelGestionDepartamento({ incidencia, cuadrillas = [], 
   }
 
   return (
-    <div className="absolute inset-y-0 right-0 z-[1000] w-full max-w-sm overflow-y-auto border-l border-gray-200 bg-white p-4 shadow-xl">
+    // "fixed" (no "absolute"): alto completo de pantalla y scroll propio, para
+    // que el panel no se corte cuando el contenedor del mapa es bajo — ver el
+    // mismo cambio en PanelAsignacion.jsx.
+    <div className="fixed inset-y-0 right-0 z-[1000] w-full max-w-sm overflow-y-auto border-l border-gray-200 bg-white p-4 shadow-2xl">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">{incidencia.categoria}</h3>

@@ -835,3 +835,35 @@ Tanda pedida por el usuario a partir de capturas de la app corriendo en su celul
 **Verificado en local antes de desplegar**: ficha de reporte con fecha y hora reales, buscador sin tildes, los 9 grupos con su color, y la validación paso a paso (sin foto → bloqueado con aviso; teléfono mal formado → bloqueado; con foto + nombre + WhatsApp válido → habilitado). Sin errores de consola.
 
 **Pendiente de esta tanda**: no se verificó end-to-end en producción el envío real de un reporte con el formulario nuevo ni la respuesta del bot a "mis reportes" — el bot hay que **reiniciarlo** para que tome los cambios.
+
+## 30. Panel de control del Alcalde (02-ago-2026)
+
+Pedido del usuario sobre capturas del Dashboard General: el mapa se veía cortado, los paneles quedaban bloqueados y la pantalla no se movía con fluidez; además quería información de gestión de alto valor, no solo el mapa.
+
+**El bug de layout — la página estaba fijada al alto de la pantalla.** El contenedor raíz era `h-screen` + `overflow-hidden`, así que la página **no hacía scroll**: todo tenía que caber en el viewport. Con el KPI de gasto y las métricas por departamento arriba, al mapa y a la lista les quedaban unos pocos cientos de píxeles, y el `PanelAsignacion` (`absolute inset-y-0`) se cortaba sin poder llegar al botón de asignar. Arreglado:
+- Raíz a `min-h-screen` (crece y hace scroll natural) y header `sticky top-0` para que no se pierda al bajar.
+- El bloque mapa+lista tiene **altura propia** (`md:h-[calc(100vh-4rem)] md:min-h-[520px]`) en vez de "lo que sobre".
+- `PanelAsignacion` y `PanelGestionDepartamento` pasaron de `absolute` a **`fixed`**: siempre ocupan el alto completo de la pantalla con scroll propio, así no se cortan aunque el contenedor sea bajo.
+- El mismo arreglo se aplicó al Dashboard del Jefe de Departamento, que tenía el problema idéntico.
+
+**`src/components/dashboard/PanelIndicadores.jsx`** (nuevo): 9 indicadores del estado del municipio, calculados sobre el array de incidencias que la página ya suscribe (sin consultas nuevas) más el roster de trabajadores, igual patrón que `MetricasPorDepartamento`:
+
+| Indicador | Qué cuenta |
+|---|---|
+| Emergencias activas | gravedad Alta sin resolver (cualquier estado ≠ Resuelto) |
+| Trabajos atrasados | Pendiente con más de 4h sin cuadrilla, **todas las gravedades** |
+| Por asignar | Pendiente |
+| Trabajos inconclusos | En Proceso |
+| Resueltos este mes | Resuelto con `fecha_cierre` del mes, más el total histórico |
+| Trabajadores presentes | presentes/total de hoy, con ausentes y "sin pasar lista" aparte |
+| Cuadrillas en terreno | `cuadrilla_asignada` únicas con algo En Proceso |
+| Tiempo promedio | `fecha_cierre - fecha_creacion` de lo cerrado este mes |
+| Satisfacción vecinal | promedio de `calificacion_ciudadano` (§24) |
+
+Cada tarjeta lleva una **línea de apoyo que explica el número** — es lo que la hace didáctica y no un dato suelto. Los colores son la paleta de estado fija de la skill `dataviz` (`critico`/`serio`/`bueno`), y siempre acompañados de ícono + etiqueta escrita: la regla de esa skill es que un color de estado nunca carga solo con el significado.
+
+**Trampa de lectura que se evitó a propósito**: "Trabajos atrasados" cuenta todas las gravedades, pero el aviso rojo de `MetricasPorDepartamento` (que sigue abajo) cuenta **solo las de gravedad Alta** — en los datos reales daban 39 vs 13. Dos números distintos para algo que se llama parecido parece un error; por eso el texto de apoyo de la tarjeta dice explícitamente "de cualquier gravedad" y el aviso dice "de gravedad Alta".
+
+**"Gasto del mes" quedó fuera del panel** a propósito, para no mostrar el mismo número dos veces: ya lo cubre `ResumenGastoMensual`, que además tiene filtro por departamento y el detalle línea por línea (§24).
+
+**Verificación**: el agente **no puede entrar al Dashboard** (requiere login de funcionario, §20.5), así que en vez de verificar visualmente se replicaron los cálculos exactos del componente contra los datos reales de producción con un script temporal. Resultado en `demo` (92 incidencias, 47 trabajadores): 27 emergencias activas, 39 atrasados, 39 por asignar, 17 inconclusos, 0 resueltos este mes (36 históricos), 0/47 presentes (47 sin pasar lista), 3 cuadrillas en terreno. Cuadra: 39 + 17 + 36 = 92 = total. **Falta que el usuario confirme visualmente** el scroll y que el panel lateral ya no se corte.

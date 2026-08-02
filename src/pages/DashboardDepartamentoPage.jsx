@@ -72,8 +72,9 @@ export default function DashboardDepartamentoPage() {
   const cuadrillasMunicipio = municipio.cuadrillas || []
 
   return (
-    <div className="flex h-screen flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3">
+    // Scroll natural, igual que el Dashboard General (ver el comentario allá).
+    <div className="min-h-screen bg-gray-50">
+      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur">
         <div>
           <EncabezadoMunicipio municipio={municipio} tituloDefecto="Dashboard Departamento" />
           <p className="text-sm text-gray-500">{perfil.departamento}</p>
@@ -92,8 +93,8 @@ export default function DashboardDepartamentoPage() {
         )}
       </header>
 
-      <div className="relative flex flex-1 flex-col overflow-hidden md:flex-row">
-        <div className="h-[45vh] w-full shrink-0 md:h-full md:w-[60%]">
+      <div className="flex flex-col md:h-[calc(100vh-4rem)] md:min-h-[520px] md:flex-row">
+        <div className="h-[55vh] w-full shrink-0 md:h-full md:w-[60%]">
           <MapaIncidencias
             incidencias={incidenciasFiltradas}
             incidenciaSeleccionadaId={seleccionadaId}
