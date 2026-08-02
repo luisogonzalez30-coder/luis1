@@ -41,10 +41,15 @@ const auth = getAuth(app)
 const db = getFirestore(app)
 const logger = pino({ level: 'silent' })
 
-// El contacto del ciudadano puede ser WhatsApp o correo (ver PasoFoto.jsx del
-// front). Solo se intenta WhatsApp si no tiene forma de correo.
+// Desde el 02-ago-2026 el formulario exige un celular chileno válido y lo
+// guarda normalizado (§29), pero en reportes anteriores contacto_ciudadano
+// tiene lo que el vecino haya tecleado: correos, nombres ("gonzalez"), números
+// a medias. Se exige una cantidad de dígitos plausible para no ir a preguntarle
+// a WhatsApp por cosas que claramente no son un teléfono.
 function pareceTelefono(contacto) {
-  return Boolean(contacto) && !contacto.includes('@')
+  if (!contacto || contacto.includes('@')) return false
+  const digitos = contacto.replace(/\D/g, '')
+  return digitos.length >= 8 && digitos.length <= 12
 }
 
 // Baileys espera el número en formato E.164 sin "+". El ciudadano puede haber
@@ -149,11 +154,27 @@ function extraerNumeroTicket(texto) {
   return nuevo ? `${nuevo[1]}${nuevo[2]}` : null
 }
 
-// El JID de WhatsApp ("56912345678@s.whatsapp.net") al formato en que la app
-// guarda contacto_ciudadano ("+56912345678", ver utils/telefono.js).
-function telefonoDesdeJid(jid) {
+// Variantes con las que un mismo teléfono puede estar guardado en
+// contacto_ciudadano, a partir del JID de WhatsApp ("56912345678@s.whatsapp.net").
+//
+// Desde el 02-ago-2026 la app guarda siempre "+56912345678" normalizado
+// (utils/telefono.js), pero los reportes ANTERIORES tienen lo que el vecino
+// haya tecleado: "9999999999", "56912345678", etc. Se prueban las formas más
+// comunes para que "mis reportes" también encuentre los reportes viejos.
+// Las que llevan espacios o puntos quedan fuera: son infinitas y no vale la
+// pena — ese vecino igual puede consultar con su número de reporte.
+function variantesTelefono(jid) {
   const digitos = (jid || '').split('@')[0].replace(/\D/g, '')
-  return digitos ? `+${digitos}` : null
+  if (!digitos) return []
+
+  const variantes = new Set([`+${digitos}`, digitos])
+  // "56912345678" → también "912345678" (como lo escribiría alguien en Chile).
+  if (digitos.startsWith('56') && digitos.length === 11) {
+    const sinPais = digitos.slice(2)
+    variantes.add(sinPais)
+    variantes.add(`+${sinPais}`)
+  }
+  return [...variantes]
 }
 
 // Permite que el ciudadano consulte el estado de su reporte escribiéndole
@@ -180,19 +201,24 @@ async function responderConsultaTicket(sock, remitenteJid, textoMensaje, mensaje
 // los suyos. La identidad es el propio número de WhatsApp desde el que escribe,
 // y la respuesta llega SOLO a ese número — nadie puede pedir los de otro.
 async function responderMisReportes(sock, remitenteJid, municipioId, mensajeOriginal) {
-  const telefono = telefonoDesdeJid(remitenteJid)
-  if (!telefono) return false
+  const variantes = variantesTelefono(remitenteJid)
+  if (variantes.length === 0) return false
 
   // Dos filtros de igualdad, sin orderBy: Firestore los resuelve sin índice
-  // compuesto. Son pocos por persona, así que se ordena en memoria.
-  const q = query(
-    collection(db, 'incidencias'),
-    where('municipio_id', '==', municipioId),
-    where('contacto_ciudadano', '==', telefono)
-  )
-  const snap = await getDocs(q)
+  // compuesto (verificado contra el proyecto real). Una consulta por variante;
+  // son pocas y esto solo corre cuando alguien escribe "mis reportes".
+  const porId = new Map()
+  for (const telefono of variantes) {
+    const snap = await getDocs(query(
+      collection(db, 'incidencias'),
+      where('municipio_id', '==', municipioId),
+      where('contacto_ciudadano', '==', telefono)
+    ))
+    // Map por id: si dos variantes trajeran el mismo reporte, no se duplica.
+    snap.docs.forEach((d) => porId.set(d.id, d.data()))
+  }
 
-  if (snap.empty) {
+  if (porId.size === 0) {
     await sock.sendMessage(
       remitenteJid,
       { text: `No encontré reportes hechos desde este número. Si reportaste con otro teléfono, escríbeme desde ese, o consulta con tu número de reporte en ${PORTAL_URL_ESTADO}` },
@@ -201,8 +227,7 @@ async function responderMisReportes(sock, remitenteJid, municipioId, mensajeOrig
     return true
   }
 
-  const reportes = snap.docs
-    .map((d) => d.data())
+  const reportes = [...porId.values()]
     .sort((a, b) => (b.fecha_creacion?.toMillis?.() || 0) - (a.fecha_creacion?.toMillis?.() || 0))
     .slice(0, 10)
 
@@ -214,7 +239,7 @@ async function responderMisReportes(sock, remitenteJid, municipioId, mensajeOrig
   lineas.push('', `Detalle de cualquiera en ${PORTAL_URL_ESTADO}`)
 
   await sock.sendMessage(remitenteJid, { text: lineas.join('\n') }, { quoted: mensajeOriginal })
-  console.log(`[bot] Enviada la lista de ${reportes.length} reporte(s) a ${telefono}.`)
+  console.log(`[bot] Enviada la lista de ${reportes.length} reporte(s) a ${remitenteJid}.`)
   return true
 }
 
