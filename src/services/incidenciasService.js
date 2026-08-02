@@ -10,6 +10,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
 } from 'firebase/firestore'
 import { db, COLECCIONES } from '../firebase/firebase'
 import { subirImagen } from './storageService'
@@ -61,9 +62,13 @@ export async function crearIncidencia({
   esAnonimo,
   idDocumento,
   numeroTicketExistente,
+  dispositivoId,
 }) {
   if (!municipioId) {
     throw new Error('Falta el identificador de la municipalidad.')
+  }
+  if (!dispositivoId) {
+    throw new Error('Falta el identificador de dispositivo.')
   }
 
   const docRef = idDocumento ? doc(db, COLECCIONES.INCIDENCIAS, idDocumento) : doc(incidenciasRef)
@@ -100,7 +105,14 @@ export async function crearIncidencia({
     }
   }
 
-  await setDoc(docRef, {
+  // Anti-spam: la incidencia y la "marca de tiempo" del dispositivo se escriben
+  // en UN SOLO lote atómico. firestore.rules exige (con getAfter) que ese
+  // dispositivos/{id} se esté sellando en este mismo lote y que haya pasado el
+  // enfriamiento desde el reporte anterior — sin el lote, bastaría con no
+  // escribir nunca la marca para saltarse el límite. Ver §28 en ESTADO_PROYECTO.md.
+  const lote = writeBatch(db)
+
+  lote.set(docRef, {
     categoria,
     coordenadas,
     direccion_texto: direccionTexto || '',
@@ -129,10 +141,20 @@ export async function crearIncidencia({
     notificado_whatsapp_creacion: false,
     notificado_whatsapp_asignacion: false,
     notificado_whatsapp: false,
+    // UUID aleatorio del navegador (utils/dispositivo.js), NO un dato personal:
+    // es lo que permite aplicar el límite anti-spam del lado servidor. El mismo
+    // valor ya se guardaba en usuarios_afectados al votar (§16), así que no
+    // expone nada nuevo — la app sigue siendo anónima salvo que el vecino
+    // decida dejar sus datos a propósito.
+    dispositivo_id: dispositivoId,
     fecha_creacion: serverTimestamp(),
     fecha_asignacion: null,
     fecha_cierre: null,
   })
+
+  lote.set(doc(db, COLECCIONES.DISPOSITIVOS, dispositivoId), { ultimo_reporte: serverTimestamp() })
+
+  await lote.commit()
 
   if (fotosAntes?.length) {
     // Sin "await": la incidencia ya quedó registrada, así que el ticket se muestra de

@@ -8,6 +8,14 @@
 const CLAVE_ID = 'dispositivo_id'
 const CLAVE_VOTOS = 'incidencias_votadas'
 const CLAVE_TICKETS_POR_RUT = 'tickets_por_rut'
+const CLAVE_ULTIMO_REPORTE = 'ultimo_reporte_ms'
+
+// Enfriamiento entre reportes del mismo dispositivo. Debe coincidir con el
+// valor de firestore.rules (ENFRIAMIENTO_SEGUNDOS): allá es la defensa real
+// —enforced en el servidor— y acá abajo es solo para poder avisarle al vecino
+// con un mensaje claro antes de intentar, en vez de mostrarle un error crudo
+// de permisos. Ver §28 en ESTADO_PROYECTO.md.
+export const ENFRIAMIENTO_REPORTE_SEGUNDOS = 60
 
 function generarId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
@@ -50,6 +58,33 @@ export function registrarVotoLocal(incidenciaId) {
     }
   } catch (error) {
     console.error('[dispositivo] No se pudo guardar el voto local:', error)
+  }
+}
+
+// Segundos que faltan para poder reportar de nuevo, o 0 si ya se puede. Solo
+// es una ayuda de UX (ver ENFRIAMIENTO_REPORTE_SEGUNDOS): si el reloj del
+// celular está mal o alguien borra el localStorage, esto se equivoca — el
+// límite de verdad lo aplica firestore.rules contra la hora del servidor.
+export function segundosParaPoderReportar() {
+  try {
+    const ultimo = Number(localStorage.getItem(CLAVE_ULTIMO_REPORTE))
+    if (!ultimo) return 0
+    const transcurridos = (Date.now() - ultimo) / 1000
+    const restantes = Math.ceil(ENFRIAMIENTO_REPORTE_SEGUNDOS - transcurridos)
+    // Un reloj adelantado/atrasado puede dar valores absurdos: se ignoran en
+    // vez de dejar al vecino bloqueado sin poder reportar.
+    return restantes > 0 && restantes <= ENFRIAMIENTO_REPORTE_SEGUNDOS ? restantes : 0
+  } catch (error) {
+    console.error('[dispositivo] No se pudo leer el último reporte local:', error)
+    return 0
+  }
+}
+
+export function registrarReporteLocal() {
+  try {
+    localStorage.setItem(CLAVE_ULTIMO_REPORTE, String(Date.now()))
+  } catch (error) {
+    console.error('[dispositivo] No se pudo guardar la marca del último reporte:', error)
   }
 }
 

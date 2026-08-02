@@ -70,6 +70,7 @@ export const COLECCIONES = {
   TICKETS_PUBLICOS: 'tickets_publicos',
   TRABAJADORES: 'trabajadores',
   UBICACIONES_CUADRILLA: 'ubicaciones_cuadrilla',
+  DISPOSITIVOS: 'dispositivos', // marca de tiempo por dispositivo para el límite anti-spam (ver §28)
 }
 
 export default app

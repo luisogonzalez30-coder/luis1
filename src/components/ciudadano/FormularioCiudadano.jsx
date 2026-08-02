@@ -11,6 +11,8 @@ import {
   registrarVotoLocal,
   yaVotoPorIncidencia,
   registrarTicketPorRut,
+  registrarReporteLocal,
+  segundosParaPoderReportar,
 } from '../../utils/dispositivo'
 import { distanciaMetros } from '../../utils/distancia'
 import { esRutValido, formatearRut, limpiarRut } from '../../utils/rut'
@@ -103,6 +105,9 @@ export default function FormularioCiudadano({ municipio }) {
       registrarTicketPorRut(limpiarRut(datosReporte.rutCiudadano), numeroTicket)
     }
 
+    // Para el vecino esto ya fue "enviar un reporte", así que corre el mismo
+    // enfriamiento aunque todavía esté en la cola offline.
+    registrarReporteLocal()
     setFotoDescartadaOffline(tieneFotos)
     setPendienteSincronizar(true)
     setTicket(numeroTicket)
@@ -111,6 +116,18 @@ export default function FormularioCiudadano({ municipio }) {
   async function manejarEnvio() {
     if (rutInvalido) return
     setErrorEnvio(null)
+
+    // Enfriamiento anti-spam: se avisa acá para no mandar al vecino contra un
+    // "permiso denegado" incomprensible. El límite real lo aplica el servidor
+    // (firestore.rules), esto es solo el mensaje amable — ver §28.
+    const esperar = segundosParaPoderReportar()
+    if (esperar > 0) {
+      setErrorEnvio(
+        `Acabas de enviar un reporte. Espera ${esperar} segundo${esperar === 1 ? '' : 's'} antes de enviar otro.`
+      )
+      return
+    }
+
     setEnviando(true)
 
     const idDocumento = generarIdIncidencia()
@@ -125,6 +142,7 @@ export default function FormularioCiudadano({ municipio }) {
       rutCiudadano: quiereDejarDatos && rutEscrito ? formatearRut(rutCiudadano) : '',
       esAnonimo: !quiereDejarDatos,
       idDocumento,
+      dispositivoId: obtenerIdDispositivo(),
     }
 
     // Pre-chequeo rápido: si el dispositivo ya sabe que no tiene red, no vale la
@@ -146,6 +164,7 @@ export default function FormularioCiudadano({ municipio }) {
       if (datosReporte.rutCiudadano) {
         registrarTicketPorRut(limpiarRut(datosReporte.rutCiudadano), numeroTicket)
       }
+      registrarReporteLocal()
       setTicket(numeroTicket)
     } catch (err) {
       if (err.esTimeout) {

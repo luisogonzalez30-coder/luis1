@@ -72,6 +72,55 @@ service cloud.firestore {
         despues.calificacion_ciudadano >= 1 && despues.calificacion_ciudadano <= 5;
     }
 
+    // --- Anti-spam de reportes ciudadanos (02-ago-2026) ---
+    // La app ciudadana no tiene login, así que no hay usuario real que limitar.
+    // Se usa el ID de dispositivo (utils/dispositivo.js: un UUID aleatorio en
+    // localStorage, ya usado para los votos "+1") como identidad débil.
+    //
+    // Mecanismo: crear una incidencia SOLO se permite si en el MISMO lote
+    // atómico (writeBatch, ver crearIncidencia) se está sellando
+    // dispositivos/{id}.ultimo_reporte con la hora del servidor. getAfter() es
+    // lo que hace esto obligatorio — sin él, bastaría con no escribir nunca la
+    // marca para saltarse el límite. Además se exige que haya pasado el
+    // enfriamiento desde el reporte anterior de ESE dispositivo.
+    //
+    // Límite conocido y aceptado: quien borre su localStorage (o use incógnito)
+    // obtiene un ID nuevo y vuelve a cero — el mismo techo que ya tenía el
+    // sistema de votos. Esto frena el spam accidental, el doble-envío y los
+    // scripts ingenuos; NO a un atacante decidido. Para eso haría falta
+    // Firebase App Check (ver §28 en ESTADO_PROYECTO.md).
+    function rutaDispositivo(dispositivoId) {
+      return /databases/$(database)/documents/dispositivos/$(dispositivoId);
+    }
+
+    function respetaEnfriamiento(dispositivoId) {
+      return getAfter(rutaDispositivo(dispositivoId)).data.ultimo_reporte == request.time &&
+        (!exists(rutaDispositivo(dispositivoId)) ||
+          get(rutaDispositivo(dispositivoId)).data.ultimo_reporte < request.time - duration.value(60, 's'));
+    }
+
+    // Topes de tamaño: evitan que alguien infle la base de datos con textos
+    // gigantes. Son holgados respecto de lo que permite el formulario.
+    function textosDeTamanoRazonable(datos) {
+      return datos.get('direccion_texto', '').size() <= 500 &&
+        datos.get('detalles_adicionales', '').size() <= 2000 &&
+        datos.get('nombre_ciudadano', '').size() <= 150 &&
+        datos.get('contacto_ciudadano', '').size() <= 150 &&
+        datos.get('rut_ciudadano', '').size() <= 20;
+    }
+
+    // dispositivos/{id}: solo guarda una marca de tiempo por dispositivo, nada
+    // más. No se lista (evita enumerar dispositivos) y no se borra: borrarlo
+    // sería justamente la forma de saltarse el enfriamiento.
+    match /dispositivos/{dispositivoId} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if request.auth == null &&
+                              request.resource.data.keys().hasOnly(['ultimo_reporte']) &&
+                              request.resource.data.ultimo_reporte == request.time;
+      allow delete: if false;
+    }
+
     // --- Municipalidades (tenants) ---
     // Catálogo público: la Vista Ciudadano (sin login) necesita leerlo para resolver
     // /:slug y aplicar el tema. Sin UI de creación todavía: se gestiona a mano desde
@@ -108,7 +157,13 @@ service cloud.firestore {
                           'Dirección de Obras (DOM)', 'Tránsito', 'Operaciones',
                           'Aseo y Ornato', 'Medio Ambiente', 'Seguridad Ciudadana',
                           'Oficina de Partes'
-                        ]);
+                        ]) &&
+                      // Anti-spam (ver arriba): exige ID de dispositivo y que el
+                      // mismo lote selle dispositivos/{id} respetando el enfriamiento.
+                      textosDeTamanoRazonable(request.resource.data) &&
+                      request.resource.data.dispositivo_id is string &&
+                      request.resource.data.dispositivo_id.size() > 0 &&
+                      respetaEnfriamiento(request.resource.data.dispositivo_id);
 
       allow update: if puedeGestionarIncidencia(resource.data) ||
                       esVotoValidoIncidencia(resource.data, request.resource.data) ||

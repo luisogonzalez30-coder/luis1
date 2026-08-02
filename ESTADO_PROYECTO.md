@@ -747,8 +747,8 @@ La app **funciona** end-to-end y está en producción; esta sección es sobre qu
 1. ~~Consulta sin límite a `tickets_publicos`~~ — ✅ **resuelto**, ver §26.
 2. **Contraseña débil de la cuenta del bot** (`whatsapp-bot/.env`): sigue siendo trivial, y esa cuenta tiene permiso de escritura sobre `incidencias` en producción. Cambiarla desde Firebase Console (Authentication) y actualizar el `.env`. Ver §23.
 3. **Sin política de privacidad ni términos de servicio**: la app pide RUT (§11). La Ley 21.719 de protección de datos personales lo exige, y ningún municipio debería firmar sin eso.
-4. **Sin anti-spam / rate limiting**: `allow create` de `incidencias` es anónimo y sin tope — alguien puede inyectar cientos de reportes falsos o inflar votos. No hay CAPTCHA (ni lo habrá con la restricción de no usar servicios pagados) ni límite por dispositivo/IP. El `dispositivo.js` actual es solo ayuda de UX, no una defensa (§16).
-5. **Datos de prueba mezclados en producción**: ~89 incidencias sembradas en `municipalidades/demo` (§19) más algunas de prueba en `licanten`. Limpiar antes de entregar a un municipio real.
+4. ~~Sin anti-spam / rate limiting~~ — ✅ **parcialmente resuelto**, ver §28. Queda pendiente App Check para frenar a un atacante decidido (el enfriamiento por dispositivo se evade rotando el `localStorage`).
+5. **Datos de prueba mezclados en producción**: ~89 incidencias sembradas en `municipalidades/demo` (§19) más 1 de prueba en `licanten`. Limpiar antes de entregar a un municipio real.
 
 **Importantes antes de cobrarle a un municipio:**
 6. **Bot de WhatsApp no oficial y dependiente de esta PC** (§21, §23): el número puede bloquearse sin aviso, y solo notifica con la PC prendida.
@@ -763,3 +763,40 @@ La app **funciona** end-to-end y está en producción; esta sección es sobre qu
 13. Sin UI para crear/editar municipalidades — todo a mano vía script con Admin SDK (§4).
 14. `gasto_real` no se puede corregir después de cerrar un caso (§17).
 15. Las notificaciones nuevas del bot (creación/asignación) y la consulta conversacional no se verificaron end-to-end una por una (§23).
+
+## 28. Anti-spam de reportes ciudadanos (02-ago-2026)
+
+**El problema**: `allow create` de `incidencias` era anónimo y sin ningún tope (la app no tiene login, ver §11). Cualquiera podía inyectar cientos de reportes falsos, a mano o con un script, y llenar el Dashboard del municipio.
+
+**Mecanismo elegido — enfriamiento por dispositivo, forzado en el servidor.** Sin backend propio ni servicios pagados (no hay Cloud Functions, ver §19), la única identidad disponible es el ID de dispositivo de `utils/dispositivo.js` (un UUID aleatorio en `localStorage`, el mismo que ya se usaba para los votos "+1" de §16).
+
+Cómo se hace inevadible, que es la parte importante:
+- `crearIncidencia` escribe la incidencia **y** `dispositivos/{id}.ultimo_reporte` en **un solo `writeBatch` atómico**.
+- `firestore.rules` usa **`getAfter()`** para exigir que ese `dispositivos/{id}` se esté sellando con `request.time` en ESE MISMO lote. Sin esto, el cliente simplemente no escribiría nunca la marca y el límite sería decorativo.
+- Además exige que el `ultimo_reporte` **anterior** sea más viejo que el enfriamiento (`ENFRIAMIENTO`, hoy 60s).
+- `dispositivos/{id}` no se puede borrar (`allow delete: if false`) ni listar — borrarlo sería justamente la forma de resetear el contador.
+
+**Otros topes agregados en la misma regla** (`textosDeTamanoRazonable`): límites de tamaño a `direccion_texto` (500), `detalles_adicionales` (2000), `nombre_ciudadano`/`contacto_ciudadano` (150) y `rut_ciudadano` (20), para que nadie infle la base con textos gigantes.
+
+**Campo nuevo**: `incidencias.dispositivo_id` (string). Es un UUID aleatorio del navegador, **no un dato personal**, y el mismo valor ya viajaba en `usuarios_afectados` al votar — la app sigue siendo anónima salvo que el vecino decida dejar sus datos.
+
+**Capa de UX (no es la defensa)**: `segundosParaPoderReportar()` / `registrarReporteLocal()` en `utils/dispositivo.js` guardan la última hora de envío en `localStorage` para mostrar *"Acabas de enviar un reporte. Espera N segundos antes de enviar otro."* en vez de un `permission-denied` crudo. `ENFRIAMIENTO_REPORTE_SEGUNDOS` (cliente) debe mantenerse igual al valor de `firestore.rules` (servidor). El cliente puede equivocarse (reloj malo, `localStorage` borrado) y no pasa nada: el límite real lo aplica el servidor.
+
+**Orden de despliegue usado (3 pasos, sin caída)** — importante si se repite algo así:
+1. `firestore:rules` con la colección `dispositivos` **sin** el candado en `incidencias` (nada cambia para la app en vivo, pero ya hay dónde escribir).
+2. `hosting` con el código del lote atómico.
+3. `firestore:rules` otra vez, ahora **con** el candado en `incidencias`.
+   Al revés se rompe: el candado antes del código deja a los ciudadanos sin poder reportar, y el código antes de las reglas de `dispositivos` falla al escribir el sello.
+
+**Verificado contra producción (02-ago-2026)** con un script temporal que usa el SDK cliente anónimo, igual que el navegador — 5 casos, todos con el resultado esperado:
+| Caso | Resultado |
+|---|---|
+| Primer reporte de un dispositivo nuevo | PERMITIDO |
+| Segundo reporte inmediato, mismo dispositivo | BLOQUEADO (enfriamiento) |
+| Lote que **no** sella `dispositivos/{id}` | BLOQUEADO (esto valida `getAfter`) |
+| Sin campo `dispositivo_id` | BLOQUEADO |
+| `detalles_adicionales` de 5.000 caracteres | BLOQUEADO (tope de tamaño) |
+
+Además se verificó por la interfaz real en producción que un vecino **sí** puede reportar normalmente (el camino feliz no se rompió), que el mensaje de enfriamiento aparece, y que la detección de duplicados sigue funcionando. Las incidencias de prueba creadas durante la verificación se borraron.
+
+**Limitación conocida y aceptada**: quien borre su `localStorage`, use incógnito o rote el UUID a mano obtiene un dispositivo nuevo y vuelve a cero. Esto frena el spam accidental, el doble-envío y los scripts ingenuos — **no a un atacante decidido**. La defensa real contra eso es **Firebase App Check** (gratis con reCAPTCHA v3), que verifica que la petición venga de la app de verdad y no de un script. No se implementó todavía porque obliga a resolver primero el bot de WhatsApp (§23), que usa el SDK cliente desde Node y quedaría bloqueado — lo natural sería migrarlo a Admin SDK (ya hay una llave de cuenta de servicio, ver §25), que además simplificaría el bot. Queda como el siguiente paso natural de esta línea.
