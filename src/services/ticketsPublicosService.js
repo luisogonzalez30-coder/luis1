@@ -3,7 +3,9 @@ import {
   doc,
   getDoc,
   increment,
+  limit as limitar,
   onSnapshot,
+  orderBy,
   query,
   serverTimestamp,
   setDoc,
@@ -13,6 +15,20 @@ import {
 import { db, COLECCIONES } from '../firebase/firebase'
 
 const ticketsPublicosRef = collection(db, COLECCIONES.TICKETS_PUBLICOS)
+
+// Techos de resultados para las suscripciones públicas. IMPORTANTE: ninguna
+// consulta a tickets_publicos debe quedar sin limit().
+//
+// Motivo (bug real corregido el 02-ago-2026): antes existía una única
+// suscripción `suscribirTicketsPublicos` SIN límite, que traía TODOS los
+// tickets del municipio a cada ciudadano que abría el formulario. Con ~70
+// tickets de prueba no se notaba, pero crece sin techo: con miles de reportes
+// acumulados le quema los datos móviles al vecino (justo el público rural de
+// gama baja que el resto de la app cuida) y agota la cuota gratis de lecturas
+// de Firestore (plan Spark, ver ESTADO_PROYECTO.md §19) — la app se caería
+// justo cuando empiece a usarse en serio.
+const MAX_TICKETS_ACTIVOS = 200
+const MAX_TICKETS_RECIENTES = 500
 
 // Registra el ticket público de una incidencia. Usa setDoc con el numero_ticket
 // como ID de documento: si ese número ya lo usó OTRO reporte, Firestore clasifica
@@ -53,28 +69,59 @@ export async function registrarTicketPublico({
   }
 }
 
-// Suscripción en tiempo real a los tickets públicos de UNA municipalidad —
-// alimenta el mapa ciudadano (pines de reportes activos, tipo Waze) y el
-// chequeo de proximidad al crear un reporte nuevo (ver utils/distancia.js).
-// Solo trae campos no sensibles (mismo criterio que buscarTicketPublico),
-// nunca nombre/contacto del ciudadano.
-export function suscribirTicketsPublicos(callback, municipioId) {
-  if (!municipioId) {
-    console.error('[ticketsPublicosService] suscribirTicketsPublicos requiere municipioId.')
-    return () => {}
-  }
-
-  const q = query(ticketsPublicosRef, where('municipio_id', '==', municipioId))
+// Helper interno: toda suscripción a tickets_publicos pasa por acá, así ninguna
+// puede quedarse sin limit() por descuido (ver MAX_TICKETS_* arriba).
+function suscribir(condiciones, cuantos, callback, etiqueta) {
+  const q = query(ticketsPublicosRef, ...condiciones, orderBy('fecha_creacion', 'desc'), limitar(cuantos))
 
   return onSnapshot(
     q,
-    (snapshot) => {
-      const tickets = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
-      callback(tickets)
-    },
-    (error) => {
-      console.error('[ticketsPublicosService] Error al escuchar tickets públicos:', error)
-    }
+    (snapshot) => callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    (error) => console.error(`[ticketsPublicosService] Error al escuchar ${etiqueta}:`, error)
+  )
+}
+
+// Reportes ACTIVOS (sin resolver) de una municipalidad: alimenta los pines del
+// mapa ciudadano (tipo Waze) y el chequeo de proximidad al crear un reporte
+// nuevo (ver utils/distancia.js). Solo trae campos no sensibles (mismo criterio
+// que buscarTicketPublico), nunca nombre/contacto del ciudadano.
+//
+// Acotado a los MAX_TICKETS_ACTIVOS más recientes. Los resueltos se excluyen en
+// el servidor (antes se filtraban en memoria, después de haberlos descargado):
+// son los que crecen sin techo con el tiempo, mientras que los activos se
+// mantienen acotados solos a medida que el municipio va cerrando casos.
+// Limitación aceptada: si un municipio llegara a acumular más de 200 reportes
+// sin resolver, la detección de duplicados podría no ver los más antiguos —
+// preferible a romper la app entera por cuota.
+export function suscribirTicketsActivos(callback, municipioId) {
+  if (!municipioId) {
+    console.error('[ticketsPublicosService] suscribirTicketsActivos requiere municipioId.')
+    return () => {}
+  }
+
+  return suscribir(
+    [where('municipio_id', '==', municipioId), where('estado', 'in', ['Pendiente', 'En Proceso'])],
+    MAX_TICKETS_ACTIVOS,
+    callback,
+    'tickets activos'
+  )
+}
+
+// Últimos reportes de una municipalidad, de cualquier estado, del más reciente
+// al más antiguo. Lo usan el listado "Últimos reportes de la comuna" del
+// formulario ciudadano (con un puñado) y la página pública de transparencia
+// (con una ventana más grande, para calcular sus estadísticas).
+export function suscribirUltimosTickets(callback, municipioId, cuantos = 10) {
+  if (!municipioId) {
+    console.error('[ticketsPublicosService] suscribirUltimosTickets requiere municipioId.')
+    return () => {}
+  }
+
+  return suscribir(
+    [where('municipio_id', '==', municipioId)],
+    Math.min(cuantos, MAX_TICKETS_RECIENTES),
+    callback,
+    'últimos tickets'
   )
 }
 

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, Send, AlertTriangle } from 'lucide-react'
 import { useGeolocation } from '../../hooks/useGeolocation'
 import { crearIncidencia, generarIdIncidencia, votarIncidencia } from '../../services/incidenciasService'
-import { suscribirTicketsPublicos } from '../../services/ticketsPublicosService'
+import { suscribirTicketsActivos, suscribirUltimosTickets } from '../../services/ticketsPublicosService'
 import { conTimeout } from '../../utils/timeout'
 import { generarNumeroTicket } from '../../utils/ticket'
 import { guardarReportePendiente } from '../../utils/colaOffline'
@@ -44,7 +44,8 @@ export default function FormularioCiudadano({ municipio }) {
   const [pendienteSincronizar, setPendienteSincronizar] = useState(false)
   const [fotoDescartadaOffline, setFotoDescartadaOffline] = useState(false)
 
-  const [incidenciasCercanas, setIncidenciasCercanas] = useState([])
+  const [incidenciasActivas, setIncidenciasActivas] = useState([])
+  const [ultimosReportes, setUltimosReportes] = useState([])
   const [duplicadoDetectado, setDuplicadoDetectado] = useState(null)
   const [votandoDuplicado, setVotandoDuplicado] = useState(false)
   const [esVotoExistente, setEsVotoExistente] = useState(false)
@@ -58,31 +59,23 @@ export default function FormularioCiudadano({ municipio }) {
     if (coordenadasGPS) setCoordenadas(coordenadasGPS)
   }, [coordenadasGPS])
 
-  // Alimenta el mapa (pines de reportes activos) y el chequeo de duplicados —
-  // ambos usan el mismo listener, sin queries repetidas.
+  // Dos suscripciones acotadas, a propósito separadas (antes era una sola sin
+  // límite que traía TODOS los tickets del municipio — ver el comentario de
+  // MAX_TICKETS_* en ticketsPublicosService.js):
+  //  - activos: pines del mapa + chequeo de duplicados. Excluye resueltos en el
+  //    servidor, que son los que crecen sin techo.
+  //  - últimos 10: el listado "Últimos reportes de la comuna" del Paso 1, que
+  //    sí quiere mostrar también los resueltos (es lo que da confianza).
+  // Ambas vienen ya ordenadas por fecha desde Firestore, sin ordenar en memoria.
   useEffect(() => {
     if (!municipio?.id) return
-    const unsubscribe = suscribirTicketsPublicos(setIncidenciasCercanas, municipio.id)
-    return unsubscribe
+    const cancelarActivos = suscribirTicketsActivos(setIncidenciasActivas, municipio.id)
+    const cancelarUltimos = suscribirUltimosTickets(setUltimosReportes, municipio.id, 10)
+    return () => {
+      cancelarActivos()
+      cancelarUltimos()
+    }
   }, [municipio?.id])
-
-  const incidenciasActivas = useMemo(
-    () => incidenciasCercanas.filter((t) => t.estado === 'Pendiente' || t.estado === 'En Proceso'),
-    [incidenciasCercanas]
-  )
-
-  // Últimos 10 reportes de la comuna (cualquier estado) para el listado del
-  // Paso 1 — mismo listener que ya alimenta el mapa, sin consulta nueva.
-  // tickets_publicos no viene ordenado por fecha (suscribirTicketsPublicos no
-  // usa orderBy), así que se ordena acá.
-  const ultimosReportes = useMemo(
-    () =>
-      incidenciasCercanas
-        .slice()
-        .sort((a, b) => (b.fecha_creacion?.toMillis() || 0) - (a.fecha_creacion?.toMillis() || 0))
-        .slice(0, 10),
-    [incidenciasCercanas]
-  )
 
   const rutEscrito = rutCiudadano.trim().length > 0
   const rutInvalido = quiereDejarDatos && rutEscrito && !esRutValido(rutCiudadano)

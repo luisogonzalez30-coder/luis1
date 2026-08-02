@@ -348,7 +348,7 @@ Excluidos a propósito: direccion_texto, detalles_adicionales, nombre/contacto/*
 
 **Identidad de dispositivo sin login** (`src/utils/dispositivo.js`): como el ciudadano nunca se autentica, se genera un UUID y se guarda en `localStorage` (`obtenerIdDispositivo()`, get-or-create) para saber qué reportes ya votó este dispositivo (`yaVotoPorIncidencia(incidenciaId)` / `registrarVotoLocal(incidenciaId)`, contra una lista `incidencias_votadas` también en `localStorage`). Es solo una ayuda de UX (evita mostrar "votar" dos veces en el mismo navegador) — la verdad de quién votó vive en `incidencias.usuarios_afectados` en Firestore.
 
-**Chequeo de proximidad al reportar** (`src/utils/distancia.js`, fórmula de Haversine — `distanciaMetros(a, b)`): `FormularioCiudadano.jsx` se suscribe a `tickets_publicos` del municipio (`suscribirTicketsPublicos`) y, al pasar del paso de ubicación, busca entre los tickets activos (`estado` Pendiente o En Proceso) uno de la **misma categoría** a **menos de 50 metros** (`RADIO_DUPLICADO_METROS`). Si encuentra uno, no avanza al paso siguiente — muestra `AvisoPosibleDuplicado.jsx` con la tarjeta del ticket existente y dos opciones: "Sumarme a este reporte" o "Crear uno nuevo de todas formas" (el ciudadano siempre puede decidir que es un problema distinto).
+**Chequeo de proximidad al reportar** (`src/utils/distancia.js`, fórmula de Haversine — `distanciaMetros(a, b)`): `FormularioCiudadano.jsx` se suscribe a los tickets activos del municipio (`suscribirTicketsActivos`, acotada — ver §26) y, al pasar del paso de ubicación, busca uno de la **misma categoría** a **menos de 50 metros** (`RADIO_DUPLICADO_METROS`). Si encuentra uno, no avanza al paso siguiente — muestra `AvisoPosibleDuplicado.jsx` con la tarjeta del ticket existente y dos opciones: "Sumarme a este reporte" o "Crear uno nuevo de todas formas" (el ciudadano siempre puede decidir que es un problema distinto).
 
 **Mapa de reportes activos**: `MapaSeleccionUbicacion.jsx` ahora recibe los tickets cercanos y dibuja un pin por cada uno (coloreado por `nivel_gravedad`, mismo esquema que el resto de la app) mientras el ciudadano elige su ubicación, con `PopupVotoIncidencia.jsx` como contenido del popup: categoría, `BadgeEstado`, `BadgeGravedad`, foto si existe, contador de apoyos, y un botón "+1" para votar directo desde el mapa sin pasar por el flujo de creación.
 
@@ -585,7 +585,7 @@ service cloud.firestore {
 
 - **Proyecto**: `app-incidencias-urbanas`. El plan Blaze se intentó activar el 30-jul-2026 pero el municipio no cuenta con una tarjeta (ni débito ni crédito) — sin eso, Google no deja crear ni vincular una cuenta de Facturación de Cloud, así que **el proyecto sigue efectivamente en Spark (gratis)**. Firestore, Auth y Hosting no requieren Blaze, así que esto no afecta al resto de la app. Corrige una nota anterior de este documento que decía que Blaze ya estaba activo — no llegó a completarse.
 - **Authentication**: habilitado (Correo/contraseña). Usuario real de Luis González, `municipio_id: "demo"`, `rol: "ALCALDE_ADMIN"` (migrado desde `"ADMIN"` el 30-jul-2026). Además hay una cuenta de prueba con `rol: "JEFE_DEPARTAMENTO"` / `departamento: "Aseo y Ornato"`, y al menos una cuenta creada vía la UI de autoservicio (`/dashboard/funcionarios`, ver §5) el 30-jul-2026 durante la verificación.
-- **Firestore**: habilitado, con datos reales de prueba. Índices compuestos creados y habilitados: `(municipio_id ASC, fecha_creacion DESC)` y `(municipio_id ASC, estado ASC, fecha_creacion DESC)` sobre `incidencias`.
+- **Firestore**: habilitado, con datos reales de prueba. Índices compuestos creados y habilitados: `(municipio_id ASC, fecha_creacion DESC)` y `(municipio_id ASC, estado ASC, fecha_creacion DESC)` sobre `incidencias`, y **los dos equivalentes sobre `tickets_publicos`** (agregados el 02-ago-2026 para las consultas acotadas, ver §26).
 - **Storage (fotos): NO se usa Firebase Storage — se usa Cloudinary.** Firebase ahora exige Blaze (con tarjeta) incluso para crear el bucket gratuito, así que tras varios intentos fallidos de activar Blaze sin tarjeta (30-jul-2026), se migró la subida de fotos a **Cloudinary** (plan gratis, 25GB, no pide tarjeta para registrarse):
   - Cuenta Cloudinary del municipio: cloud name **`ugiblcuk`**, upload preset **`reporte_incidencias`** (modo **Unsigned** — permite que el ciudadano suba la foto "antes" sin login, sin exponer ninguna clave secreta, mismo patrón de acceso público que tenía Storage).
   - `src/services/storageService.js` se reescribió para subir a `https://api.cloudinary.com/v1_1/{cloud_name}/image/upload` vía `fetch` + `FormData`, con la misma firma `subirImagen(archivo, rutaCarpeta)` de antes — ningún otro archivo tuvo que cambiar (`incidenciasService.js` sigue igual).
@@ -718,3 +718,48 @@ Tanda grande implementada de una sola vez a pedido del usuario ("realiza todas l
 **Automatización — tarea programada de Windows**: el usuario pidió que corriera solo todos los días. **El agente NO pudo crear la tarea** (`Register-ScheduledTask` y `schtasks /create` fallan con "Acceso denegado" en el entorno sandboxeado donde corre — limitación del entorno del agente, no de la PC del usuario). Se le dieron instrucciones paso a paso para crearla a mano desde el Programador de tareas de Windows (GUI): programa `C:\Program Files\nodejs\node.exe`, argumento `scripts\backup.js`, "Iniciar en" `C:\Users\Administrador\Desktop\kpop\reporte-incidencias`, diaria a las 3:00 a.m. **No confirmado si el usuario efectivamente la creó** — verificar en una próxima sesión (`Get-ScheduledTask -TaskName "RespaldoTuMuniAqui"` debería listarla si existe, ese fue el nombre sugerido) o preguntarle directamente.
 
 **Riesgo/limitación aceptada**: igual que el bot de WhatsApp, el respaldo solo corre si la PC está prendida a esa hora — si está apagada, ese día no hay respaldo nuevo (no hay reintento automático). Sin respaldo en la nube (fuera de esta PC); si el disco falla, se pierden también los backups locales junto con todo lo demás. Mejora futura posible: subir el JSON resultante a algún storage externo (Google Drive, etc.) — no implementado.
+
+## 26. Consultas acotadas a `tickets_publicos` — arreglo de escalabilidad (02-ago-2026)
+
+**El bug (latente, nunca llegó a manifestarse en producción)**: existía una sola suscripción `suscribirTicketsPublicos(callback, municipioId)` **sin `limit()` ni `orderBy`**, que traía TODOS los tickets del municipio. La usaban `FormularioCiudadano.jsx` (pines del mapa + chequeo de duplicados + listado de últimos 10) y `TransparenciaPage.jsx` (estadísticas agregadas). Con los ~73 tickets de prueba no se notaba nada, pero `tickets_publicos` **crece sin techo**: cada ciudadano que abría el formulario descargaba la colección completa. Dos consecuencias, ambas peores mientras más éxito tenga la app:
+- Le quema los datos móviles al vecino — justo el público rural con celulares de gama baja que el resto de la app cuida a propósito (§2, §11, §24).
+- Agota la cuota gratis de lecturas de Firestore (plan Spark, 50.000 lecturas/día — ver §19): ~20 vecinos × unos miles de tickets deja la app caída hasta el día siguiente.
+
+**El arreglo** (`src/services/ticketsPublicosService.js`): se **eliminó** `suscribirTicketsPublicos` (a propósito, para que el patrón sin límite no se reintroduzca por costumbre) y se reemplazó por dos suscripciones acotadas, ambas pasando por un helper interno `suscribir()` que siempre aplica `orderBy('fecha_creacion','desc')` + `limit()`:
+- **`suscribirTicketsActivos(callback, municipioId)`** — `estado in ['Pendiente','En Proceso']`, tope `MAX_TICKETS_ACTIVOS = 200`. Alimenta los pines del mapa y el chequeo de duplicados. Clave del diseño: **los resueltos ahora se excluyen en el servidor** (antes se filtraban en memoria, o sea ya se habían descargado) — son justamente los que se acumulan para siempre, mientras que los activos se mantienen acotados solos a medida que el municipio cierra casos.
+- **`suscribirUltimosTickets(callback, municipioId, cuantos = 10)`** — cualquier estado, tope duro `MAX_TICKETS_RECIENTES = 500`. La usa el listado "Últimos reportes de la comuna" del Paso 1 (con 10) y `TransparenciaPage.jsx` (con 500).
+
+Como ambas vienen ordenadas desde Firestore, se eliminaron los `useMemo` que filtraban/ordenaban en memoria en `FormularioCiudadano.jsx`.
+
+**Índices nuevos (obligatorios)** en `firestore.indexes.json`, sobre `tickets_publicos`: `(municipio_id ASC, fecha_creacion DESC)` y `(municipio_id ASC, estado ASC, fecha_creacion DESC)`. Sin ellos las dos consultas fallan con `failed-precondition: The query requires an index`.
+
+**Orden de despliegue — importante**: `firebase deploy --only firestore:indexes` **primero**, esperar a que los índices terminen de construirse, y **recién después** `--only hosting`. Al revés, la app queda rota para los ciudadanos durante el rato que tardan en construirse (se verificó en local que efectivamente fallan mientras tanto, antes de subir nada).
+
+**Limitación aceptada y documentada**: si un municipio llegara a acumular más de 200 reportes sin resolver al mismo tiempo, la detección de duplicados no vería los más antiguos de esa cola. Es un trade-off consciente: preferible a que la app entera se caiga por cuota. Lo mismo en transparencia — cuando la ventana de 500 se llena, la UI deja de decir "Reportes totales" y pasa a "Reportes considerados", aclarando desde qué fecha son los datos (no se presentan cifras parciales como si fueran el histórico completo).
+
+**Pendiente relacionado, NO resuelto**: `tickets_publicos` sigue con `allow list: if true` (§18), así que cualquiera puede listar tickets sin pasar por la app. Los límites de arriba acotan lo que consume la *app*, no lo que podría consumir alguien golpeando Firestore directo. Mitigarlo de verdad requeriría repensar el acceso público de esa colección — ver también la falta de rate limiting / anti-spam en §27.
+
+## 27. Qué falta para uso real con ciudadanos reales (evaluación al 02-ago-2026)
+
+La app **funciona** end-to-end y está en producción; esta sección es sobre qué falta para que aguante uso real sostenido de una municipalidad con vecinos reales. Ordenado por riesgo, tal como se le presentó al usuario.
+
+**Bloqueantes antes de abrirla a vecinos reales:**
+1. ~~Consulta sin límite a `tickets_publicos`~~ — ✅ **resuelto**, ver §26.
+2. **Contraseña débil de la cuenta del bot** (`whatsapp-bot/.env`): sigue siendo trivial, y esa cuenta tiene permiso de escritura sobre `incidencias` en producción. Cambiarla desde Firebase Console (Authentication) y actualizar el `.env`. Ver §23.
+3. **Sin política de privacidad ni términos de servicio**: la app pide RUT (§11). La Ley 21.719 de protección de datos personales lo exige, y ningún municipio debería firmar sin eso.
+4. **Sin anti-spam / rate limiting**: `allow create` de `incidencias` es anónimo y sin tope — alguien puede inyectar cientos de reportes falsos o inflar votos. No hay CAPTCHA (ni lo habrá con la restricción de no usar servicios pagados) ni límite por dispositivo/IP. El `dispositivo.js` actual es solo ayuda de UX, no una defensa (§16).
+5. **Datos de prueba mezclados en producción**: ~89 incidencias sembradas en `municipalidades/demo` (§19) más algunas de prueba en `licanten`. Limpiar antes de entregar a un municipio real.
+
+**Importantes antes de cobrarle a un municipio:**
+6. **Bot de WhatsApp no oficial y dependiente de esta PC** (§21, §23): el número puede bloquearse sin aviso, y solo notifica con la PC prendida.
+7. **Sin dominio propio**: `app-incidencias-urbanas.web.app` no proyecta seriedad institucional. Algo tipo `licanten.tumuniaqui.cl`.
+8. **Cero tests automatizados** (verificado: no hay `test`/`spec` en el repo ni script de test en `package.json`). Toda la verificación es manual contra producción, agravado porque el emulador está roto en esta máquina (§20.1).
+9. **Respaldo**: la tarea programada de Windows nunca se confirmó creada (§25), y solo respalda local.
+10. **Sin manual de uso / capacitación** para los funcionarios municipales.
+
+**Menores:**
+11. La página de transparencia no tiene ningún link de entrada (§24) — solo se llega escribiendo la URL.
+12. Sin service worker: la carga inicial no funciona offline (§20.4).
+13. Sin UI para crear/editar municipalidades — todo a mano vía script con Admin SDK (§4).
+14. `gasto_real` no se puede corregir después de cerrar un caso (§17).
+15. Las notificaciones nuevas del bot (creación/asignación) y la consulta conversacional no se verificaron end-to-end una por una (§23).

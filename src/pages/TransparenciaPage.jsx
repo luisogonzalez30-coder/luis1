@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useMunicipio } from '../hooks/useMunicipio'
-import { suscribirTicketsPublicos } from '../services/ticketsPublicosService'
+import { suscribirUltimosTickets } from '../services/ticketsPublicosService'
 import { CATEGORIAS } from '../utils/categorias'
 import { COLOR_POR_GRAVEDAD } from '../utils/gravedad'
 import EncabezadoMunicipio from '../components/common/EncabezadoMunicipio'
 import Spinner from '../components/common/Spinner'
 
 const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
+
+// Cuántos reportes recientes alimentan estas estadísticas. Tope duro: el
+// servicio nunca devuelve más de MAX_TICKETS_RECIENTES.
+const VENTANA_REPORTES = 500
 
 function promedioResolucionHoras(tickets) {
   const resueltos = tickets.filter((t) => t.estado === 'Resuelto' && t.fecha_creacion?.toDate && t.fecha_cierre?.toDate)
@@ -48,9 +52,14 @@ export default function TransparenciaPage() {
   const { municipio, cargando: cargandoMunicipio, noEncontrado } = useMunicipio(municipioSlug)
   const [tickets, setTickets] = useState([])
 
+  // Ventana acotada a los VENTANA_REPORTES más recientes, en vez de "todo el
+  // histórico": las estadísticas de una página pública no justifican descargar
+  // una colección que crece sin techo (ver MAX_TICKETS_* en
+  // ticketsPublicosService.js). Cuando se llega al tope, la UI aclara desde qué
+  // fecha son los datos para no dar a entender que es el total histórico.
   useEffect(() => {
     if (!municipio) return
-    return suscribirTicketsPublicos(setTickets, municipio.id)
+    return suscribirUltimosTickets(setTickets, municipio.id, VENTANA_REPORTES)
   }, [municipio])
 
   if (cargandoMunicipio) {
@@ -75,6 +84,14 @@ export default function TransparenciaPage() {
   const pendientes = tickets.filter((t) => t.estado === 'Pendiente').length
   const porcentajeResueltos = total > 0 ? Math.round((resueltos / total) * 100) : 0
   const promedioHoras = promedioResolucionHoras(tickets)
+
+  // Si se llenó la ventana, hay reportes más antiguos que estas cifras no
+  // cubren — se dice explícitamente en vez de presentarlas como el histórico
+  // completo. Los tickets vienen del más reciente al más antiguo.
+  const estaTopeado = total >= VENTANA_REPORTES
+  const fechaMasAntigua = estaTopeado
+    ? tickets[total - 1]?.fecha_creacion?.toDate?.().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null
 
   const conteoPorGravedad = ['Alta', 'Media', 'Baja'].map((g) => ({
     etiqueta: g,
@@ -106,7 +123,7 @@ export default function TransparenciaPage() {
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { etiqueta: 'Reportes totales', valor: total },
+          { etiqueta: estaTopeado ? 'Reportes considerados' : 'Reportes totales', valor: total },
           { etiqueta: 'Resueltos', valor: `${resueltos} (${porcentajeResueltos}%)` },
           { etiqueta: 'En proceso', valor: enProceso },
           { etiqueta: 'Tiempo promedio', valor: formatearHoras(promedioHoras) },
@@ -137,7 +154,9 @@ export default function TransparenciaPage() {
           </div>
 
           <p className="mt-6 text-xs text-gray-400">
-            {pendientes} reportes están pendientes de asignar cuadrilla. Datos en tiempo real, sin incluir información que identifique a quien reportó.
+            {pendientes} reportes están pendientes de asignar cuadrilla.
+            {estaTopeado && ` Estas cifras consideran los ${VENTANA_REPORTES} reportes más recientes${fechaMasAntigua ? `, desde el ${fechaMasAntigua}` : ''}.`}
+            {' '}Datos en tiempo real, sin incluir información que identifique a quien reportó.
           </p>
         </>
       )}
