@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { initializeApp } from 'firebase/app'
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
-import { getFirestore, doc, getDoc, collection, query, where, onSnapshot, updateDoc } from 'firebase/firestore'
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, onSnapshot, updateDoc } from 'firebase/firestore'
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys'
 import qrcode from 'qrcode-terminal'
 import pino from 'pino'
@@ -133,32 +133,100 @@ const ESTADO_LEGIBLE = {
   Resuelto: 'Resuelto',
 }
 
-// Formato de generarNumeroTicket() (src/utils/ticket.js): "INC-YYYYMMDD-XXXX",
-// XXXX son 4 caracteres hex. Insensible a mayúsculas: el ciudadano lo escribe a mano.
-const REGEX_TICKET = /INC-\d{8}-[0-9A-F]{4}/i
+// Números de ticket. El formato actual son 6 dígitos ("482173", que se muestra
+// como "482 173"); el viejo era "INC-YYYYMMDD-XXXX" y se sigue reconociendo
+// porque hay vecinos con uno de esos anotado. Insensible a mayúsculas.
+const REGEX_TICKET_NUEVO = /\b(\d{3})\s?(\d{3})\b/
+const REGEX_TICKET_VIEJO = /INC-\d{8}-[0-9A-F]{4}/i
+
+// "mis reportes", "mis reporte", "mis tickets", "mis solicitudes"...
+const REGEX_MIS_REPORTES = /\bmis\s+(reportes?|tickets?|solicitudes?|numeros?|números?)\b/i
+
+function extraerNumeroTicket(texto) {
+  const viejo = texto.match(REGEX_TICKET_VIEJO)
+  if (viejo) return viejo[0].toUpperCase()
+  const nuevo = texto.match(REGEX_TICKET_NUEVO)
+  return nuevo ? `${nuevo[1]}${nuevo[2]}` : null
+}
+
+// El JID de WhatsApp ("56912345678@s.whatsapp.net") al formato en que la app
+// guarda contacto_ciudadano ("+56912345678", ver utils/telefono.js).
+function telefonoDesdeJid(jid) {
+  const digitos = (jid || '').split('@')[0].replace(/\D/g, '')
+  return digitos ? `+${digitos}` : null
+}
 
 // Permite que el ciudadano consulte el estado de su reporte escribiéndole
 // directo al bot (sin tener que abrir /estado). Solo responde si el mensaje
 // contiene algo con forma de ticket — cualquier otro mensaje se ignora, para no
 // contestar con ruido si alguien le escribe otra cosa al número del municipio.
 async function responderConsultaTicket(sock, remitenteJid, textoMensaje, mensajeOriginal) {
-  const match = textoMensaje.match(REGEX_TICKET)
-  if (!match) return
+  const numeroTicket = extraerNumeroTicket(textoMensaje)
+  if (!numeroTicket) return false
 
-  const numeroTicket = match[0].toUpperCase()
   const snap = await getDoc(doc(db, 'tickets_publicos', numeroTicket))
 
   const respuesta = snap.exists()
     ? construirRespuestaEstado(numeroTicket, snap.data())
-    : `No encontré ningún reporte con el ticket *${numeroTicket}*. Revisa que esté bien escrito, o consulta en ${PORTAL_URL_ESTADO}`
+    : `No encontré ningún reporte con el número *${formatearTicket(numeroTicket)}*. Revisa que esté bien escrito, o consulta en ${PORTAL_URL_ESTADO}`
 
   await sock.sendMessage(remitenteJid, { text: respuesta }, { quoted: mensajeOriginal })
   console.log(`[bot] Respondida consulta de estado para ${numeroTicket} a ${remitenteJid}.`)
+  return true
+}
+
+// Recuperación de tickets sin pedir datos personales (reemplaza a la búsqueda
+// por RUT, ver §29): el vecino escribe "mis reportes" y el bot le contesta con
+// los suyos. La identidad es el propio número de WhatsApp desde el que escribe,
+// y la respuesta llega SOLO a ese número — nadie puede pedir los de otro.
+async function responderMisReportes(sock, remitenteJid, municipioId, mensajeOriginal) {
+  const telefono = telefonoDesdeJid(remitenteJid)
+  if (!telefono) return false
+
+  // Dos filtros de igualdad, sin orderBy: Firestore los resuelve sin índice
+  // compuesto. Son pocos por persona, así que se ordena en memoria.
+  const q = query(
+    collection(db, 'incidencias'),
+    where('municipio_id', '==', municipioId),
+    where('contacto_ciudadano', '==', telefono)
+  )
+  const snap = await getDocs(q)
+
+  if (snap.empty) {
+    await sock.sendMessage(
+      remitenteJid,
+      { text: `No encontré reportes hechos desde este número. Si reportaste con otro teléfono, escríbeme desde ese, o consulta con tu número de reporte en ${PORTAL_URL_ESTADO}` },
+      { quoted: mensajeOriginal }
+    )
+    return true
+  }
+
+  const reportes = snap.docs
+    .map((d) => d.data())
+    .sort((a, b) => (b.fecha_creacion?.toMillis?.() || 0) - (a.fecha_creacion?.toMillis?.() || 0))
+    .slice(0, 10)
+
+  const lineas = [`Estos son tus reportes (${reportes.length}):`, '']
+  for (const r of reportes) {
+    lineas.push(`*${formatearTicket(r.numero_ticket)}* — ${etiquetaCategoria(r.categoria)}`)
+    lineas.push(`   ${ESTADO_LEGIBLE[r.estado] || r.estado} · ${formatearFecha(r.fecha_creacion)}`)
+  }
+  lineas.push('', `Detalle de cualquiera en ${PORTAL_URL_ESTADO}`)
+
+  await sock.sendMessage(remitenteJid, { text: lineas.join('\n') }, { quoted: mensajeOriginal })
+  console.log(`[bot] Enviada la lista de ${reportes.length} reporte(s) a ${telefono}.`)
+  return true
+}
+
+// "482173" → "482 173" (los tickets viejos se devuelven tal cual).
+function formatearTicket(numeroTicket) {
+  if (!numeroTicket) return ''
+  return /^\d{6}$/.test(numeroTicket) ? `${numeroTicket.slice(0, 3)} ${numeroTicket.slice(3)}` : numeroTicket
 }
 
 function construirRespuestaEstado(numeroTicket, ticket) {
   const lineas = [
-    `Ticket *${numeroTicket}*`,
+    `Reporte *${formatearTicket(numeroTicket)}*`,
     `Categoría: ${etiquetaCategoria(ticket.categoria)}`,
     `Estado: ${ESTADO_LEGIBLE[ticket.estado] || ticket.estado}`,
     `Creado: ${formatearFecha(ticket.fecha_creacion)}`,
@@ -168,7 +236,7 @@ function construirRespuestaEstado(numeroTicket, ticket) {
   return lineas.join('\n')
 }
 
-function escucharMensajesEntrantes(sock) {
+function escucharMensajesEntrantes(sock, municipioId) {
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
     if (type !== 'notify') return
 
@@ -181,9 +249,15 @@ function escucharMensajesEntrantes(sock) {
       if (!texto) continue
 
       try {
-        await responderConsultaTicket(sock, remoteJid, texto, mensaje)
+        // "mis reportes" primero: si no, un mensaje como "mis 2 reportes"
+        // podría confundirse con un número de ticket.
+        if (REGEX_MIS_REPORTES.test(texto)) {
+          await responderMisReportes(sock, remoteJid, municipioId, mensaje)
+        } else {
+          await responderConsultaTicket(sock, remoteJid, texto, mensaje)
+        }
       } catch (error) {
-        console.error('[bot] Error respondiendo consulta de ticket:', error?.message || error)
+        console.error('[bot] Error respondiendo mensaje entrante:', error?.message || error)
       }
     }
   })
@@ -224,7 +298,7 @@ async function iniciarWhatsApp(municipioId, nombreMunicipio) {
   const sock = makeWASocket({ version, auth: state, logger })
 
   sock.ev.on('creds.update', saveCreds)
-  escucharMensajesEntrantes(sock)
+  escucharMensajesEntrantes(sock, municipioId)
 
   sock.ev.on('connection.update', (actualizacion) => {
     const { connection, lastDisconnect, qr } = actualizacion

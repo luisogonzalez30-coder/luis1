@@ -31,18 +31,16 @@ export default function PasoUbicacion({ coordenadas, cargando, error, onObtenerU
       />
 
       {coordenadas ? (
-        <div className="flex items-start gap-2 rounded-xl bg-green-50 p-3 text-sm text-green-800">
+        <div className="flex items-start gap-2 rounded-2xl bg-green-50 p-3 text-sm text-green-800 ring-1 ring-green-100">
           <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-          <span>
-            Ubicación: {coordenadas.lat.toFixed(5)}, {coordenadas.lng.toFixed(5)}
-          </span>
+          <span>Ubicación marcada en el mapa</span>
         </div>
       ) : (
         <p className="text-xs text-gray-400">Toca el mapa para fijar la ubicación a mano.</p>
       )}
 
       {error && (
-        <div className="flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+        <div className="flex items-start gap-2 rounded-2xl bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-100">
           <AlertTriangle size={18} className="mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>

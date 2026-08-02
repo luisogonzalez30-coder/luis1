@@ -1,12 +1,35 @@
-// Genera un número de ticket legible para el ciudadano, ej: "INC-20260729-4F2A"
-// No es el ID del documento de Firestore (ese lo genera Firestore automáticamente),
-// es solo un código amigable que el ciudadano puede anotar o mostrar.
-export function generarNumeroTicket() {
-  const fecha = new Date()
-  const yyyy = fecha.getFullYear()
-  const mm = String(fecha.getMonth() + 1).padStart(2, '0')
-  const dd = String(fecha.getDate()).padStart(2, '0')
-  const sufijo = Math.random().toString(16).slice(2, 6).toUpperCase()
+// Número de ticket que el ciudadano anota o dicta por teléfono.
+//
+// Formato: 6 dígitos ("482173"), mostrado agrupado como "482 173".
+// Antes era "INC-YYYYMMDD-XXXX" (17 caracteres, con letras y números): se
+// acortó a propósito porque es un dato que el vecino tiene que leer, anotar a
+// mano y muchas veces dictar por teléfono a la municipalidad — mezclar letras
+// con números y agregar la fecha lo hacía largo y propenso a errores.
+//
+// Un millón de combinaciones alcanza de sobra: no se exige que sea imposible
+// de repetir, sino que las repeticiones sean raras. Cuando ocurre una, el
+// propio Firestore rechaza la escritura (el número es el ID del documento en
+// tickets_publicos) y crearIncidencia genera otro y reintenta — ver §15.
+const DIGITOS = 6
 
-  return `INC-${yyyy}${mm}${dd}-${sufijo}`
+export function generarNumeroTicket() {
+  const maximo = 10 ** DIGITOS
+  return String(Math.floor(Math.random() * maximo)).padStart(DIGITOS, '0')
+}
+
+// Solo para mostrar en pantalla: "482173" → "482 173". Los tickets antiguos
+// (formato "INC-20260802-8BD7") se devuelven tal cual, para que los vecinos
+// que ya tienen uno anotado lo sigan reconociendo.
+export function formatearNumeroTicket(numeroTicket) {
+  if (!numeroTicket) return ''
+  if (!/^\d{6}$/.test(numeroTicket)) return numeroTicket
+  return `${numeroTicket.slice(0, 3)} ${numeroTicket.slice(3)}`
+}
+
+// Normaliza lo que el vecino escribe al consultar: le saca espacios, puntos y
+// guiones ("482 173", "482-173" → "482173") y pasa a mayúsculas para que los
+// tickets antiguos ("inc-...") también calcen con su ID real.
+export function normalizarNumeroTicket(entrada) {
+  const limpio = (entrada || '').trim().replace(/[\s.\-]/g, '')
+  return /^\d+$/.test(limpio) ? limpio : (entrada || '').trim().toUpperCase()
 }

@@ -10,12 +10,11 @@ import {
   obtenerIdDispositivo,
   registrarVotoLocal,
   yaVotoPorIncidencia,
-  registrarTicketPorRut,
   registrarReporteLocal,
   segundosParaPoderReportar,
 } from '../../utils/dispositivo'
 import { distanciaMetros } from '../../utils/distancia'
-import { esRutValido, formatearRut, limpiarRut } from '../../utils/rut'
+import { esWhatsappValido, normalizarWhatsapp } from '../../utils/telefono'
 import Boton from '../common/Boton'
 import EncabezadoMunicipio from '../common/EncabezadoMunicipio'
 import PasoUbicacion from './PasoUbicacion'
@@ -36,10 +35,9 @@ export default function FormularioCiudadano({ municipio }) {
   const [direccionTexto, setDireccionTexto] = useState('')
   const [detallesAdicionales, setDetallesAdicionales] = useState('')
   const [fotos, setFotos] = useState([])
-  const [quiereDejarDatos, setQuiereDejarDatos] = useState(false)
   const [nombreCiudadano, setNombreCiudadano] = useState('')
-  const [rutCiudadano, setRutCiudadano] = useState('')
   const [contactoCiudadano, setContactoCiudadano] = useState('')
+  const [sinConexion, setSinConexion] = useState(typeof navigator !== 'undefined' && !navigator.onLine)
   const [enviando, setEnviando] = useState(false)
   const [errorEnvio, setErrorEnvio] = useState(null)
   const [ticket, setTicket] = useState(null)
@@ -61,6 +59,19 @@ export default function FormularioCiudadano({ municipio }) {
     if (coordenadasGPS) setCoordenadas(coordenadasGPS)
   }, [coordenadasGPS])
 
+  // La foto es obligatoria SALVO que el celular esté sin señal: las fotos no se
+  // pueden guardar en la cola offline (un File no cabe en localStorage, ver §10),
+  // así que exigirla dejaría a un vecino en zona sin cobertura sin poder reportar.
+  useEffect(() => {
+    const actualizar = () => setSinConexion(!navigator.onLine)
+    window.addEventListener('online', actualizar)
+    window.addEventListener('offline', actualizar)
+    return () => {
+      window.removeEventListener('online', actualizar)
+      window.removeEventListener('offline', actualizar)
+    }
+  }, [])
+
   // Dos suscripciones acotadas, a propósito separadas (antes era una sola sin
   // límite que traía TODOS los tickets del municipio — ver el comentario de
   // MAX_TICKETS_* en ticketsPublicosService.js):
@@ -79,13 +90,17 @@ export default function FormularioCiudadano({ municipio }) {
     }
   }, [municipio?.id])
 
-  const rutEscrito = rutCiudadano.trim().length > 0
-  const rutInvalido = quiereDejarDatos && rutEscrito && !esRutValido(rutCiudadano)
+  // Ya nada es opcional en el formulario (decisión del usuario, ver §29): la
+  // municipalidad necesita saber DÓNDE exactamente, QUÉ pasa, cómo se ve, y a
+  // quién llamar. La única excepción es la foto sin señal (ver arriba).
+  const contactoValido = esWhatsappValido(contactoCiudadano)
+  const datosCompletos = nombreCiudadano.trim().length >= 2 && contactoValido
+  const fotoLista = fotos.length > 0 || sinConexion
 
   const puedeAvanzar = {
     1: Boolean(coordenadas),
-    2: Boolean(categoria),
-    3: true, // las fotos son opcionales
+    2: Boolean(categoria) && direccionTexto.trim().length >= 3 && detallesAdicionales.trim().length >= 5,
+    3: fotoLista && datosCompletos,
   }[paso]
 
   function encolarSinConexion(datosReporte, tieneFotos) {
@@ -101,10 +116,6 @@ export default function FormularioCiudadano({ municipio }) {
       return
     }
 
-    if (datosReporte.rutCiudadano) {
-      registrarTicketPorRut(limpiarRut(datosReporte.rutCiudadano), numeroTicket)
-    }
-
     // Para el vecino esto ya fue "enviar un reporte", así que corre el mismo
     // enfriamiento aunque todavía esté en la cola offline.
     registrarReporteLocal()
@@ -114,7 +125,7 @@ export default function FormularioCiudadano({ municipio }) {
   }
 
   async function manejarEnvio() {
-    if (rutInvalido) return
+    if (!puedeAvanzar) return
     setErrorEnvio(null)
 
     // Enfriamiento anti-spam: se avisa acá para no mandar al vecino contra un
@@ -137,10 +148,11 @@ export default function FormularioCiudadano({ municipio }) {
       direccionTexto,
       detallesAdicionales,
       municipioId: municipio.id,
-      nombreCiudadano: quiereDejarDatos ? nombreCiudadano : '',
-      contactoCiudadano: quiereDejarDatos ? contactoCiudadano : '',
-      rutCiudadano: quiereDejarDatos && rutEscrito ? formatearRut(rutCiudadano) : '',
-      esAnonimo: !quiereDejarDatos,
+      nombreCiudadano: nombreCiudadano.trim(),
+      // Siempre en formato "+569XXXXXXXX", venga como venga escrito — así el bot
+      // puede mandarle WhatsApp y buscar sus reportes sin normalizar de nuevo.
+      contactoCiudadano: normalizarWhatsapp(contactoCiudadano),
+      esAnonimo: false,
       idDocumento,
       dispositivoId: obtenerIdDispositivo(),
     }
@@ -161,9 +173,6 @@ export default function FormularioCiudadano({ municipio }) {
         15000,
         'Esto está tardando demasiado. Revisa tu conexión a internet e intenta nuevamente.'
       )
-      if (datosReporte.rutCiudadano) {
-        registrarTicketPorRut(limpiarRut(datosReporte.rutCiudadano), numeroTicket)
-      }
       registrarReporteLocal()
       setTicket(numeroTicket)
     } catch (err) {
@@ -186,9 +195,7 @@ export default function FormularioCiudadano({ municipio }) {
     setDireccionTexto('')
     setDetallesAdicionales('')
     setFotos([])
-    setQuiereDejarDatos(false)
     setNombreCiudadano('')
-    setRutCiudadano('')
     setContactoCiudadano('')
     setErrorEnvio(null)
     setTicket(null)
@@ -280,14 +287,16 @@ export default function FormularioCiudadano({ municipio }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-6">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-gradient-to-b from-primary/[0.04] to-transparent px-4 py-6">
       <header className="mb-6">
         <EncabezadoMunicipio municipio={municipio} tituloDefecto="Reportar Incidencia Urbana" />
-        <div className="mt-3 flex gap-1.5">
+        <div className="mt-4 flex gap-1.5">
           {Array.from({ length: TOTAL_PASOS }).map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 flex-1 rounded-full ${i + 1 <= paso ? 'bg-primary' : 'bg-gray-200'}`}
+              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                i + 1 <= paso ? 'bg-gradient-to-r from-primary to-primary-dark' : 'bg-gray-200'
+              }`}
             />
           ))}
         </div>
@@ -329,14 +338,11 @@ export default function FormularioCiudadano({ municipio }) {
               <PasoFoto
                 fotos={fotos}
                 onCambiarFotos={setFotos}
-                quiereDejarDatos={quiereDejarDatos}
                 nombreCiudadano={nombreCiudadano}
-                rutCiudadano={rutCiudadano}
                 contactoCiudadano={contactoCiudadano}
-                onCambiarQuiereDejarDatos={setQuiereDejarDatos}
                 onCambiarNombre={setNombreCiudadano}
-                onCambiarRut={setRutCiudadano}
                 onCambiarContacto={setContactoCiudadano}
+                sinConexion={sinConexion}
               />
             )}
           </>
@@ -365,7 +371,7 @@ export default function FormularioCiudadano({ municipio }) {
               <ChevronRight size={18} />
             </Boton>
           ) : (
-            <Boton className="flex-1" cargando={enviando} disabled={rutInvalido} onClick={manejarEnvio}>
+            <Boton className="flex-1" cargando={enviando} disabled={!puedeAvanzar} onClick={manejarEnvio}>
               <Send size={18} />
               Enviar reporte
             </Boton>

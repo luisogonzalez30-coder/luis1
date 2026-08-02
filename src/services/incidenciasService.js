@@ -58,7 +58,6 @@ export async function crearIncidencia({
   municipioId,
   nombreCiudadano,
   contactoCiudadano,
-  rutCiudadano,
   esAnonimo,
   idDocumento,
   numeroTicketExistente,
@@ -91,6 +90,7 @@ export async function crearIncidencia({
         categoria,
         nivelGravedad: nivel_gravedad,
         coordenadas,
+        direccionTexto,
         esRetry,
       })
       break
@@ -124,7 +124,9 @@ export async function crearIncidencia({
     departamento,
     nombre_ciudadano: nombreCiudadano || '',
     contacto_ciudadano: contactoCiudadano || '',
-    rut_ciudadano: rutCiudadano || '',
+    // rut_ciudadano se dejó de pedir el 02-ago-2026 para no manejar datos
+    // personales sensibles sin necesidad (ver §29). Los reportes antiguos que
+    // ya lo tienen conservan el campo; los nuevos simplemente no lo escriben.
     es_anonimo: esAnonimo ?? true,
     fotos_antes_urls: [],
     foto_despues_url: '',

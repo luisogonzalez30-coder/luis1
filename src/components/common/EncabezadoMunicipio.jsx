@@ -6,11 +6,15 @@ export default function EncabezadoMunicipio({ municipio, tituloDefecto = 'TuMuni
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2.5">
       {municipio.logo_url && (
-        <img src={municipio.logo_url} alt={municipio.nombre} className="h-8 w-8 rounded object-contain" />
+        <img
+          src={municipio.logo_url}
+          alt={municipio.nombre}
+          className="h-10 w-10 rounded-xl bg-white object-contain p-0.5 shadow-sm ring-1 ring-black/5"
+        />
       )}
-      <h1 className="text-xl font-bold text-gray-900">{municipio.nombre}</h1>
+      <h1 className="text-xl font-bold leading-tight text-gray-900">{municipio.nombre}</h1>
     </div>
   )
 }

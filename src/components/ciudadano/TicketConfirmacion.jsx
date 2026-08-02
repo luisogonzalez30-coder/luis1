@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import { CheckCircle2, CloudOff, ThumbsUp } from 'lucide-react'
+import { CheckCircle2, CloudOff, ThumbsUp, MessageCircle } from 'lucide-react'
 import Boton from '../common/Boton'
+import { formatearNumeroTicket } from '../../utils/ticket'
 
 export default function TicketConfirmacion({ numeroTicket, pendienteSincronizar, esVotoExistente, onReportarOtra }) {
   return (
@@ -11,7 +12,7 @@ export default function TicketConfirmacion({ numeroTicket, pendienteSincronizar,
           <h2 className="text-xl font-semibold text-gray-900">Guardado sin conexión</h2>
           <p className="text-gray-500">
             Se guardó en tu dispositivo y se enviará automáticamente la próxima vez que abras la app con señal.
-            Guarda este número para hacer seguimiento a tu solicitud:
+            Anota este número:
           </p>
         </>
       ) : esVotoExistente ? (
@@ -19,23 +20,39 @@ export default function TicketConfirmacion({ numeroTicket, pendienteSincronizar,
           <ThumbsUp size={56} className="text-primary" />
           <h2 className="text-xl font-semibold text-gray-900">¡Te sumaste al reporte!</h2>
           <p className="text-gray-500">
-            No hacía falta crear uno nuevo — este es el ticket al que te sumaste, guárdalo para hacer seguimiento:
+            No hacía falta crear uno nuevo — este es el número al que te sumaste:
           </p>
         </>
       ) : (
         <>
           <CheckCircle2 size={56} className="text-green-600" />
           <h2 className="text-xl font-semibold text-gray-900">¡Reporte enviado!</h2>
-          <p className="text-gray-500">Guarda este número para hacer seguimiento a tu solicitud:</p>
+          <p className="text-gray-500">Este es el número de tu reporte:</p>
         </>
       )}
 
-      <div className={`w-full rounded-xl py-4 ${pendienteSincronizar ? 'bg-amber-50' : 'bg-gray-100'}`}>
-        <span className="text-2xl font-bold tracking-wide text-primary">{numeroTicket}</span>
+      <div
+        className={`w-full rounded-3xl py-6 shadow-sm ring-1 ${
+          pendienteSincronizar ? 'bg-amber-50 ring-amber-200' : 'bg-gradient-to-b from-primary/10 to-primary/5 ring-primary/20'
+        }`}
+      >
+        <span className="text-4xl font-bold tracking-[0.2em] text-primary">
+          {formatearNumeroTicket(numeroTicket)}
+        </span>
       </div>
 
+      {!pendienteSincronizar && !esVotoExistente && (
+        <div className="flex items-start gap-2 rounded-2xl bg-gray-50 p-3 text-left text-sm text-gray-600">
+          <MessageCircle size={18} className="mt-0.5 shrink-0 text-primary" />
+          <span>
+            También te lo mandamos por WhatsApp. Si se te pierde, escríbenos <strong>"mis reportes"</strong> por
+            ahí mismo y te lo reenviamos.
+          </span>
+        </div>
+      )}
+
       <Link to="/estado" className="text-sm font-medium text-primary hover:underline">
-        Podrás consultar el estado de tu reporte más adelante con este número
+        Consultar el estado de mi reporte
       </Link>
 
       <Boton onClick={onReportarOtra} variante="secundario" className="w-full">

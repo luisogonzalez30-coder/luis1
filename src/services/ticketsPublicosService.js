@@ -13,6 +13,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { db, COLECCIONES } from '../firebase/firebase'
+import { normalizarNumeroTicket } from '../utils/ticket'
 
 const ticketsPublicosRef = collection(db, COLECCIONES.TICKETS_PUBLICOS)
 
@@ -47,6 +48,7 @@ export async function registrarTicketPublico({
   categoria,
   nivelGravedad,
   coordenadas,
+  direccionTexto,
   esRetry = false,
 }) {
   try {
@@ -56,6 +58,13 @@ export async function registrarTicketPublico({
       categoria,
       nivel_gravedad: nivelGravedad || null,
       coordenadas,
+      // Referencia de ubicación ("frente a la escuela"). Se agregó el
+      // 02-ago-2026 para que el vecino vea DÓNDE fue al tocar un reporte de la
+      // lista (§29). No agrega exposición real: las coordenadas exactas ya
+      // eran públicas acá desde el mapa tipo Waze. Los "detalles adicionales"
+      // siguen FUERA a propósito — ese campo es texto libre y puede contener
+      // referencias a personas; este solo describe un lugar.
+      direccion_texto: direccionTexto || '',
       upvotes: 1,
       fotos_antes_urls: [],
       estado: 'Pendiente',
@@ -150,11 +159,12 @@ export function actualizarCalificacionTicketPublico(numeroTicket, calificacion) 
   })
 }
 
-// Busca un ticket público por su número (normaliza mayúsculas/espacios porque el
-// ciudadano lo escribe a mano). Devuelve null si no existe, no lanza error.
+// Busca un ticket público por su número. Normaliza lo que el ciudadano escribe
+// a mano (espacios, puntos, guiones) — ver normalizarNumeroTicket, que también
+// sigue reconociendo los tickets del formato antiguo. Devuelve null si no
+// existe, no lanza error.
 export async function buscarTicketPublico(numeroTicket) {
-  const idNormalizado = numeroTicket.trim().toUpperCase()
-  const snap = await getDoc(doc(db, COLECCIONES.TICKETS_PUBLICOS, idNormalizado))
+  const snap = await getDoc(doc(db, COLECCIONES.TICKETS_PUBLICOS, normalizarNumeroTicket(numeroTicket)))
   return snap.exists() ? { id: snap.id, ...snap.data() } : null
 }
 

@@ -1,9 +1,12 @@
+import { useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 import { CATEGORIAS } from '../../utils/categorias'
-import { COLOR_POR_GRAVEDAD } from '../../utils/gravedad'
+import { colorDeGrupo } from '../../utils/coloresGrupo'
 import { tiempoRelativo } from '../../utils/tiempo'
 import BadgeEstado from '../common/BadgeEstado'
+import DetalleReporte from './DetalleReporte'
 
-const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
+const POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c]))
 
 // Lista de los últimos reportes de la municipalidad, debajo del mapa del Paso 1
 // — le muestra al ciudadano que el municipio está activo recibiendo y
@@ -11,28 +14,45 @@ const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.
 // tickets_publicos, que ya se suscribe en tiempo real en FormularioCiudadano
 // para el mapa y el chequeo de duplicados — se reusa esa misma suscripción,
 // sin ninguna consulta nueva; por eso la lista se actualiza sola.
+//
+// Cada fila abre la ficha completa del reporte (DetalleReporte): dónde fue
+// exactamente, a qué hora, en qué va y cuántos vecinos se sumaron.
 export default function UltimosReportes({ reportes }) {
+  const [abierto, setAbierto] = useState(null)
+
   if (!reportes?.length) return null
 
   return (
     <div>
       <h3 className="mb-2 text-sm font-semibold text-gray-700">Últimos reportes de la comuna</h3>
-      <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200">
-        {reportes.map((r) => (
-          <li key={r.id} className="flex items-center gap-2 px-3 py-2">
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: COLOR_POR_GRAVEDAD[r.nivel_gravedad] || '#9CA3AF' }}
-              aria-hidden="true"
-            />
-            <span className="min-w-0 flex-1 truncate text-sm text-gray-700">
-              {ETIQUETA_POR_VALOR[r.categoria] || r.categoria}
-            </span>
-            <span className="shrink-0 text-xs text-gray-400">{tiempoRelativo(r.fecha_creacion)}</span>
-            <BadgeEstado estado={r.estado} />
-          </li>
-        ))}
+      <ul className="divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        {reportes.map((r) => {
+          const info = POR_VALOR[r.categoria]
+          return (
+            <li key={r.id}>
+              <button
+                type="button"
+                onClick={() => setAbierto(r)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 active:bg-gray-100"
+              >
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: colorDeGrupo(info?.grupo) }}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 flex-1 truncate text-sm text-gray-700">
+                  {info?.etiqueta || r.categoria}
+                </span>
+                <span className="shrink-0 text-xs text-gray-400">{tiempoRelativo(r.fecha_creacion)}</span>
+                <BadgeEstado estado={r.estado} />
+                <ChevronRight size={16} className="shrink-0 text-gray-300" />
+              </button>
+            </li>
+          )
+        })}
       </ul>
+
+      {abierto && <DetalleReporte ticket={abierto} onCerrar={() => setAbierto(null)} />}
     </div>
   )
 }

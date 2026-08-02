@@ -1,24 +1,28 @@
 import { useMemo } from 'react'
-import { Camera, X, AlertTriangle } from 'lucide-react'
-import { esRutValido, formatearRut } from '../../utils/rut'
+import { Camera, X, AlertTriangle, MessageCircle, WifiOff } from 'lucide-react'
+import { esWhatsappValido } from '../../utils/telefono'
 
 const MAX_FOTOS = 3
 
+// Paso 3: foto + datos de contacto. A diferencia de versiones anteriores, acá
+// ya nada es opcional (decisión del usuario, ver §29 en ESTADO_PROYECTO.md):
+// la municipalidad necesita al menos una foto para dimensionar el trabajo y un
+// WhatsApp real para coordinar con el vecino. La única excepción es la foto
+// cuando el celular está sin señal — ver el aviso de más abajo.
 export default function PasoFoto({
   fotos,
   onCambiarFotos,
-  quiereDejarDatos,
   nombreCiudadano,
-  rutCiudadano,
   contactoCiudadano,
-  onCambiarQuiereDejarDatos,
   onCambiarNombre,
-  onCambiarRut,
   onCambiarContacto,
+  sinConexion,
 }) {
   const previews = useMemo(() => fotos.map((f) => URL.createObjectURL(f)), [fotos])
-  const rutEscrito = rutCiudadano.trim().length > 0
-  const rutInvalido = rutEscrito && !esRutValido(rutCiudadano)
+
+  const contactoEscrito = contactoCiudadano.trim().length > 0
+  const contactoInvalido = contactoEscrito && !esWhatsappValido(contactoCiudadano)
+  const faltaFoto = fotos.length === 0 && !sinConexion
 
   function manejarSeleccion(e) {
     const archivo = e.target.files?.[0]
@@ -33,87 +37,104 @@ export default function PasoFoto({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">3. Fotos de la incidencia</h2>
-        <p className="text-sm text-gray-500">Hasta 3 fotos — ayudan a la cuadrilla a dimensionar el problema.</p>
+        <h2 className="text-lg font-semibold text-gray-900">3. Foto y tus datos</h2>
+        <p className="text-sm text-gray-500">
+          Una foto ayuda a la cuadrilla a dimensionar el problema antes de salir a terreno.
+        </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        {previews.map((url, i) => (
-          <div key={url} className="relative">
-            <img src={url} alt={`Foto ${i + 1}`} className="h-24 w-full rounded-xl object-cover" />
-            <button
-              type="button"
-              onClick={() => quitarFoto(i)}
-              className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white"
-              aria-label="Quitar foto"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ))}
+      <div>
+        <label className="mb-2 block text-sm font-medium text-gray-700">
+          Fotos del problema {sinConexion ? '(no disponible sin señal)' : '· al menos 1'}
+        </label>
 
-        {fotos.length < MAX_FOTOS && (
-          <label className="flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:border-primary hover:text-primary">
-            <Camera size={22} />
-            <span className="text-xs font-medium">Agregar</span>
-            <input type="file" accept="image/*" capture="environment" onChange={manejarSeleccion} className="hidden" />
-          </label>
+        <div className="grid grid-cols-3 gap-2">
+          {previews.map((url, i) => (
+            <div key={url} className="relative">
+              <img src={url} alt={`Foto ${i + 1}`} className="h-24 w-full rounded-2xl object-cover shadow-sm" />
+              <button
+                type="button"
+                onClick={() => quitarFoto(i)}
+                className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+                aria-label="Quitar foto"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+
+          {fotos.length < MAX_FOTOS && (
+            <label
+              className={`flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed transition-colors
+                ${faltaFoto ? 'border-red-300 bg-red-50/50 text-red-500' : 'border-gray-300 text-gray-500 hover:border-primary hover:text-primary'}`}
+            >
+              <Camera size={22} />
+              <span className="text-xs font-medium">Agregar</span>
+              <input type="file" accept="image/*" capture="environment" onChange={manejarSeleccion} className="hidden" />
+            </label>
+          )}
+        </div>
+
+        {sinConexion ? (
+          <div className="mt-2 flex items-start gap-1.5 rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800">
+            <WifiOff size={14} className="mt-0.5 shrink-0" />
+            <span>
+              Estás sin señal. Tu reporte se va a guardar y enviar solo cuando vuelva internet, pero
+              <strong> sin foto</strong> — no alcanza a guardarse en el celular.
+            </span>
+          </div>
+        ) : (
+          faltaFoto && <p className="mt-2 text-xs text-red-600">Agrega al menos una foto para poder enviar tu reporte.</p>
         )}
       </div>
 
-      <p className="text-xs text-gray-400">Las fotos son opcionales, pero muy recomendadas.</p>
-
       <hr className="border-gray-200" />
 
-      <div>
-        <label className="flex items-start gap-2 text-sm text-gray-700">
-          <input
-            type="checkbox"
-            checked={quiereDejarDatos}
-            onChange={(e) => onCambiarQuiereDejarDatos(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-gray-300"
-          />
-          Quiero que me avisen cuando resuelvan mi reporte
-        </label>
-        <div className="mt-1 flex items-start gap-1.5 text-xs text-amber-700">
-          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-          <span>Tu reporte se envía igual sin esto — pero sin tu RUT y un WhatsApp o correo, no vamos a poder avisarte cuando se resuelva tu problema.</span>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-start gap-2 rounded-2xl bg-primary/5 p-3 text-sm text-gray-700">
+          <MessageCircle size={18} className="mt-0.5 shrink-0 text-primary" />
+          <span>
+            Cuando tomen tu caso <strong>te van a llamar o escribir por WhatsApp</strong> para coordinar la visita
+            o hacerte las preguntas que falten. Por ahí mismo te llega el número de tu reporte y el aviso cuando
+            quede resuelto.
+          </span>
         </div>
-      </div>
 
-      {quiereDejarDatos && (
-        <div className="flex flex-col gap-3">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Tu nombre</label>
           <input
             type="text"
             value={nombreCiudadano}
             onChange={(e) => onCambiarNombre(e.target.value)}
-            placeholder="Tu nombre"
-            className="w-full rounded-xl border border-gray-300 p-3 text-base focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-          <div>
-            <input
-              type="text"
-              value={rutCiudadano}
-              onChange={(e) => onCambiarRut(e.target.value)}
-              onBlur={() => rutEscrito && !rutInvalido && onCambiarRut(formatearRut(rutCiudadano))}
-              placeholder="Tu RUT (ej: 12.345.678-9)"
-              className={`w-full rounded-xl border p-3 text-base focus:outline-none focus:ring-2 ${
-                rutInvalido ? 'border-red-400 focus:ring-red-200' : 'border-gray-300 focus:border-primary focus:ring-primary/30'
-              }`}
-            />
-            {rutInvalido && <p className="mt-1 text-xs text-red-600">Ese RUT no parece válido — revisa el número.</p>}
-          </div>
-          <input
-            type="text"
-            value={contactoCiudadano}
-            onChange={(e) => onCambiarContacto(e.target.value)}
-            placeholder="WhatsApp o correo"
-            className="w-full rounded-xl border border-gray-300 p-3 text-base focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+            placeholder="Ej: María González"
+            className="w-full rounded-2xl border border-gray-300 p-3 text-base transition-shadow focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
-      )}
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Tu WhatsApp</label>
+          <input
+            type="tel"
+            inputMode="numeric"
+            value={contactoCiudadano}
+            onChange={(e) => onCambiarContacto(e.target.value)}
+            placeholder="9 1234 5678"
+            className={`w-full rounded-2xl border p-3 text-base transition-shadow focus:outline-none focus:ring-2 ${
+              contactoInvalido ? 'border-red-400 focus:ring-red-200' : 'border-gray-300 focus:border-primary focus:ring-primary/30'
+            }`}
+          />
+          {contactoInvalido ? (
+            <p className="mt-1 flex items-start gap-1 text-xs text-red-600">
+              <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+              Revisa el número: son 9 dígitos y parte con 9 (ej: 9 1234 5678).
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-gray-400">Solo lo usa la municipalidad para este reporte.</p>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

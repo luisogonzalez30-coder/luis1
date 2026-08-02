@@ -7,7 +7,6 @@
 // que tiene cualquier sistema de votos anónimo sin cuentas de usuario.
 const CLAVE_ID = 'dispositivo_id'
 const CLAVE_VOTOS = 'incidencias_votadas'
-const CLAVE_TICKETS_POR_RUT = 'tickets_por_rut'
 const CLAVE_ULTIMO_REPORTE = 'ultimo_reporte_ms'
 
 // Enfriamiento entre reportes del mismo dispositivo. Debe coincidir con el
@@ -88,32 +87,7 @@ export function registrarReporteLocal() {
   }
 }
 
-// Índice LOCAL (nunca sale de este dispositivo) de qué números de ticket
-// corresponden a qué RUT — permite el buscador "Mis reportes" en
-// ConsultaTicketPage.jsx sin necesitar una consulta al servidor por RUT, que
-// expondría públicamente qué vecino reportó qué (/estado es de lectura
-// pública sin login). Si el vecino cambia de celular, no lo va a encontrar
-// por RUT — solo por el número de ticket que ya se le mostró al crear.
-export function registrarTicketPorRut(rutLimpio, numeroTicket) {
-  if (!rutLimpio) return
-  try {
-    const indice = JSON.parse(localStorage.getItem(CLAVE_TICKETS_POR_RUT) || '{}')
-    const tickets = indice[rutLimpio] || []
-    if (!tickets.includes(numeroTicket)) {
-      indice[rutLimpio] = [...tickets, numeroTicket]
-      localStorage.setItem(CLAVE_TICKETS_POR_RUT, JSON.stringify(indice))
-    }
-  } catch (error) {
-    console.error('[dispositivo] No se pudo guardar el ticket en el índice local por RUT:', error)
-  }
-}
-
-export function buscarTicketsPorRutLocal(rutLimpio) {
-  try {
-    const indice = JSON.parse(localStorage.getItem(CLAVE_TICKETS_POR_RUT) || '{}')
-    return indice[rutLimpio] || []
-  } catch (error) {
-    console.error('[dispositivo] No se pudo leer el índice local por RUT:', error)
-    return []
-  }
-}
+// El índice local de tickets por RUT se eliminó el 02-ago-2026 junto con el
+// campo RUT (ver §29): ahora el vecino recupera sus reportes escribiéndole
+// "mis reportes" al WhatsApp de la municipalidad, y el bot le responde solo a
+// ese número — no hace falta guardar nada acá ni pedirle un dato sensible.

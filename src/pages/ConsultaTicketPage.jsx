@@ -5,9 +5,8 @@ import { buscarTicketPublico } from '../services/ticketsPublicosService'
 import { calificarIncidencia } from '../services/incidenciasService'
 import { agregarSeguimiento } from '../services/seguimientosService'
 import { subirImagen } from '../services/storageService'
-import { buscarTicketsPorRutLocal } from '../utils/dispositivo'
-import { limpiarRut } from '../utils/rut'
 import { CATEGORIAS } from '../utils/categorias'
+import { formatearNumeroTicket } from '../utils/ticket'
 import BadgeEstado from '../components/common/BadgeEstado'
 import BadgeGravedad from '../components/common/BadgeGravedad'
 import Boton from '../components/common/Boton'
@@ -122,7 +121,10 @@ function TarjetaResultado({ resultado, onCalificado }) {
   return (
     <div className="mt-5 rounded-xl border border-gray-200 p-4">
       <div className="flex items-start justify-between gap-2">
-        <h2 className="font-semibold text-gray-900">{ETIQUETA_POR_VALOR[resultado.categoria] || resultado.categoria}</h2>
+        <div>
+          <h2 className="font-semibold text-gray-900">{ETIQUETA_POR_VALOR[resultado.categoria] || resultado.categoria}</h2>
+          <p className="text-xs text-gray-400">N° {formatearNumeroTicket(resultado.id)}</p>
+        </div>
         <BadgeEstado estado={resultado.estado} />
       </div>
 
@@ -169,25 +171,17 @@ function TarjetaResultado({ resultado, onCalificado }) {
 // cualquier municipalidad. Solo lee de tickets_publicos (campos no sensibles),
 // nunca de incidencias directamente.
 //
-// Tiene DOS formas de buscar: por número de ticket (consulta directa al
-// servidor, funciona desde cualquier dispositivo) y por RUT (ver "Consulta de
-// tickets por RUT" en ESTADO_PROYECTO.md) — esta segunda NUNCA envía el RUT al
-// servidor: solo lee un índice guardado en ESTE dispositivo al momento de
-// crear el reporte (utils/dispositivo.js). Guardar el RUT en una consulta
-// pública del lado del servidor expondría qué vecino reportó qué a cualquiera
-// que probara RUTs al azar — por eso la búsqueda por RUT solo funciona desde
-// el mismo celular que se usó para reportar.
+// Se busca solo por número de ticket. La búsqueda por RUT se eliminó el
+// 02-ago-2026 junto con el campo RUT (§29): quien perdió su número lo recupera
+// escribiéndole "mis reportes" al WhatsApp de la municipalidad, y el bot le
+// responde únicamente a ese teléfono — más simple para el vecino y sin pedirle
+// un dato personal sensible.
 export default function ConsultaTicketPage() {
-  const [modo, setModo] = useState('ticket') // 'ticket' | 'rut'
-
   const [numeroTicket, setNumeroTicket] = useState('')
   const [buscando, setBuscando] = useState(false)
   const [resultado, setResultado] = useState(null)
   const [noEncontrado, setNoEncontrado] = useState(false)
   const [error, setError] = useState(null)
-
-  const [rut, setRut] = useState('')
-  const [resultadosRut, setResultadosRut] = useState(null)
 
   async function manejarBusquedaPorTicket(e) {
     e.preventDefault()
@@ -213,44 +207,17 @@ export default function ConsultaTicketPage() {
     }
   }
 
-  async function manejarBusquedaPorRut(e) {
-    e.preventDefault()
-    if (!rut.trim()) return
-
-    setBuscando(true)
-    setError(null)
-    setResultadosRut(null)
-
-    try {
-      const numerosTicket = buscarTicketsPorRutLocal(limpiarRut(rut))
-      if (numerosTicket.length === 0) {
-        setResultadosRut([])
-        return
-      }
-      const tickets = await Promise.all(numerosTicket.map((n) => buscarTicketPublico(n)))
-      setResultadosRut(tickets.filter(Boolean))
-    } catch (err) {
-      console.error('[ConsultaTicketPage] Error al buscar por RUT:', err)
-      setError('No se pudo consultar tus reportes. Revisa tu conexión a internet e intenta nuevamente.')
-    } finally {
-      setBuscando(false)
-    }
-  }
-
   // Actualización optimista tras calificar: evita releer el ticket completo
   // (el ciudadano no tiene permiso de lectura sobre incidencias, y el mirror en
   // tickets_publicos es best-effort/asíncrono, no conviene esperarlo para pintar).
   function manejarCalificado(ticketId, calificacion) {
     setResultado((actual) => (actual?.id === ticketId ? { ...actual, calificacion_ciudadano: calificacion } : actual))
-    setResultadosRut((actual) => actual?.map((r) => (r.id === ticketId ? { ...r, calificacion_ciudadano: calificacion } : r)) ?? actual)
   }
 
   function buscarOtro() {
     setNumeroTicket('')
     setResultado(null)
     setNoEncontrado(false)
-    setRut('')
-    setResultadosRut(null)
     setError(null)
   }
 
@@ -261,90 +228,48 @@ export default function ConsultaTicketPage() {
       </Link>
 
       <h1 className="text-xl font-bold text-gray-900">Consultar estado de un reporte</h1>
+      <p className="mt-2 text-sm text-gray-500">
+        Ingresa el número que recibiste al enviar tu reporte.
+      </p>
 
-      <div className="mt-4 flex gap-1 rounded-lg bg-gray-100 p-1">
-        {[
-          { id: 'ticket', etiqueta: 'Por número de ticket' },
-          { id: 'rut', etiqueta: 'Por mi RUT' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => { setModo(tab.id); buscarOtro() }}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors
-              ${modo === tab.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            {tab.etiqueta}
-          </button>
-        ))}
-      </div>
+      <form onSubmit={manejarBusquedaPorTicket} className="mt-4 flex gap-2">
+        <input
+          type="text"
+          inputMode="numeric"
+          value={numeroTicket}
+          onChange={(e) => setNumeroTicket(e.target.value)}
+          placeholder="482 173"
+          className="w-full rounded-2xl border border-gray-300 p-3 text-lg tracking-widest transition-shadow focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        <Boton type="submit" cargando={buscando} disabled={!numeroTicket.trim()}>
+          <Search size={18} />
+        </Boton>
+      </form>
 
-      {modo === 'ticket' ? (
+      {noEncontrado && (
+        <p className="mt-4 rounded-2xl bg-gray-100 p-3 text-center text-sm text-gray-600">
+          No encontramos ningún reporte con ese número. Revisa que esté bien escrito.
+        </p>
+      )}
+
+      {resultado && (
         <>
-          <p className="mt-4 text-sm text-gray-500">
-            Ingresa el número de ticket que recibiste al enviar tu reporte.
-          </p>
-
-          <form onSubmit={manejarBusquedaPorTicket} className="mt-4 flex gap-2">
-            <input
-              type="text"
-              value={numeroTicket}
-              onChange={(e) => setNumeroTicket(e.target.value)}
-              placeholder="INC-20260729-4F2A"
-              className="w-full rounded-lg border border-gray-300 p-2.5 font-mono uppercase tracking-wide"
-            />
-            <Boton type="submit" cargando={buscando} disabled={!numeroTicket.trim()}>
-              <Search size={18} />
-            </Boton>
-          </form>
-
-          {noEncontrado && (
-            <p className="mt-4 rounded-xl bg-gray-100 p-3 text-center text-sm text-gray-600">
-              No encontramos ningún reporte con ese número de ticket. Revisa que esté bien escrito.
-            </p>
-          )}
-
-          {resultado && (
-            <>
-              <TarjetaResultado resultado={resultado} onCalificado={manejarCalificado} />
-              <Boton variante="secundario" className="mt-4 w-full" onClick={buscarOtro}>
-                Consultar otro ticket
-              </Boton>
-            </>
-          )}
+          <TarjetaResultado resultado={resultado} onCalificado={manejarCalificado} />
+          <Boton variante="secundario" className="mt-4 w-full" onClick={buscarOtro}>
+            Consultar otro número
+          </Boton>
         </>
-      ) : (
-        <>
-          <p className="mt-4 text-sm text-gray-500">
-            Busca los reportes que hiciste con tu RUT — solo funciona desde el mismo celular con el que reportaste.
-          </p>
+      )}
 
-          <form onSubmit={manejarBusquedaPorRut} className="mt-4 flex gap-2">
-            <input
-              type="text"
-              value={rut}
-              onChange={(e) => setRut(e.target.value)}
-              placeholder="12.345.678-9"
-              className="w-full rounded-lg border border-gray-300 p-2.5"
-            />
-            <Boton type="submit" cargando={buscando} disabled={!rut.trim()}>
-              <Search size={18} />
-            </Boton>
-          </form>
-
-          {resultadosRut?.length === 0 && (
-            <p className="mt-4 rounded-xl bg-gray-100 p-3 text-center text-sm text-gray-600">
-              No encontramos reportes con ese RUT en este celular. Si reportaste desde otro dispositivo, busca por número de ticket.
-            </p>
-          )}
-
-          {resultadosRut?.map((r) => <TarjetaResultado key={r.id} resultado={r} onCalificado={manejarCalificado} />)}
-
-          {resultadosRut?.length > 0 && (
-            <Boton variante="secundario" className="mt-4 w-full" onClick={buscarOtro}>
-              Buscar otro RUT
-            </Boton>
-          )}
-        </>
+      {!resultado && (
+        <div className="mt-6 flex items-start gap-2 rounded-2xl bg-primary/5 p-4 text-sm text-gray-700">
+          <MessageSquare size={18} className="mt-0.5 shrink-0 text-primary" />
+          <span>
+            <strong>¿Perdiste tu número?</strong> Escríbele <strong>"mis reportes"</strong> por WhatsApp
+            a la municipalidad desde el mismo teléfono con el que reportaste, y te reenviamos tus
+            números con el estado de cada uno.
+          </span>
+        </div>
       )}
 
       {error && (

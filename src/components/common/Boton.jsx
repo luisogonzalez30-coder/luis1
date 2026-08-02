@@ -11,10 +11,14 @@ export default function Boton({
   disabled = false,
   className = '',
 }) {
+  // Degradado sutil + sombra en el color del municipio, y un leve hundimiento al
+  // tocar (active:scale). Se mantiene el texto blanco sobre el color pleno del
+  // tenant para no bajar el contraste: la app la usan también adultos mayores y
+  // muchas veces con sol directo en la pantalla.
   const estilos = {
-    primario: 'bg-primary hover:bg-primary-dark text-white',
-    secundario: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
-    peligro: 'bg-red-600 hover:bg-red-700 text-white',
+    primario: 'bg-gradient-to-b from-primary to-primary-dark text-white shadow-md shadow-primary/25 hover:brightness-110',
+    secundario: 'bg-gray-100 text-gray-800 hover:bg-gray-200',
+    peligro: 'bg-gradient-to-b from-red-500 to-red-700 text-white shadow-md shadow-red-500/25 hover:brightness-110',
   }
 
   return (
@@ -22,8 +26,9 @@ export default function Boton({
       type={type}
       onClick={onClick}
       disabled={disabled || cargando}
-      className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-medium
-        transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+      className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-medium
+        transition-all duration-150 active:scale-[0.98]
+        disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:active:scale-100
         ${estilos[variante]} ${className}`}
     >
       {cargando && <Loader2 className="animate-spin" size={18} />}

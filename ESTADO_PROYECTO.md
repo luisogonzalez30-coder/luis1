@@ -800,3 +800,38 @@ Cómo se hace inevadible, que es la parte importante:
 Además se verificó por la interfaz real en producción que un vecino **sí** puede reportar normalmente (el camino feliz no se rompió), que el mensaje de enfriamiento aparece, y que la detección de duplicados sigue funcionando. Las incidencias de prueba creadas durante la verificación se borraron.
 
 **Limitación conocida y aceptada**: quien borre su `localStorage`, use incógnito o rote el UUID a mano obtiene un dispositivo nuevo y vuelve a cero. Esto frena el spam accidental, el doble-envío y los scripts ingenuos — **no a un atacante decidido**. La defensa real contra eso es **Firebase App Check** (gratis con reCAPTCHA v3), que verifica que la petición venga de la app de verdad y no de un script. No se implementó todavía porque obliga a resolver primero el bot de WhatsApp (§23), que usa el SDK cliente desde Node y quedaría bloqueado — lo natural sería migrarlo a Admin SDK (ya hay una llave de cuenta de servicio, ver §25), que además simplificaría el bot. Queda como el siguiente paso natural de esta línea.
+
+## 29. Rediseño del flujo ciudadano (02-ago-2026)
+
+Tanda pedida por el usuario a partir de capturas de la app corriendo en su celular. Cambia decisiones de producto de fondo, no solo estética.
+
+**Cambio de principio — la app ya NO es anónima por defecto.** Hasta ahora dejar datos era opcional (§11) y `es_anonimo` era `true` salvo que el vecino marcara una casilla. Ahora **nombre y WhatsApp son obligatorios** y `es_anonimo` se escribe siempre en `false`. El motivo del usuario: la municipalidad necesita poder llamar al vecino para coordinar la visita. Si alguna vez se quiere volver atrás, el punto de cambio es `puedeAvanzar` en `FormularioCiudadano.jsx`.
+
+**Se dejó de pedir el RUT.** Decisión del usuario para no manejar datos personales sensibles sin necesidad (y evitar la exposición legal que eso implica). Se eliminó `src/utils/rut.js`, el campo del formulario, el índice local por RUT en `utils/dispositivo.js` y la pestaña "Por mi RUT" de `/estado`. `incidencias.rut_ciudadano` **ya no se escribe**; los reportes antiguos que lo tienen lo conservan.
+
+**Recuperación de ticket sin datos personales**: el vecino le escribe **"mis reportes"** al WhatsApp municipal y el bot le responde con sus reportes y estados (`responderMisReportes` en `whatsapp-bot/index.js`). La identidad es el propio número desde el que escribe, y la respuesta llega solo a ese teléfono — nadie puede pedir los de otro. Reemplaza a la búsqueda por RUT de §15.
+
+**Número de ticket corto**: pasó de `INC-YYYYMMDD-XXXX` (17 caracteres con letras) a **6 dígitos** (`482173`, mostrado `482 173`). Es un dato que el vecino anota a mano y dicta por teléfono. `utils/ticket.js` expone `generarNumeroTicket`, `formatearNumeroTicket` y `normalizarNumeroTicket` — esta última acepta espacios/puntos/guiones y **sigue reconociendo los tickets del formato viejo**, que ya están en manos de gente. El bot también reconoce ambos formatos. Un millón de combinaciones con el reintento por colisión que ya existía (§15) alcanza de sobra.
+
+**Campos ahora obligatorios** (`puedeAvanzar` en `FormularioCiudadano.jsx`):
+| Paso | Exige |
+|---|---|
+| 1 | ubicación marcada |
+| 2 | categoría + "¿Dónde exactamente?" (≥3) + "Cuéntanos qué pasa" (≥5) |
+| 3 | al menos 1 foto + nombre (≥2) + WhatsApp chileno válido |
+
+**Foto obligatoria, con una excepción deliberada**: si `navigator.onLine` es `false`, la foto **no** se exige y se le avisa al vecino que su reporte se enviará sin ella. Motivo: las fotos no se pueden guardar en la cola offline (un `File` no cabe en `localStorage`, §10), así que exigirla siempre dejaría sin poder reportar a quien esté en zona sin cobertura — justo el público rural que el resto de la app cuida. Se le planteó el conflicto al usuario y eligió esta opción.
+
+**Validación de WhatsApp** (`src/utils/telefono.js`, nuevo): acepta 9 dígitos que parten con 9, con o sin `+56`. Se **guarda siempre normalizado** como `+569XXXXXXXX`, para que el bot pueda mandar mensajes y buscar por ese campo sin volver a normalizar. Ojo: se valida el **formato**, no que el número sea realmente del vecino — verificarlo exigiría mandarle un código, que se descartó por fricción.
+
+**Selector de categorías propio** (`SelectorCategoria.jsx`, nuevo): reemplaza al `<select>` nativo, que en Android se dibujaba como una lista negra ajena a la app y obligaba a leer las 58 categorías de corrido. Ahora es un panel tipo hoja inferior con **buscador** (insensible a tildes: "arbol" encuentra "Árbol caído") y los 9 grupos separados por color.
+
+**Colores por grupo** (`src/utils/coloresGrupo.js`, nuevo): paleta categórica de la skill `dataviz`, **en su orden fijo** — el orden es el mecanismo de seguridad para daltonismo, no algo cosmético. Validado con `scripts/validate_palette.js --mode light --surface #ffffff`: todos los chequeos PASS (peor par adyacente ΔE 9.1 protan / 19.6 visión normal). El WARN de contraste está cubierto porque el nombre del grupo siempre se muestra escrito al lado del color. Son 8 slots categóricos y 9 grupos: "Otros" lleva el neutro, siguiendo la regla de la skill de que el noveno cae en "Other".
+
+**Ficha de reporte** (`DetalleReporte.jsx`, nuevo): cada fila de "Últimos reportes de la comuna" ahora abre una ficha con referencia de ubicación, link a Google Maps, **fecha y hora completas**, estado, gravedad, fotos, cuántos vecinos se sumaron y el botón "A mí también me afecta". Para eso se agregó `direccion_texto` a `tickets_publicos` — no aumenta la exposición real (las coordenadas exactas ya eran públicas ahí desde el mapa tipo Waze), y `detalles_adicionales` se mantuvo **fuera** a propósito: ese campo es texto libre y puede mencionar a personas.
+
+**Estilo**: se eligió "moderno y limpio" por sobre un futurismo más marcado, a propósito, porque la usan adultos mayores y muchas veces con sol directo en la pantalla. Bordes más redondeados (`rounded-2xl`/`3xl`), degradados sutiles en el color del municipio, sombras suaves, y un leve hundimiento al tocar los botones (`active:scale-[0.98]`).
+
+**Verificado en local antes de desplegar**: ficha de reporte con fecha y hora reales, buscador sin tildes, los 9 grupos con su color, y la validación paso a paso (sin foto → bloqueado con aviso; teléfono mal formado → bloqueado; con foto + nombre + WhatsApp válido → habilitado). Sin errores de consola.
+
+**Pendiente de esta tanda**: no se verificó end-to-end en producción el envío real de un reporte con el formulario nuevo ni la respuesta del bot a "mis reportes" — el bot hay que **reiniciarlo** para que tome los cambios.
