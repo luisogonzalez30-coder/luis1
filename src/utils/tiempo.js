@@ -30,6 +30,20 @@ export function horasDesde(timestamp) {
   return (Date.now() - timestamp.toDate().getTime()) / 3_600_000
 }
 
+// Tiempo relativo corto ("hace 5 min", "hace 2h", "hace 3d") — usado en la
+// lista de últimos reportes del ciudadano (ver PasoUbicacion.jsx). A
+// diferencia de formatearFecha (fecha/hora absoluta, para paneles de
+// funcionario), acá interesa más "qué tan reciente" que la fecha exacta.
+export function tiempoRelativo(timestamp) {
+  if (!timestamp?.toDate) return ''
+  const minutos = Math.floor((Date.now() - timestamp.toDate().getTime()) / 60000)
+  if (minutos < 1) return 'recién'
+  if (minutos < 60) return `hace ${minutos} min`
+  const horas = Math.floor(minutos / 60)
+  if (horas < 24) return `hace ${horas}h`
+  return `hace ${Math.floor(horas / 24)}d`
+}
+
 // Usado para el KPI de gasto mensual (ResumenGastoMensual.jsx, MetricasPorDepartamento.jsx).
 export function esDelMesActual(timestamp) {
   if (!timestamp?.toDate) return false

@@ -1,8 +1,9 @@
 import { MapPin, CheckCircle2, AlertTriangle } from 'lucide-react'
 import Boton from '../common/Boton'
 import MapaSeleccionUbicacion from './MapaSeleccionUbicacion'
+import UltimosReportes from './UltimosReportes'
 
-export default function PasoUbicacion({ coordenadas, cargando, error, onObtenerUbicacion, onCambiarCoordenadas, centroPorDefecto, incidenciasCercanas }) {
+export default function PasoUbicacion({ coordenadas, cargando, error, onObtenerUbicacion, onCambiarCoordenadas, centroPorDefecto, incidenciasCercanas, ultimosReportes }) {
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -46,6 +47,8 @@ export default function PasoUbicacion({ coordenadas, cargando, error, onObtenerU
           <span>{error}</span>
         </div>
       )}
+
+      <UltimosReportes reportes={ultimosReportes} />
     </div>
   )
 }

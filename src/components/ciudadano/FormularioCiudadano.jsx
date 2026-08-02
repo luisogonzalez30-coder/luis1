@@ -71,6 +71,19 @@ export default function FormularioCiudadano({ municipio }) {
     [incidenciasCercanas]
   )
 
+  // Últimos 10 reportes de la comuna (cualquier estado) para el listado del
+  // Paso 1 — mismo listener que ya alimenta el mapa, sin consulta nueva.
+  // tickets_publicos no viene ordenado por fecha (suscribirTicketsPublicos no
+  // usa orderBy), así que se ordena acá.
+  const ultimosReportes = useMemo(
+    () =>
+      incidenciasCercanas
+        .slice()
+        .sort((a, b) => (b.fecha_creacion?.toMillis() || 0) - (a.fecha_creacion?.toMillis() || 0))
+        .slice(0, 10),
+    [incidenciasCercanas]
+  )
+
   const rutEscrito = rutCiudadano.trim().length > 0
   const rutInvalido = quiereDejarDatos && rutEscrito && !esRutValido(rutCiudadano)
 
@@ -287,6 +300,7 @@ export default function FormularioCiudadano({ municipio }) {
                 onCambiarCoordenadas={setCoordenadas}
                 centroPorDefecto={municipio?.centro_mapa}
                 incidenciasCercanas={incidenciasActivas}
+                ultimosReportes={ultimosReportes}
               />
             )}
             {paso === 2 && (
