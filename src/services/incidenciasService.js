@@ -145,6 +145,10 @@ export async function crearIncidencia({
     notificado_whatsapp_creacion: false,
     notificado_whatsapp_asignacion: false,
     notificado_whatsapp: false,
+    // El bot avisa al celular del Alcalde cuando entra algo de gravedad Alta
+    // (ver §32). Bandera aparte de las de arriba porque el destinatario es
+    // otro: el Alcalde, no el vecino.
+    alertado_alcalde: false,
     // UUID aleatorio del navegador (utils/dispositivo.js), NO un dato personal:
     // es lo que permite aplicar el límite anti-spam del lado servidor. El mismo
     // valor ya se guardaba en usuarios_afectados al votar (§16), así que no

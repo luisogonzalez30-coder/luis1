@@ -95,6 +95,87 @@ const TIPOS_NOTIFICACION = [
   },
 ]
 
+// --- Alerta de emergencia al Alcalde ---
+// Cuando entra una incidencia de gravedad Alta (riesgo a las personas: fuga de
+// gas, cableado expuesto, socavón, árbol caído...) el bot le escribe al celular
+// del Alcalde. El escenario que esto evita es que el Alcalde se entere de algo
+// grave por un vecino enojado en redes sociales antes que por su propio
+// municipio.
+//
+// El número sale de municipalidades/{id}.whatsapp_alcalde — si el municipio no
+// lo configuró, la alerta simplemente no corre (no es obligatorio).
+async function procesarEmergencia(sock, incidenciaId, incidencia, municipio) {
+  const refIncidencia = doc(db, 'incidencias', incidenciaId)
+
+  // Si el bot estuvo apagado y el caso ya se resolvió, avisar ahora sería ruido:
+  // se marca como alertado y no se manda nada.
+  if (incidencia.estado === 'Resuelto') {
+    await updateDoc(refIncidencia, { alertado_alcalde: true })
+    return
+  }
+
+  const numero = normalizarNumero(municipio.whatsapp_alcalde)
+
+  try {
+    const [resultado] = await sock.onWhatsApp(numero)
+    if (!resultado?.exists) {
+      console.warn(`[bot] ${incidencia.numero_ticket} (emergencia): el número del Alcalde (${numero}) no tiene WhatsApp. Revisa municipalidades/${municipio.id}.whatsapp_alcalde`)
+      await updateDoc(refIncidencia, { alertado_alcalde: true })
+      return
+    }
+
+    const lineas = [
+      '🚨 *EMERGENCIA REPORTADA*',
+      '',
+      `*${etiquetaCategoria(incidencia.categoria)}*`,
+      `Reporte ${formatearTicket(incidencia.numero_ticket)} · ${incidencia.departamento || 'Sin departamento'}`,
+    ]
+    if (incidencia.direccion_texto) lineas.push(`📍 ${incidencia.direccion_texto}`)
+    if (incidencia.detalles_adicionales) lineas.push(`"${incidencia.detalles_adicionales}"`)
+    if (incidencia.coordenadas?.lat) {
+      lineas.push(`Ubicación exacta: https://www.google.com/maps?q=${incidencia.coordenadas.lat},${incidencia.coordenadas.lng}`)
+    }
+    lineas.push('', `Ingresado: ${formatearFecha(incidencia.fecha_creacion)}`)
+    lineas.push('', 'Todavía sin cuadrilla asignada. Revisa el panel para asignarla.')
+
+    const mensaje = lineas.join('\n')
+    const fotoUrl = incidencia.fotos_antes_urls?.[0]
+
+    await sock.sendMessage(resultado.jid, fotoUrl ? { image: { url: fotoUrl }, caption: mensaje } : { text: mensaje })
+    await updateDoc(refIncidencia, { alertado_alcalde: true })
+    console.log(`[bot] ${incidencia.numero_ticket} (emergencia): alerta enviada al Alcalde (${numero}).`)
+  } catch (error) {
+    // Igual que el resto: si falla no se marca la bandera, así se reintenta sola.
+    console.error(`[bot] ${incidencia.numero_ticket} (emergencia): falló la alerta al Alcalde.`, error?.message || error)
+  }
+}
+
+function escucharEmergencias(sock, municipio) {
+  if (!municipio.whatsapp_alcalde) {
+    console.log('[bot] Sin alerta de emergencias: la municipalidad no tiene "whatsapp_alcalde" configurado.')
+    return
+  }
+
+  const q = query(
+    collection(db, 'incidencias'),
+    where('municipio_id', '==', municipio.id),
+    where('nivel_gravedad', '==', 'Alta'),
+    where('alertado_alcalde', '==', false)
+  )
+
+  onSnapshot(
+    q,
+    (snapshot) => {
+      snapshot.docChanges().forEach((cambio) => {
+        if (cambio.type === 'added') procesarEmergencia(sock, cambio.doc.id, cambio.doc.data(), municipio)
+      })
+    },
+    (error) => console.error('[bot] Error escuchando emergencias:', error?.message || error)
+  )
+
+  console.log(`[bot] Alertas de emergencia activas hacia el Alcalde (${municipio.whatsapp_alcalde}).`)
+}
+
 async function procesarNotificacion(sock, incidenciaId, incidencia, nombreMunicipio, config) {
   const { tipo, campo, construirMensaje, obtenerFoto } = config
   const refIncidencia = doc(db, 'incidencias', incidenciaId)
@@ -316,14 +397,14 @@ function escucharNotificacion(sock, municipioId, nombreMunicipio, config) {
   console.log(`[bot] Escuchando notificaciones de "${config.tipo}" del municipio "${municipioId}"...`)
 }
 
-async function iniciarWhatsApp(municipioId, nombreMunicipio) {
+async function iniciarWhatsApp(municipio) {
   const { state, saveCreds } = await useMultiFileAuthState('auth_info')
   const { version } = await fetchLatestBaileysVersion()
 
   const sock = makeWASocket({ version, auth: state, logger })
 
   sock.ev.on('creds.update', saveCreds)
-  escucharMensajesEntrantes(sock, municipioId)
+  escucharMensajesEntrantes(sock, municipio.id)
 
   sock.ev.on('connection.update', (actualizacion) => {
     const { connection, lastDisconnect, qr } = actualizacion
@@ -335,7 +416,8 @@ async function iniciarWhatsApp(municipioId, nombreMunicipio) {
 
     if (connection === 'open') {
       console.log('[bot] Conectado a WhatsApp.')
-      TIPOS_NOTIFICACION.forEach((config) => escucharNotificacion(sock, municipioId, nombreMunicipio, config))
+      TIPOS_NOTIFICACION.forEach((config) => escucharNotificacion(sock, municipio.id, municipio.nombre, config))
+      escucharEmergencias(sock, municipio)
     }
 
     if (connection === 'close') {
@@ -344,7 +426,7 @@ async function iniciarWhatsApp(municipioId, nombreMunicipio) {
         console.error('[bot] Sesión cerrada desde el celular. Borra la carpeta "auth_info" y vuelve a correr el bot para escanear el QR de nuevo.')
       } else {
         console.warn('[bot] Se cortó la conexión con WhatsApp, reconectando...')
-        iniciarWhatsApp(municipioId, nombreMunicipio)
+        iniciarWhatsApp(municipio)
       }
     }
   })
@@ -365,11 +447,16 @@ async function main() {
   }
 
   const municipioSnap = await getDoc(doc(db, 'municipalidades', perfil.municipio_id))
-  const nombreMunicipio = municipioSnap.exists() ? municipioSnap.data().nombre : 'la Municipalidad'
+  const municipio = {
+    id: perfil.municipio_id,
+    nombre: municipioSnap.exists() ? municipioSnap.data().nombre : 'la Municipalidad',
+    // Opcional: si no está configurado, no se mandan alertas de emergencia.
+    whatsapp_alcalde: municipioSnap.exists() ? municipioSnap.data().whatsapp_alcalde : null,
+  }
 
-  console.log(`[bot] Sesión iniciada como ${perfil.nombre || perfil.email} (${perfil.rol}), municipio "${perfil.municipio_id}" (${nombreMunicipio}).`)
+  console.log(`[bot] Sesión iniciada como ${perfil.nombre || perfil.email} (${perfil.rol}), municipio "${municipio.id}" (${municipio.nombre}).`)
 
-  await iniciarWhatsApp(perfil.municipio_id, nombreMunicipio)
+  await iniciarWhatsApp(municipio)
 }
 
 main().catch((error) => {
