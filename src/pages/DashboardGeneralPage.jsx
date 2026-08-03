@@ -14,6 +14,7 @@ import PanelAsignacion from '../components/dashboard/PanelAsignacion'
 import MetricasPorDepartamento from '../components/dashboard/MetricasPorDepartamento'
 import PanelIndicadores from '../components/dashboard/PanelIndicadores'
 import PanelSectores from '../components/dashboard/PanelSectores'
+import PanelEvolucion from '../components/dashboard/PanelEvolucion'
 import ResumenGastoMensual from '../components/dashboard/ResumenGastoMensual'
 import EstadisticasRapidas from '../components/dashboard/EstadisticasRapidas'
 import EncabezadoMunicipio from '../components/common/EncabezadoMunicipio'
@@ -124,6 +125,7 @@ export default function DashboardGeneralPage() {
       </header>
 
       <PanelIndicadores incidencias={incidencias} municipioId={municipio.id} />
+      <PanelEvolucion incidencias={incidencias} />
       <ResumenGastoMensual incidencias={incidencias} />
       <MetricasPorDepartamento incidencias={incidencias} municipioId={municipio.id} />
       <PanelSectores

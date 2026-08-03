@@ -867,3 +867,59 @@ Cada tarjeta lleva una **línea de apoyo que explica el número** — es lo que 
 **"Gasto del mes" quedó fuera del panel** a propósito, para no mostrar el mismo número dos veces: ya lo cubre `ResumenGastoMensual`, que además tiene filtro por departamento y el detalle línea por línea (§24).
 
 **Verificación**: el agente **no puede entrar al Dashboard** (requiere login de funcionario, §20.5), así que en vez de verificar visualmente se replicaron los cálculos exactos del componente contra los datos reales de producción con un script temporal. Resultado en `demo` (92 incidencias, 47 trabajadores): 27 emergencias activas, 39 atrasados, 39 por asignar, 17 inconclusos, 0 resueltos este mes (36 históricos), 0/47 presentes (47 sin pasar lista), 3 cuadrillas en terreno. Cuadra: 39 + 17 + 36 = 92 = total. **Falta que el usuario confirme visualmente** el scroll y que el panel lateral ya no se corte.
+
+## 31. Cuenta Pública en un clic (02-ago-2026)
+
+Pedido del usuario tras preguntar qué haría la sección del Alcalde "irresistible". Esta es la que convierte: todo alcalde en Chile debe rendir una **cuenta pública anual** (Ley 18.695) y hoy la arma a mano juntando planillas de cada departamento. La app ya tiene los datos.
+
+**`src/pages/CuentaPublicaPage.jsx`** — ruta `/dashboard/cuenta-publica`, solo `ALCALDE_ADMIN`, lazy-loaded (13 kB, no pesa en el flujo del ciudadano). Enlace "Cuenta pública" en el header del Dashboard General.
+
+Secciones: resumen del período (con la cifra grande de problemas resueltos), cómo respondimos (tiempo de reacción, de resolución, satisfacción, horas hombre), desempeño por dirección municipal (tabla), qué reportaron los vecinos (top categorías + gravedad), evolución mes a mes, e inversión ejecutada. Períodos: año actual, año anterior, últimos 12 meses.
+
+**Decisiones técnicas:**
+- **Sin librería de PDF.** Se imprime con el diálogo del navegador ("Guardar como PDF"). Cero peso extra y funciona en cualquier equipo.
+- **Gráficos en CSS puro, no recharts.** Los gráficos dibujados en canvas/SVG suelen salir cortados o en blanco al imprimir; con CSS el navegador imprime lo que se ve. Reglas `@media print` en `index.css`: `print-color-adjust: exact` (que los colores no salgan en blanco), `break-inside: avoid` en secciones y `break-after: avoid` en encabezados.
+- **`obtenerIncidenciasPorPeriodo`** (`incidenciasService.js`) usa `getDocs`, no `onSnapshot`: un informe es una foto de un momento, no algo que deba cambiar mientras se imprime. Acotada por rango de fechas; usa el índice `(municipio_id, fecha_creacion DESC)` que ya existía.
+
+**Bug encontrado al verificar contra datos reales**: el tiempo de reacción salía **"-7 horas"**, porque hay incidencias con `fecha_asignacion` anterior a `fecha_creacion` (datos sembrados/migrados). Un negativo en el documento público del Alcalde destruye la credibilidad del resto del informe. Se agregó **`horasEntre()` y `promedioHoras()`** en `utils/tiempo.js`, que descartan los intervalos incoherentes en vez de deformar el promedio, y se aplicaron también a `PanelIndicadores` y `TransparenciaPage`, que tenían el mismo riesgo latente.
+
+También se cambió `html, body, #root` de `height: 100%` a `min-height: 100%`: con altura fija el contenido se desbordaba de la caja en vez de alargar la página.
+
+**Verificado** replicando los cálculos contra producción (92 reportes de `demo`): la consulta corre con los índices existentes y los números cuadran. **Falta que el usuario confirme visualmente** cómo sale el PDF impreso.
+
+## 32. Alerta de emergencias al WhatsApp del Alcalde (02-ago-2026)
+
+Cuando entra una incidencia de **gravedad Alta** (fuga de gas, cableado expuesto, socavón, árbol caído), el bot le escribe al celular del Alcalde con: categoría, número de reporte, departamento, dirección de referencia, detalles del vecino, **link a Google Maps con la ubicación exacta**, la foto y la hora de ingreso. El escenario que esto evita es que el Alcalde se entere de algo grave por un vecino enojado en redes sociales antes que por su propio municipio.
+
+- El número se configura por municipalidad en **`municipalidades/{id}.whatsapp_alcalde`**. Si no está configurado, la alerta simplemente no corre (es opcional).
+- Script: **`scripts/configurar-whatsapp-alcalde.mjs <municipio> <numero|quitar>`**, que normaliza el número a `+56XXXXXXXXX` y valida el largo.
+- Campo nuevo en `incidencias`: **`alertado_alcalde`** (bandera aparte de las `notificado_whatsapp_*` porque el destinatario es otro).
+
+**Dos decisiones de diseño que importan:**
+1. **Sin alertas retroactivas.** El campo solo se escribe en los reportes nuevos, así que al activar esto por primera vez el Alcalde **no** recibe de golpe las 36 emergencias históricas — solo las que entren de ahí en adelante. Verificado: la consulta devuelve 0 sobre los datos actuales.
+2. Si el bot estuvo apagado y el caso ya se resolvió, se marca como alertado **sin enviar**: avisar de una emergencia ya cerrada es ruido que desgasta la confianza en la alerta.
+
+Consulta verificada contra producción: las 3 igualdades (`municipio_id` + `nivel_gravedad` + `alertado_alcalde`) corren sin índice compuesto nuevo.
+
+## 33. Vista por sectores del municipio (02-ago-2026)
+
+Los alcaldes piensan el territorio por villas, poblaciones y sectores rurales, y la pregunta política que se hacen es *qué sector estoy desatendiendo* — porque desatender un sector se paga en votos. El mapa de pines sueltos no responde eso.
+
+- **`src/utils/sectores.js`**: `sectorDeCoordenada()` y `agruparPorSector()`, sobre el `distanciaMetros()` (Haversine) que ya existía para el chequeo de duplicados.
+- **`src/components/dashboard/PanelSectores.jsx`**: tabla por sector con sin resolver / total / urgentes y una barra de cumplimiento (relleno con severidad, riel un paso más claro del mismo tono — regla de "meter" de la skill dataviz) con el porcentaje **escrito al lado**, nunca solo color. Al hacer clic en un sector, el mapa lo encuadra.
+- **`MapaIncidencias.jsx`**: dibuja los sectores como círculos tenues **debajo** de los pines (van antes en el árbol), para dar contexto territorial sin competir con el dato principal. `EncuadradorSector` usa `fitBounds` sobre el círculo, no un zoom fijo, para que un sector grande no quede a medias.
+- **`scripts/configurar-sectores.mjs`**: carga los sectores, validando que las coordenadas caigan dentro de Chile y que el radio sea positivo — un sector mal escrito no se nota a simple vista en el dashboard (simplemente no le caen incidencias), así que conviene que falle al cargarlo.
+
+**Por qué centro + radio y no polígonos**: un municipio chico puede sacar las coordenadas de Google Maps (clic derecho, copiar) y cargarlo en minutos, sin editor de mapas ni archivos GeoJSON. La contrapartida es que los sectores son circulares y pueden solaparse; si dos alcanzan un mismo punto, **gana el más cercano al centro**. Lo que no cae en ningún sector se agrupa en "Fuera de los sectores definidos" y se explica al pie, para que se note si faltan sectores o si los radios quedaron chicos.
+
+Lógica verificada con casos límite: sin coordenadas, sin sectores definidos, latitud indefinida y zona de solape — ninguno rompe.
+
+**Pendiente**: `municipalidades/licanten` todavía no tiene sectores cargados; el panel muestra un mensaje explicando cómo hacerlo en vez de quedar vacío sin razón.
+
+## 34. Comparación mes contra mes (02-ago-2026)
+
+*Bajamos el tiempo de respuesta de 5 días a 2* es una frase de campaña. El resto del panel muestra el ahora; **`src/components/dashboard/PanelEvolucion.jsx`** muestra si vamos mejor o peor que el mes pasado: trabajos terminados, tiempo en asignar, tiempo en resolver y reportes recibidos.
+
+- **La dirección de "bueno" depende del indicador**, no del signo: en los tiempos, bajar es mejorar (`mejorEsMenos`), y el color e ícono siguen esa lectura. Verde no significa "subió", significa "mejoró".
+- **División por cero controlada**: si el mes anterior fue 0 o no hay dato, se muestra "Sin datos del mes anterior para comparar" en vez de un porcentaje infinito. Verificado con los casos `5 vs 0`, `0 vs 5`, `x vs null`.
+- "Reportes recibidos" lleva una nota aclarando que **más reportes no es malo**: significa que los vecinos están usando el canal. Sin esa nota, un alcalde podría leer el aumento como un empeoramiento y desincentivar el uso de la app.
