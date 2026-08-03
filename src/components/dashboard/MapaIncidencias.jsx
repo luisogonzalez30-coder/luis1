@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Circle, Tooltip, useMap } from 'react-leaflet'
 import { aplicarFixIconosLeaflet } from '../../utils/leafletIconFix'
 import { crearIconoPin } from '../../utils/iconoPin'
 
@@ -32,7 +32,26 @@ function CentradorMapa({ incidencias, seleccionadaId }) {
   return null
 }
 
-export default function MapaIncidencias({ incidencias, incidenciaSeleccionadaId, onSeleccionar, centro }) {
+// Lleva el mapa a un sector cuando el Alcalde lo elige desde PanelSectores.
+function EncuadradorSector({ sector }) {
+  const mapa = useMap()
+
+  useEffect(() => {
+    if (typeof sector?.lat !== 'number') return
+    // fitBounds sobre el círculo del sector: encuadra el territorio completo en
+    // vez de un zoom fijo, que en un sector grande dejaría la mitad fuera.
+    const radio = sector.radio_metros || 500
+    const grados = radio / 111_320 // metros → grados de latitud, aproximado
+    mapa.fitBounds(
+      [[sector.lat - grados, sector.lng - grados], [sector.lat + grados, sector.lng + grados]],
+      { padding: [24, 24], duration: 0.8 }
+    )
+  }, [sector, mapa])
+
+  return null
+}
+
+export default function MapaIncidencias({ incidencias, incidenciaSeleccionadaId, onSeleccionar, centro, sectores, sectorEnfocado }) {
   // react-leaflet solo lee "center" al montar el mapa (no re-centra si cambia después),
   // así que el llamador debe esperar a tener el centro real antes de montar este componente.
   const centroInicial = centro?.lat && centro?.lng ? [centro.lat, centro.lng] : CENTRO_DEFECTO
@@ -45,6 +64,23 @@ export default function MapaIncidencias({ incidencias, incidenciaSeleccionadaId,
       />
 
       <CentradorMapa incidencias={incidencias} seleccionadaId={incidenciaSeleccionadaId} />
+      <EncuadradorSector sector={sectorEnfocado} />
+
+      {/* Sectores de la comuna: se dibujan DEBAJO de los pines (van antes en el
+          árbol) y con relleno muy tenue, para dar contexto territorial sin
+          competir visualmente con las incidencias, que son el dato principal. */}
+      {sectores?.filter((s) => typeof s.lat === 'number' && typeof s.lng === 'number').map((s) => (
+        <Circle
+          key={s.nombre}
+          center={[s.lat, s.lng]}
+          radius={s.radio_metros || 500}
+          pathOptions={{ color: '#6B7280', weight: 1, fillColor: '#6B7280', fillOpacity: 0.05 }}
+        >
+          <Tooltip direction="center" permanent className="!border-0 !bg-transparent !shadow-none">
+            <span className="text-[11px] font-medium text-gray-600">{s.nombre}</span>
+          </Tooltip>
+        </Circle>
+      ))}
 
       {incidencias
         .filter((inc) => inc.coordenadas?.lat && inc.coordenadas?.lng)

@@ -13,6 +13,7 @@ import ListaIncidencias from '../components/dashboard/ListaIncidencias'
 import PanelAsignacion from '../components/dashboard/PanelAsignacion'
 import MetricasPorDepartamento from '../components/dashboard/MetricasPorDepartamento'
 import PanelIndicadores from '../components/dashboard/PanelIndicadores'
+import PanelSectores from '../components/dashboard/PanelSectores'
 import ResumenGastoMensual from '../components/dashboard/ResumenGastoMensual'
 import EstadisticasRapidas from '../components/dashboard/EstadisticasRapidas'
 import EncabezadoMunicipio from '../components/common/EncabezadoMunicipio'
@@ -34,6 +35,7 @@ export default function DashboardGeneralPage() {
   const [filtroCuadrilla, setFiltroCuadrilla] = useState('Todas')
   const [filtroDepartamento, setFiltroDepartamento] = useState('Todas')
   const [filtroTexto, setFiltroTexto] = useState('')
+  const [sectorEnfocado, setSectorEnfocado] = useState(null)
   const [vista, setVista] = useState('mapa')
   const { perfil, cerrarSesion } = useAuth()
   const { municipio, cargando, noEncontrado } = useMunicipio(perfil?.municipio_id)
@@ -124,6 +126,11 @@ export default function DashboardGeneralPage() {
       <PanelIndicadores incidencias={incidencias} municipioId={municipio.id} />
       <ResumenGastoMensual incidencias={incidencias} />
       <MetricasPorDepartamento incidencias={incidencias} municipioId={municipio.id} />
+      <PanelSectores
+        incidencias={incidencias}
+        sectores={municipio.sectores}
+        onSeleccionarSector={setSectorEnfocado}
+      />
 
       {vista === 'estadisticas' ? (
         <EstadisticasRapidas incidencias={incidencias} />
@@ -137,6 +144,8 @@ export default function DashboardGeneralPage() {
               incidenciaSeleccionadaId={seleccionadaId}
               onSeleccionar={setSeleccionadaId}
               centro={municipio.centro_mapa}
+              sectores={municipio.sectores}
+              sectorEnfocado={sectorEnfocado}
             />
           </div>
 
