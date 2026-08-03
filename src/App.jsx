@@ -18,6 +18,7 @@ const DashboardGeneralPage = lazy(() => import('./pages/DashboardGeneralPage'))
 const DashboardDepartamentoPage = lazy(() => import('./pages/DashboardDepartamentoPage'))
 const GestionFuncionariosPage = lazy(() => import('./pages/GestionFuncionariosPage'))
 const TransparenciaPage = lazy(() => import('./pages/TransparenciaPage'))
+const CuentaPublicaPage = lazy(() => import('./pages/CuentaPublicaPage'))
 
 const conSuspenso = (elemento) => (
   <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Spinner /></div>}>
@@ -76,6 +77,15 @@ function App() {
             element={
               <RutaProtegida rolesPermitidos={['ALCALDE_ADMIN']}>
                 {conSuspenso(<DashboardGeneralPage />)}
+              </RutaProtegida>
+            }
+          />
+          {/* Informe de gestión para la Cuenta Pública anual del Alcalde (§31) */}
+          <Route
+            path="/dashboard/cuenta-publica"
+            element={
+              <RutaProtegida rolesPermitidos={['ALCALDE_ADMIN']}>
+                {conSuspenso(<CuentaPublicaPage />)}
               </RutaProtegida>
             }
           />

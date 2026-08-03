@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Users, Download, Search } from 'lucide-react'
+import { Users, Download, Search, FileBarChart } from 'lucide-react'
 import { suscribirIncidencias } from '../services/incidenciasService'
 import { useMunicipio } from '../hooks/useMunicipio'
 import { ORDEN_GRAVEDAD } from '../utils/gravedad'
@@ -109,6 +109,9 @@ export default function DashboardGeneralPage() {
         </div>
         {perfil && (
           <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+            <Link to="/dashboard/cuenta-publica" className="flex items-center gap-1 text-primary hover:underline">
+              <FileBarChart size={16} /> Cuenta pública
+            </Link>
             <Link to="/dashboard/funcionarios" className="flex items-center gap-1 text-primary hover:underline">
               <Users size={16} /> Funcionarios
             </Link>

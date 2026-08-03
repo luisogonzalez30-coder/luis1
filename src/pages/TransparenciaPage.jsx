@@ -5,6 +5,7 @@ import { useMunicipio } from '../hooks/useMunicipio'
 import { suscribirUltimosTickets } from '../services/ticketsPublicosService'
 import { CATEGORIAS } from '../utils/categorias'
 import { COLOR_POR_GRAVEDAD } from '../utils/gravedad'
+import { promedioHoras } from '../utils/tiempo'
 import EncabezadoMunicipio from '../components/common/EncabezadoMunicipio'
 import Spinner from '../components/common/Spinner'
 
@@ -14,11 +15,11 @@ const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.
 // servicio nunca devuelve más de MAX_TICKETS_RECIENTES.
 const VENTANA_REPORTES = 500
 
+// promedioHoras descarta fechas incoherentes, para no publicar un tiempo
+// negativo en una página abierta a cualquier vecino (ver utils/tiempo.js).
 function promedioResolucionHoras(tickets) {
-  const resueltos = tickets.filter((t) => t.estado === 'Resuelto' && t.fecha_creacion?.toDate && t.fecha_cierre?.toDate)
-  if (resueltos.length === 0) return null
-  const totalHoras = resueltos.reduce((acc, t) => acc + (t.fecha_cierre.toDate() - t.fecha_creacion.toDate()) / 3_600_000, 0)
-  return totalHoras / resueltos.length
+  const resueltos = tickets.filter((t) => t.estado === 'Resuelto')
+  return promedioHoras(resueltos, (t) => t.fecha_creacion, (t) => t.fecha_cierre)
 }
 
 function formatearHoras(horas) {

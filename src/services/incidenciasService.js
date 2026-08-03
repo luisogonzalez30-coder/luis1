@@ -1,7 +1,9 @@
 import {
+  Timestamp,
   arrayUnion,
   collection,
   doc,
+  getDocs,
   increment,
   onSnapshot,
   orderBy,
@@ -207,6 +209,30 @@ export function suscribirIncidencias(callback, estado = null, municipioId = null
       console.error('[incidenciasService] Error al escuchar incidencias:', error)
     }
   )
+}
+
+// Lectura de UNA vez (no suscripción) de las incidencias de un período, para
+// generar la Cuenta Pública (ver CuentaPublicaPage.jsx). Un informe es una foto
+// de un momento, no algo que deba actualizarse en vivo mientras se imprime —
+// por eso getDocs y no onSnapshot.
+// Acotada por fechas, así el peso de la consulta no crece con el histórico
+// completo del municipio (mismo criterio que §26).
+export async function obtenerIncidenciasPorPeriodo(municipioId, desde, hasta) {
+  if (!municipioId) {
+    console.error('[incidenciasService] obtenerIncidenciasPorPeriodo requiere municipioId.')
+    return []
+  }
+
+  const q = query(
+    incidenciasRef,
+    where('municipio_id', '==', municipioId),
+    where('fecha_creacion', '>=', Timestamp.fromDate(desde)),
+    where('fecha_creacion', '<=', Timestamp.fromDate(hasta)),
+    orderBy('fecha_creacion', 'desc')
+  )
+
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
 
 // Asigna una cuadrilla y cambia el estado a "En Proceso" (antes "Asignado").

@@ -3,7 +3,7 @@ import {
   Siren, Clock, Inbox, Wrench, CheckCircle2, Users, Truck, Star,
 } from 'lucide-react'
 import { suscribirTrabajadoresMunicipio } from '../../services/trabajadoresService'
-import { esDelMesActual, horasDesde } from '../../utils/tiempo'
+import { esDelMesActual, horasDesde, promedioHoras } from '../../utils/tiempo'
 
 // Umbral de atraso para un ticket sin asignar cuadrilla. El mismo criterio que
 // MetricasPorDepartamento usa para las alertas rojas por departamento.
@@ -76,11 +76,10 @@ export default function PanelIndicadores({ incidencias, municipioId }) {
 
   const resueltasMes = resueltas.filter((i) => esDelMesActual(i.fecha_cierre))
 
-  // Tiempo promedio desde que entra el reporte hasta que se cierra (solo del mes).
-  const conTiempos = resueltasMes.filter((i) => i.fecha_creacion?.toDate && i.fecha_cierre?.toDate)
-  const promedioResolucion = conTiempos.length
-    ? conTiempos.reduce((acc, i) => acc + (i.fecha_cierre.toDate() - i.fecha_creacion.toDate()) / 3_600_000, 0) / conTiempos.length
-    : null
+  // Tiempo promedio desde que entra el reporte hasta que se cierra (solo del
+  // mes). promedioHoras descarta fechas incoherentes para que no salga un
+  // promedio negativo (ver utils/tiempo.js).
+  const promedioResolucion = promedioHoras(resueltasMes, (i) => i.fecha_creacion, (i) => i.fecha_cierre)
 
   const calificadas = resueltas.filter((i) => typeof i.calificacion_ciudadano === 'number')
   const promedioCalificacion = calificadas.length

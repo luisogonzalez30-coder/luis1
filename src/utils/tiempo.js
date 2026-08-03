@@ -22,6 +22,33 @@ export function formatearDuracion(desde, hasta) {
   return `${minutos}min`
 }
 
+// Horas entre dos Timestamps de Firestore, o null si el par no sirve para
+// promediar. Devuelve null cuando falta alguna fecha Y TAMBIÉN cuando el
+// intervalo sale negativo.
+//
+// Lo segundo pasa de verdad: hay incidencias (sembradas o migradas) con
+// fecha_asignacion anterior a fecha_creacion, y al promediarlas a ciegas la
+// Cuenta Pública mostraba "tiempo de reacción: -7 horas". Un negativo en un
+// documento público del Alcalde destruye la credibilidad del resto del
+// informe, así que esos registros se excluyen del promedio en vez de
+// deformarlo.
+export function horasEntre(desde, hasta) {
+  if (!desde?.toDate || !hasta?.toDate) return null
+  const horas = (hasta.toDate() - desde.toDate()) / 3_600_000
+  return horas >= 0 ? horas : null
+}
+
+// Promedio en horas de un intervalo, ignorando los registros inservibles
+// (ver horasEntre). Devuelve null si no queda ninguno válido.
+export function promedioHoras(items, obtenerDesde, obtenerHasta) {
+  const validos = items
+    .map((i) => horasEntre(obtenerDesde(i), obtenerHasta(i)))
+    .filter((h) => h !== null)
+
+  if (validos.length === 0) return null
+  return validos.reduce((a, h) => a + h, 0) / validos.length
+}
+
 // Horas transcurridas desde un Timestamp de Firestore hasta ahora. Usado para
 // las alertas de SLA (MetricasPorDepartamento.jsx) — cuánto lleva esperando
 // una incidencia sin asignar.
