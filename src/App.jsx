@@ -19,6 +19,10 @@ const DashboardDepartamentoPage = lazy(() => import('./pages/DashboardDepartamen
 const GestionFuncionariosPage = lazy(() => import('./pages/GestionFuncionariosPage'))
 const TransparenciaPage = lazy(() => import('./pages/TransparenciaPage'))
 const CuentaPublicaPage = lazy(() => import('./pages/CuentaPublicaPage'))
+// Textos legales: el vecino los abre una vez, no en cada reporte. Que no pesen
+// en el bundle del formulario, que es el que se descarga siempre.
+const PrivacidadPage = lazy(() => import('./pages/PrivacidadPage'))
+const TerminosPage = lazy(() => import('./pages/TerminosPage'))
 
 const conSuspenso = (elemento) => (
   <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Spinner /></div>}>
@@ -118,6 +122,12 @@ function App() {
               Ruta de 2 segmentos: no choca con /:municipioSlug (1 segmento), React
               Router los distingue por profundidad sin importar el orden acá. */}
           <Route path="/:municipioSlug/transparencia" element={conSuspenso(<TransparenciaPage />)} />
+
+          {/* Textos legales exigidos por la Ley 21.719 (vigente desde el 1-dic-2026).
+              Públicos y sin login a propósito: el vecino tiene que poder leerlos ANTES
+              de entregar su nombre y su WhatsApp, no después de haberlos entregado. */}
+          <Route path="/:municipioSlug/privacidad" element={conSuspenso(<PrivacidadPage />)} />
+          <Route path="/:municipioSlug/terminos" element={conSuspenso(<TerminosPage />)} />
 
           {/* Vista ciudadano pública, sin login, específica de cada municipalidad */}
           <Route path="/:municipioSlug" element={<CiudadanoPage />} />

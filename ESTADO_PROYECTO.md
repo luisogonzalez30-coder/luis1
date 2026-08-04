@@ -923,3 +923,59 @@ Lógica verificada con casos límite: sin coordenadas, sin sectores definidos, l
 - **La dirección de "bueno" depende del indicador**, no del signo: en los tiempos, bajar es mejorar (`mejorEsMenos`), y el color e ícono siguen esa lectura. Verde no significa "subió", significa "mejoró".
 - **División por cero controlada**: si el mes anterior fue 0 o no hay dato, se muestra "Sin datos del mes anterior para comparar" en vez de un porcentaje infinito. Verificado con los casos `5 vs 0`, `0 vs 5`, `x vs null`.
 - "Reportes recibidos" lleva una nota aclarando que **más reportes no es malo**: significa que los vecinos están usando el canal. Sin esa nota, un alcalde podría leer el aumento como un empeoramiento y desincentivar el uso de la app.
+
+## 35. Propuesta comercial, textos legales y sectores reales (03-ago-2026)
+
+Tanda de trabajo **no técnico** pedida explícitamente: los tres pendientes de venta que bloqueaban cobrarle a un municipio (§27), en este orden — propuesta, políticas, sectores.
+
+### 35.1 Propuesta comercial (`docs/PROPUESTA-COMERCIAL.md`)
+
+Documento listo para enviar a la Municipalidad de Licantén, escrito para ser reutilizable cambiando comuna y cifras. Acompañado de **`docs/PROPUESTA-COMERCIAL-NOTAS.md`**, que es interno y **no se envía**.
+
+**La decisión que ordena todo el pricing es el tope de Compra Ágil.** La Ley 21.634 lo subió a **100 UTM** (dic-2024). Bajo ese monto un municipio contrata directo por Mercado Público, sin licitación; sobre él necesita una licitación pública, que son meses de proceso y competencia con proveedores grandes. Por eso el plan base se calibró para caber con holgura:
+
+| Plan | Población | Puesta en marcha | Mensual | Primer año |
+|---|---|---|---|---|
+| Comuna | ≤ 10.000 | UF 20 | UF 8 | UF 116 ≈ **66 UTM** ✅ |
+| Comuna Mayor | 10.001–50.000 | UF 24 | UF 12 | UF 168 ≈ **96 UTM** ⚠️ justo |
+| Ciudad | > 50.000 | UF 45 | UF 20 | UF 285 ≈ 162 UTM → licitación |
+
+Licantén (≈6.900 hab.) cae en el plan Comuna. Precios en **UF** para que el contrato no se desactualice. Referencias usadas: UF $40.844,79 (2-ago-2026), UTM $71.649 (ago-2026). **El plan Comuna Mayor hay que recalcularlo antes de cada cotización** — 96 UTM deja poco margen si la UF sube.
+
+Compromisos que el documento asume y que hay que poder cumplir: SLA por severidad (crítica: 4 h hábiles de respuesta), disponibilidad 99,5% mensual con descuento topeado en una mensualidad, 4 horas mensuales de ajustes incluidas, UF 2/hora para desarrollo adicional, y garantía de devolución íntegra en los primeros 60 días.
+
+**Cinco promesas del documento que hoy NO se pueden cumplir** — están en la tabla de la sección 1 de las notas, y son la razón de que la propuesta no se pueda enviar todavía: inscripción en Mercado Público (sin verificar), dominio propio (hoy es `.web.app`, requiere Blaze), alerta de WhatsApp (bot no oficial en la PC del usuario), respaldo diario (tarea programada nunca confirmada, §25) y manual de uso (no existe). La más grave es la tercera: comprometer contractualmente una alerta de emergencias que corre sobre automatización no oficial de WhatsApp es exponerse a un incumplimiento el día que Meta bloquee el número.
+
+### 35.2 Política de privacidad y términos de servicio (Ley 21.719)
+
+Cierra el bloqueante §27.3. **La Ley 21.719 entra en plena vigencia el 1-dic-2026** (publicada 13-dic-2024, vacancia de 24 meses); hasta entonces rige la 19.628. Los textos aplican desde ya el estándar más exigente.
+
+- **`src/pages/PrivacidadPage.jsx`** y **`src/pages/TerminosPage.jsx`**, rutas públicas `/:municipioSlug/privacidad` y `/:municipioSlug/terminos`, sin login y lazy-loaded (10,9 kB y 7,3 kB — no pesan en el bundle del ciudadano).
+- **`src/components/common/PaginaLegal.jsx`**: envoltorio común (tenant, encabezado, pie, `ULTIMA_ACTUALIZACION`) más el helper `<ContactoDatos>`.
+- **Reparto de roles legales**: la **municipalidad es la responsable** del tratamiento y **TuMuniAquí el encargado**. Por eso el contacto para ejercer derechos es del municipio, no nuestro — campo nuevo `municipalidades/{id}.contacto_datos`, que se carga con **`scripts/configurar-contacto-datos.mjs`**. Si no está configurado, la página dirige a la Oficina de Partes en vez de mostrar un correo inventado.
+- **El texto describe lo que la app guarda hoy, no una plantilla.** Se escribió leyendo `crearIncidencia` y `registrarTicketPublico`. Dato importante: **§27 y §11 estaban desactualizados** — decían que la app pide RUT, pero el RUT se eliminó el 02-ago-2026 (§29). Hoy los datos personales obligatorios son **nombre y WhatsApp**, lo que hace estos textos *más* necesarios, no menos.
+- **Sección "Qué es público y qué no"**, que es la que importa: público = categoría, gravedad, coordenadas, `direccion_texto`, fotos, estado y calificación. Nunca público = nombre, contacto y `detalles_adicionales`. Se advierte explícitamente que las fotos son públicas (no fotografiar personas ni patentes).
+- **Punto de recolección**: el aviso con los dos enlaces va dentro de `PasoFoto.jsx`, justo bajo los campos de nombre y WhatsApp — no en un pie de página. El vecino tiene que poder leerlo *antes* de entregar el dato. Los enlaces abren en pestaña nueva porque el formulario no persiste el borrador entre navegaciones.
+- De paso se agregó un **pie de navegación** en `FormularioCiudadano.jsx` con enlaces a transparencia, consulta de reporte, privacidad y términos — esto cierra además el pendiente menor §27.11 (a `/transparencia` solo se llegaba escribiendo la URL).
+
+**Lo que estos textos NO son**: no los revisó un abogado. Son un borrador sólido y específico, pero antes de firmar con un municipio hay que hacerlos revisar, y hay que redactar el **acuerdo de tratamiento de datos** (anexo del contrato) que la propuesta menciona en su sección 8.
+
+### 35.3 Sectores reales de Licantén (`scripts/configurar-sectores.mjs`)
+
+Los 5 sectores anteriores eran inventados. Se reemplazaron por las **19 localidades reales** que enumera el Plan Regulador Comunal de Licantén, de este a oeste: La Higuera, Idahue, Placilla, La Leonera, Idahue Chico, Licantén, La Empalizada, Los Cristales, Villa Angosta, Quelmén, Lora, El Huapi, Naicura, Los Cuervos, Las Puertas, El Médano, La Pesca, Iloca y Duao.
+
+**Error real encontrado**: la lista inventada incluía **Lipimávida, que pertenece a la comuna de Vichuquén**, no a Licantén. Si le hubieran caído incidencias, el Alcalde habría estado midiendo territorio ajeno. Eliminada, con una nota en el archivo para que no vuelva.
+
+**Solo 3 coordenadas pudieron verificarse** contra una fuente: Licantén centro (-34.9743, -72.0604), Iloca (-34.9167, -72.1833) y Lora (-35.017, -72.067). Las otras 16 quedaron en `null`. **No se rellenaron a ojo a propósito**: un sector con la coordenada equivocada no falla de forma visible — simplemente no le caen incidencias, o le caen las del vecino. Habría sido el mismo problema que se estaba arreglando, con nombres más creíbles.
+
+Limitación del entorno que lo causó: la geocodificación automática no fue posible — Nominatim, Photon, Overpass, GeoNames y Wikipedia devuelven **403 desde el proxy** de este entorno; solo `WebSearch` pasa, y sus resultados le asignaban a Duao las coordenadas de Iloca. Si en el futuro hay acceso a un geocodificador, esto se resuelve en minutos.
+
+El script se reestructuró para que esa incertidumbre sea explícita en vez de silenciosa:
+- Cada sector lleva `confirmado: true|false` más `fuente` o `nota`. Esos tres campos son **metadata del archivo y se eliminan antes de escribir a Firestore** — a `municipalidades/{id}.sectores` solo van los 4 campos que `utils/sectores.js` usa.
+- **Sin flags, el script se niega a cargar** si hay sectores sin confirmar, y lista cuáles son con las dos salidas posibles. El chequeo va **antes** de la validación de forma, si no el error visible sería "lat/lng deben ser números" — cierto pero inútil.
+- **`--revisar`** no toca Firestore ni pide credenciales: imprime un link de Google Maps por sector (a las coordenadas si están, a la búsqueda del nombre si no) para confirmar cada punto en pantalla.
+- **`--solo-confirmados`** carga los 3 verificados y avisa qué localidades quedan fuera y que sus incidencias van a caer en "Fuera de los sectores definidos".
+
+Probado los tres caminos: `--revisar` lista los 19, sin flags bloquea con exit 1 y el mensaje correcto, y `--solo-confirmados` pasa la validación y llega al paso de credenciales.
+
+**Pendiente para el usuario**: confirmar las 16 coordenadas con `--revisar` (menos de un minuto cada una) y, de paso, validar la lista con alguien del municipio — el PRC es de 2011 y puede haber villas o poblaciones urbanas nuevas dentro de Licantén que convenga separar del sector "Licantén (centro)".

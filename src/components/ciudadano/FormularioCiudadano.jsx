@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Send, AlertTriangle } from 'lucide-react'
 import { useGeolocation } from '../../hooks/useGeolocation'
 import { crearIncidencia, generarIdIncidencia, votarIncidencia } from '../../services/incidenciasService'
@@ -343,6 +344,7 @@ export default function FormularioCiudadano({ municipio }) {
                 onCambiarNombre={setNombreCiudadano}
                 onCambiarContacto={setContactoCiudadano}
                 sinConexion={sinConexion}
+                municipioSlug={municipio.id}
               />
             )}
           </>
@@ -378,6 +380,15 @@ export default function FormularioCiudadano({ municipio }) {
           )}
         </footer>
       )}
+
+      {/* Única puerta de entrada a las páginas públicas de la comuna. Antes, a
+          /transparencia solo se llegaba escribiendo la URL a mano. */}
+      <nav className="mt-8 flex flex-wrap justify-center gap-x-4 gap-y-1 border-t border-gray-100 pt-4 text-xs text-gray-400">
+        <Link to={`/${municipio.id}/transparencia`} className="underline">Cómo vamos</Link>
+        <Link to="/estado" className="underline">Consultar un reporte</Link>
+        <Link to={`/${municipio.id}/privacidad`} className="underline">Privacidad</Link>
+        <Link to={`/${municipio.id}/terminos`} className="underline">Términos</Link>
+      </nav>
     </div>
   )
 }

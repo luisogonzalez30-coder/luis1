@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { Camera, X, AlertTriangle, MessageCircle, WifiOff } from 'lucide-react'
 import { esWhatsappValido } from '../../utils/telefono'
 
@@ -17,6 +18,7 @@ export default function PasoFoto({
   onCambiarNombre,
   onCambiarContacto,
   sinConexion,
+  municipioSlug,
 }) {
   const previews = useMemo(() => fotos.map((f) => URL.createObjectURL(f)), [fotos])
 
@@ -134,6 +136,34 @@ export default function PasoFoto({
             <p className="mt-1 text-xs text-gray-400">Solo lo usa la municipalidad para este reporte.</p>
           )}
         </div>
+
+        {/* Aviso de tratamiento de datos, exigido por la Ley 21.719. Va acá y no
+            en un pie de página: el vecino tiene que poder leerlo en el momento
+            en que entrega su nombre y su teléfono, que es justo arriba. Los
+            enlaces abren en pestaña nueva para no perder el reporte a medio
+            escribir — el formulario no persiste el borrador entre navegaciones. */}
+        <p className="text-xs leading-relaxed text-gray-500">
+          Tu nombre y tu teléfono los usa la municipalidad solo para este reporte, y{' '}
+          <strong>nunca se publican</strong>. Las fotos y la ubicación sí son públicas. Al enviar
+          aceptas los{' '}
+          <Link
+            to={`/${municipioSlug}/terminos`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-primary underline"
+          >
+            términos de servicio
+          </Link>{' '}
+          y la{' '}
+          <Link
+            to={`/${municipioSlug}/privacidad`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-primary underline"
+          >
+            política de privacidad
+          </Link>.
+        </p>
       </div>
     </div>
   )
