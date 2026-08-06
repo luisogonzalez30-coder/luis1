@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "emulators": "firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data",
     "seed": "node scripts/seed.js",
-    "backup": "node scripts/backup.js"
+    "backup": "node scripts/backup.js",
+    "desplegar": "npm install && npm run build && firebase deploy --only hosting",
+    "desplegar:reglas": "firebase deploy --only firestore:rules,firestore:indexes"
   },
   "dependencies": {
     "browser-image-compression": "^2.0.2",
