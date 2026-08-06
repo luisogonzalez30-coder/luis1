@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, Tooltip, useMap } from 'react-leaflet'
 import { aplicarFixIconosLeaflet } from '../../utils/leafletIconFix'
 import { crearIconoPin } from '../../utils/iconoPin'
+import CapaMapaCalor, { LeyendaMapaCalor } from './CapaMapaCalor'
 
 aplicarFixIconosLeaflet()
 
@@ -56,8 +57,34 @@ export default function MapaIncidencias({ incidencias, incidenciaSeleccionadaId,
   // así que el llamador debe esperar a tener el centro real antes de montar este componente.
   const centroInicial = centro?.lat && centro?.lng ? [centro.lat, centro.lng] : CENTRO_DEFECTO
 
+  const [modo, setModo] = useState('pines')
+  const esCalor = modo === 'calor'
+
   return (
-    <MapContainer center={centroInicial} zoom={13} className="h-full w-full">
+    <div className="relative h-full w-full">
+      {/* Alternador de vista. Va sobre el mapa (z sobre los tiles de Leaflet,
+          que usan z-index bajo) y no dentro de la barra de filtros: cambia CÓMO
+          se dibuja este mapa, no qué datos entran — esos ya los acota el filtro
+          único de arriba. */}
+      <div className="absolute right-3 top-3 z-[400] flex gap-1 rounded-xl bg-white/90 p-1 shadow-tarjeta ring-1 ring-borde backdrop-blur-sm">
+        {[
+          { id: 'pines', etiqueta: 'Pines' },
+          { id: 'calor', etiqueta: 'Mapa de calor' },
+        ].map((opcion) => (
+          <button
+            key={opcion.id}
+            onClick={() => setModo(opcion.id)}
+            className={`min-h-[32px] rounded-lg px-2.5 text-xs font-medium transition-colors
+              ${modo === opcion.id ? 'bg-primary text-white' : 'text-tinta-suave hover:bg-tinta-fuerte/5'}`}
+          >
+            {opcion.etiqueta}
+          </button>
+        ))}
+      </div>
+
+      {esCalor && <LeyendaMapaCalor total={incidencias.length} />}
+
+      <MapContainer center={centroInicial} zoom={13} className="h-full w-full">
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -65,6 +92,8 @@ export default function MapaIncidencias({ incidencias, incidenciaSeleccionadaId,
 
       <CentradorMapa incidencias={incidencias} seleccionadaId={incidenciaSeleccionadaId} />
       <EncuadradorSector sector={sectorEnfocado} />
+
+      {esCalor && <CapaMapaCalor incidencias={incidencias} />}
 
       {/* Sectores de la comuna: se dibujan DEBAJO de los pines (van antes en el
           árbol) y con relleno muy tenue, para dar contexto territorial sin
@@ -82,7 +111,9 @@ export default function MapaIncidencias({ incidencias, incidenciaSeleccionadaId,
         </Circle>
       ))}
 
-      {incidencias
+      {/* En modo calor no se dibujan los pines: superponerlos anula la lectura
+          de densidad, que es justo para lo que se cambió de vista. */}
+      {!esCalor && incidencias
         .filter((inc) => inc.coordenadas?.lat && inc.coordenadas?.lng)
         .map((inc) => {
           // Color = gravedad (mapa de calor de urgencia). Las resueltas se atenúan
@@ -109,6 +140,7 @@ export default function MapaIncidencias({ incidencias, incidenciaSeleccionadaId,
             </Marker>
           )
         })}
-    </MapContainer>
+      </MapContainer>
+    </div>
   )
 }

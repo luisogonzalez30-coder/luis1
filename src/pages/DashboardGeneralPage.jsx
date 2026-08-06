@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Users, Download, Search, FileBarChart, LogOut, Map, BarChart3 } from 'lucide-react'
+import { Users, Download, Search, FileBarChart, LogOut, Map, BarChart3, FileDown, Loader2 } from 'lucide-react'
 import { suscribirIncidencias } from '../services/incidenciasService'
 import { suscribirFuncionarios } from '../services/funcionariosService'
 import { useMunicipio } from '../hooks/useMunicipio'
@@ -9,6 +9,8 @@ import { DEPARTAMENTOS } from '../utils/departamento'
 import { CATEGORIAS, agruparCategorias } from '../utils/categorias'
 import { exportarIncidenciasCsv } from '../utils/exportarCsv'
 import { coincideTexto } from '../utils/busqueda'
+import { generarReporteGerencial } from '../utils/reporteGerencial'
+import { useAccionUnica } from '../hooks/useAccionUnica'
 import MapaIncidencias from '../components/dashboard/MapaIncidencias'
 import ListaIncidencias from '../components/dashboard/ListaIncidencias'
 import PanelAsignacion from '../components/dashboard/PanelAsignacion'
@@ -74,6 +76,21 @@ export default function DashboardGeneralPage() {
     setSeleccionadaId(incidenciaId)
   }
 
+  // El PDF se arma sobre TODAS las incidencias, no sobre las filtradas: es un
+  // informe del municipio, no de lo que el Alcalde tenga en pantalla en ese
+  // momento. Para exportar una selección concreta ya está el CSV.
+  const [descargarReporte, generandoPdf] = useAccionUnica(async () => {
+    try {
+      await generarReporteGerencial({
+        incidencias,
+        municipio,
+        generadoPor: perfil?.nombre,
+      })
+    } catch (error) {
+      console.error('[DashboardGeneralPage] No se pudo generar el reporte:', error)
+    }
+  })
+
   if (cargando) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -134,6 +151,19 @@ export default function DashboardGeneralPage() {
 
           {perfil && (
             <div className="flex items-center gap-1">
+              {/* "Botón del Alcalde": informe de gestión listo para una reunión,
+                  en un clic. Solo en escritorio — se genera para imprimir o
+                  adjuntar, no para mirarlo en el teléfono. */}
+              <button
+                onClick={descargarReporte}
+                disabled={generandoPdf}
+                className="hidden items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-medium text-white shadow-tarjeta transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60 md:flex"
+              >
+                {generandoPdf
+                  ? <Loader2 size={16} className="animate-spin" />
+                  : <FileDown size={16} />}
+                {generandoPdf ? 'Generando…' : 'Reporte de gestión'}
+              </button>
               <Link
                 to="/dashboard/cuenta-publica"
                 className="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-tinta transition-colors hover:bg-tinta-fuerte/5 sm:flex"

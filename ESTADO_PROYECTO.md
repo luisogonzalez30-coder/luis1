@@ -979,3 +979,62 @@ El script se reestructuró para que esa incertidumbre sea explícita en vez de s
 Probado los tres caminos: `--revisar` lista los 19, sin flags bloquea con exit 1 y el mensaje correcto, y `--solo-confirmados` pasa la validación y llega al paso de credenciales.
 
 **Pendiente para el usuario**: confirmar las 16 coordenadas con `--revisar` (menos de un minuto cada una) y, de paso, validar la lista con alguien del municipio — el PRC es de 2011 y puede haber villas o poblaciones urbanas nuevas dentro de Licantén que convenga separar del sector "Licantén (centro)".
+
+## 36. Rediseño del panel del Alcalde y capa visual tipo app nativa (04-ago-2026)
+
+Pedido en tres tandas sobre capturas del Dashboard General: el mapa se veía cortado al bajar, el panel tenía "demasiada información y desordenada", las tarjetas no hacían nada, y faltaba información de equipo. Después se sumó un brief de diseño (marca blanca, mobile-first, modales de alto contraste) y otro de cinco *features* de producto.
+
+### 36.1 Jerarquía: el problema real era que todo pesaba lo mismo
+
+Había ~20 cifras del mismo tamaño apiladas encima del mapa. Con todo al mismo peso no se lee nada — es el anti-patrón de "ocho colores cuando la historia es un número" de la skill `dataviz`. Ahora:
+
+- **Una sola cifra protagonista** (regla de la skill: exactamente una por vista): reportes sin resolver, con un medidor de porcentaje resuelto.
+- **Tres tarjetas de acción** clicables: emergencias, atrasados, por asignar.
+- **Fila secundaria** más callada para el contexto (en ejecución, resueltos del mes, asistencia, cuadrillas, tiempo, satisfacción).
+
+**Error encontrado al verificar con capturas, no al escribir el código**: la primera versión repetía cada número del bloque protagonista en las tarjetas de abajo (31, 68, 12) — exactamente el problema que se estaba arreglando. Se corrigió para que el bloque protagonista aporte lo único que no está en ninguna otra parte: la proporción resuelta. **La lección es que este panel hay que mirarlo renderizado; leyendo el JSX no se ve.**
+
+- **`ModalDetalleIndicador.jsx`** (nuevo): al tocar una tarjeta, lista los reportes que hay detrás del número, ordenados por urgencia (Alta primero, y dentro de cada nivel el más antiguo), con el reparto por departamento arriba. Tocar uno lo abre en el mapa. Tope de 40 filas, avisando cuántas quedan fuera.
+- **Los filtros pasaron a una sola fila** arriba de todo lo que acotan (antes vivían dentro del panel de la lista y no se veía que también afectaban al mapa).
+
+### 36.2 Scroll y final de página
+
+El bloque mapa+lista era el último elemento con `md:h-[calc(100vh-4rem)]`: al llegar ahí ocupaba el viewport completo y la página terminaba sin señal de cierre. Ahora tiene altura acotada, **en móvil la lista fluye con la página** (se quitó el scroll anidado, que era lo que producía la sensación de "cortado") y debajo va un **pie real** con enlaces.
+
+### 36.3 Equipo: ficha, designación y contacto directo
+
+- **`FichaTrabajador.jsx`** (nuevo) + **`utils/equipo.js`** (nuevo): al hacer clic en el nombre de un trabajador se despliega su ficha — departamento, jefatura directa (jefe de cuadrilla del roster + Jefe de Departamento de `usuarios_municipales`, con contacto), trabajos en curso con dirección exacta y enlace "cómo llegar", y horas comprometidas / del mes / históricas.
+- El estado **"Designado" es clicable** y abre esa misma ficha, que es donde está la ubicación.
+- **Contacto directo del jefe** (WhatsApp + correo) en cada tarjeta de departamento. Campo nuevo y opcional `usuarios_municipales.telefono`, con input en el alta de funcionarios.
+- **`jefaturaDe()`** detecta la jefatura de cuadrilla por el texto del cargo (jefe/jefatura/supervisor/capataz), porque el roster no tiene un campo booleano — los cargos son texto libre. Nunca se reporta a sí mismo como su propio jefe.
+- **No hay "horas trabajadas hoy" a propósito**: la asistencia solo guarda `fecha_asistencia` ("YYYY-MM-DD"), no hora de entrada, así que cualquier cifra diaria sería inventada. Está escrito en la propia ficha.
+- **Límite de reglas que condicionó el diseño**: `usuarios_municipales` solo lo puede listar el `ALCALDE_ADMIN` (y cada uno su propio doc), **no** un `JEFE_DEPARTAMENTO`. Por eso `funcionarios` se pasa como prop desde el lado del Alcalde en vez de suscribirse dentro del modal; cuando no llega, la ficha degrada sola y muestra solo la jefatura de cuadrilla.
+
+Lógica de `equipo.js` verificada con casos límite: incidencia sin presupuesto, trabajador inexistente, trabajador que ES el jefe de cuadrilla, y normalización de teléfonos.
+
+### 36.4 Capa visual
+
+- **Tokens** de superficie, tinta y estado centralizados en `index.css`. **Van como tripleta RGB** con el patrón `rgb(var(--x) / <alpha-value>)`, igual que `primary`. **Bug real encontrado al mirar una captura**: definidos como `var()` de hex plano, Tailwind 3 **no genera las clases con modificador de opacidad** (`bg-tinta-fuerte/5`, `ring-estado-critico/20`) — no da error de build, simplemente el estilo desaparece. Se detectó porque una cifra que debía ser roja salía gris.
+- **El acento por municipalidad ya estaba centralizado** (`--color-primary-rgb`, escrito por `utils/tema.js` desde `color_primario` del tenant). No se tocó: cambiar el color de una comuna sigue siendo cambiar un campo en Firestore.
+- **Sin webfont, a propósito.** En iOS y Android la fuente *nativa* (SF Pro / Roboto) es lo que hace que algo se vea nativo; cargar Inter desde un CDN se vería menos nativo y costaría ~100 kB a celulares de gama baja con señal rural. Se usa Inter solo si está instalada localmente.
+- **Modales**: desenfoque de fondo, velo más oscuro, entrada tipo hoja desde abajo en móvil con agarradera, cierre con Escape, alto acotado con scroll interno. Mismo tratamiento en `SelectorCategoria`, que el vecino usa de pie en la calle.
+- **Áreas táctiles de 44 px** mínimo (clase `.toque`), `prefers-reduced-motion` respetado, zona segura del iPhone.
+- **Se quitó `user-scalable=no`** del viewport: bloquear el zoom es una barrera de accesibilidad real (WCAG 1.4.4) para vecinos mayores o con baja visión.
+
+### 36.5 Barra inferior del vecino
+
+**`BarraNavegacion.jsx`** (nuevo): tres destinos —Mis reportes, Reportar (FAB elevado al centro, en el color del tenant), Cómo vamos—. Requirió la ruta nueva **`/:municipioSlug/estado`** para que las tres pestañas vivan dentro de la misma comuna; `/estado` a secas se mantiene intacto para los links y QR ya repartidos. De paso cierra el pendiente §27.11 (a `/transparencia` solo se llegaba escribiendo la URL).
+
+### 36.6 Compresión de fotos y prevención de doble envío
+
+- **`utils/comprimirImagen.js`** (nuevo, `browser-image-compression`): 800 px / 500 kB antes de subir. Va dentro de `storageService.subirImagen`, **el único punto por el que pasan todas las subidas** (vecino, foto "después" de la cuadrilla, seguimiento), así ninguna puede saltárselo. **Import dinámico**: son 53 kB que solo hacen falta cuando alguien adjunta una foto. Si falla, sube el original — es una optimización, no un requisito. El tope previo de 8 MB subió a 32 MB porque rechazaba fotos legítimas de cualquier celular actual.
+- **`hooks/useAccionUnica.js`** (nuevo) + `Boton` rehecho: el candado es un **`useRef`, no un `useState`**. `setState` no actualiza la variable en el acto, así que entre el primer clic y el re-render hay milisegundos en los que un segundo clic pasa el chequeo. En el alta de funcionarios eso creaba **dos cuentas de Firebase Auth**, que no se pueden borrar desde la app (requiere consola). `Boton` se bloquea solo cuando su `onClick` devuelve una promesa; los `<form onSubmit>` usan el hook.
+- **Ya existía y no se tocó**: la cola offline (`colaOffline.js` + `useSincronizacionOffline.js`, §10) ya guarda reportes sin señal y los sincroniza al volver la conexión.
+
+### 36.7 Mapa de calor y reporte gerencial en PDF
+
+- **`CapaMapaCalor.jsx`** (nuevo, `leaflet.heat`): alternador Pines / Mapa de calor sobre el mapa del Alcalde. **El mapa es Leaflet + OpenStreetMap, no Google Maps ni Mapbox.** Los reportes pesan por gravedad (Alta 1 / Media 0,55 / Baja 0,3) y los resueltos pesan un 40% — sin eso, veinte grafitis en el centro tapan tres emergencias en un sector rural. En modo calor **no se dibujan los pines**: superponerlos anula la lectura de densidad. Degradado semántico amarillo→rojo, que es la excepción declarada a la regla de "una sola tonalidad", **siempre con leyenda de escala**.
+- **`utils/reporteGerencial.js`** (nuevo, `jspdf` + `jspdf-autotable`): botón "Reporte de gestión" en el header del Dashboard, solo escritorio. Encabezado en el color del tenant, cuatro indicadores de los últimos 7 días, estado actual del municipio y tabla de los 30 últimos reportes, con pie y paginación. **Import dinámico** (~350 kB, solo el día que alguien aprieta el botón). Se arma sobre TODAS las incidencias, no las filtradas: es un informe del municipio, no de lo que haya en pantalla.
+- **Por qué jsPDF acá y no imprimir como la Cuenta Pública (§31)**: son documentos distintos. La Cuenta Pública lleva gráficos, y ahí imprimir gana porque los gráficos en canvas salen cortados o en blanco al pasar por una librería de PDF. Esto es texto y tabla, sin un solo gráfico, así que jsPDF da un archivo idéntico en cualquier computador.
+
+**Verificación**: el panel y la barra inferior se revisaron **renderizados** (capturas a 390 px y 1440 px) con datos de prueba, no solo compilados — así se encontraron el bug de los tokens y la duplicación de cifras. El PDF se generó de verdad en el navegador y se revisó página por página (2 páginas, tildes y ñ correctas). La capa de calor se verificó con tres racimos sembrados a propósito. Lo que **falta que confirme el usuario** es todo lo que requiere sesión real: el panel con datos de producción y la ficha de trabajador con roster real.
