@@ -28,13 +28,15 @@ export default function ResumenGastoMensual({ incidencias }) {
   const nombreMes = new Date().toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })
 
   return (
-    <div className="border-b border-gray-200 bg-white px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-medium uppercase text-gray-400">Gasto ejecutado — {nombreMes}</p>
+    <div className="mx-4 rounded-2xl bg-white p-5 ring-1 ring-borde sm:mx-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs font-medium text-tinta-suave">
+          Gasto ejecutado — {nombreMes}
+        </p>
         <select
           value={departamento}
           onChange={(e) => setDepartamento(e.target.value)}
-          className="rounded-lg border border-gray-300 px-2 py-1 text-xs"
+          className="min-h-[36px] rounded-xl bg-tinta-fuerte/[0.04] px-2.5 py-1.5 text-xs text-tinta ring-1 ring-borde transition-colors hover:bg-tinta-fuerte/[0.07] focus:outline-none focus:ring-2 focus:ring-primary/30"
         >
           <option value="Todos">Todos los departamentos</option>
           {DEPARTAMENTOS.map((dep) => (
@@ -42,9 +44,14 @@ export default function ResumenGastoMensual({ incidencias }) {
           ))}
         </select>
       </div>
-      <div className="flex flex-wrap items-baseline gap-3">
-        <p className="mt-1 text-2xl font-bold text-gray-900">{formatoCLP.format(totalMes)}</p>
-        <button onClick={() => setMostrarDetalle(true)} className="text-xs font-medium text-primary hover:underline">
+      <div className="mt-2 flex flex-wrap items-baseline gap-3">
+        <p className="text-3xl font-semibold leading-none tracking-tight text-tinta-fuerte">
+          {formatoCLP.format(totalMes)}
+        </p>
+        <button
+          onClick={() => setMostrarDetalle(true)}
+          className="text-xs font-medium text-primary hover:underline"
+        >
           Ver detalle
         </button>
       </div>

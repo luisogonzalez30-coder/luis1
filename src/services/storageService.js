@@ -1,5 +1,14 @@
+import { comprimirImagen } from '../utils/comprimirImagen'
+
 const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp']
-const TAMANO_MAXIMO_BYTES = 8 * 1024 * 1024 // 8 MB
+
+// Tope duro ANTES de comprimir, solo como protección de memoria: comprimir
+// implica decodificar la imagen completa en RAM, y un archivo absurdo tumbaría
+// el navegador de un celular de gama baja. No es el límite de subida real —
+// después de comprimir nada supera el medio mega (ver utils/comprimirImagen.js).
+// Antes esto eran 8 MB y rechazaba fotos legítimas: cualquier celular actual
+// saca fotos de más de 8 MB, y el vecino se quedaba sin poder reportar.
+const TAMANO_MAXIMO_BYTES = 32 * 1024 * 1024 // 32 MB
 
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
@@ -20,7 +29,7 @@ export async function subirImagen(archivo, rutaCarpeta) {
   }
 
   if (archivo.size > TAMANO_MAXIMO_BYTES) {
-    throw new Error('La imagen es demasiado pesada (máximo 8MB).')
+    throw new Error('La imagen es demasiado pesada. Sácala de nuevo con menos resolución.')
   }
 
   if (!CLOUD_NAME || !UPLOAD_PRESET) {
@@ -28,8 +37,14 @@ export async function subirImagen(archivo, rutaCarpeta) {
     throw new Error('La subida de fotos no está configurada todavía.')
   }
 
+  // Se comprime acá, en el único punto por el que pasan TODAS las subidas de la
+  // app (foto del vecino, foto "después" de la cuadrilla, foto de seguimiento).
+  // Ponerlo en cada formulario habría sido tres implementaciones que se
+  // desincronizan; acá es imposible que una subida se salte la compresión.
+  const optimizado = await comprimirImagen(archivo)
+
   const formData = new FormData()
-  formData.append('file', archivo)
+  formData.append('file', optimizado)
   formData.append('upload_preset', UPLOAD_PRESET)
   formData.append('folder', rutaCarpeta)
 

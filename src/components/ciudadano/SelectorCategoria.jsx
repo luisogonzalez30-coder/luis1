@@ -87,17 +87,29 @@ export default function SelectorCategoria({ categoria, onCambiar }) {
       </button>
 
       {abierto && (
-        <div className="fixed inset-0 z-[2000] flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setAbierto(false)}>
+        <div
+          // Velo oscuro + desenfoque: el vecino elige esto de pie en la calle,
+          // muchas veces con sol. Apagar el fondo es lo que hace que las 58
+          // opciones se lean rápido en vez de competir con el formulario.
+          className="animar-velo fixed inset-0 z-[2000] flex items-end justify-center bg-tinta-fuerte/60 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={() => setAbierto(false)}
+          role="presentation"
+        >
           <div
-            className="flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Elegir el problema"
+            className="animar-hoja flex max-h-[88vh] w-full max-w-md flex-col rounded-t-3xl bg-white shadow-flotante sm:max-h-[85vh] sm:rounded-3xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-gray-100 p-4 pb-3">
-              <h3 className="text-base font-semibold text-gray-900">¿Qué problema encontraste?</h3>
+            <div className="mx-auto mt-2.5 h-1 w-9 shrink-0 rounded-full bg-tinta-tenue/40 sm:hidden" />
+
+            <div className="flex items-center justify-between gap-2 border-b border-borde px-4 pb-3 pt-3">
+              <h3 className="text-base font-semibold text-tinta-fuerte">¿Qué problema encontraste?</h3>
               <button
                 type="button"
                 onClick={() => setAbierto(false)}
-                className="rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                className="toque -mr-2 shrink-0 rounded-full text-tinta-suave transition-colors hover:bg-tinta-fuerte/5 hover:text-tinta-fuerte"
                 aria-label="Cerrar"
               >
                 <X size={20} />
@@ -144,8 +156,10 @@ export default function SelectorCategoria({ categoria, onCambiar }) {
                               key={cat.valor}
                               type="button"
                               onClick={() => elegir(cat.valor)}
-                              className={`flex w-full items-center justify-between gap-2 border-b border-gray-100 px-3 py-3 text-left text-base transition-colors last:border-b-0
-                                ${activa ? 'bg-primary/10 font-medium text-primary' : 'bg-gray-50/60 text-gray-700 active:bg-gray-100'}`}
+                              // min-h-[48px]: área táctil cómoda para el pulgar,
+                              // que es como se usa esto en la calle.
+                              className={`flex min-h-[48px] w-full items-center justify-between gap-2 border-b border-borde px-3.5 py-3 text-left text-base transition-colors last:border-b-0
+                                ${activa ? 'bg-primary/10 font-medium text-primary' : 'bg-white text-tinta active:bg-tinta-fuerte/[0.04]'}`}
                             >
                               <span>{cat.etiqueta}</span>
                               {activa && <Check size={18} className="shrink-0" />}

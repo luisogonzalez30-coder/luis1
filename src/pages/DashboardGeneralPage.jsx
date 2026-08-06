@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Users, Download, Search, FileBarChart } from 'lucide-react'
+import { Users, Download, Search, FileBarChart, LogOut, Map, BarChart3 } from 'lucide-react'
 import { suscribirIncidencias } from '../services/incidenciasService'
+import { suscribirFuncionarios } from '../services/funcionariosService'
 import { useMunicipio } from '../hooks/useMunicipio'
 import { ORDEN_GRAVEDAD } from '../utils/gravedad'
 import { DEPARTAMENTOS } from '../utils/departamento'
@@ -24,12 +25,21 @@ import { useAuth } from '../context/AuthContext'
 const FILTROS_GRAVEDAD = ['Todas', 'Alta', 'Media', 'Baja']
 const GRUPOS_CATEGORIAS = agruparCategorias(CATEGORIAS)
 
+const PESTANAS = [
+  { id: 'mapa', etiqueta: 'Mapa', icono: Map },
+  { id: 'estadisticas', etiqueta: 'Estadísticas', icono: BarChart3 },
+]
+
+const CLASE_SELECT =
+  'min-h-[40px] w-full rounded-xl bg-white px-3 py-2 text-sm text-tinta ring-1 ring-borde transition-shadow focus:outline-none focus:ring-2 focus:ring-primary/40'
+
 // Dashboard del Alcalde ("modo dios"): ve todas las incidencias del municipio,
 // de todos los departamentos, más una fila de métricas comparativas para
 // fiscalizar atraso por departamento. Solo rol ALCALDE_ADMIN — ver §RBAC en
 // ESTADO_PROYECTO.md.
 export default function DashboardGeneralPage() {
   const [incidencias, setIncidencias] = useState([])
+  const [funcionarios, setFuncionarios] = useState([])
   const [seleccionadaId, setSeleccionadaId] = useState(null)
   const [filtroGravedad, setFiltroGravedad] = useState('Todas')
   const [filtroCategoria, setFiltroCategoria] = useState('Todas')
@@ -48,6 +58,22 @@ export default function DashboardGeneralPage() {
     return unsubscribe
   }, [municipio])
 
+  // Funcionarios del municipio: alimenta el contacto directo del jefe en cada
+  // tarjeta de departamento y la jefatura en la ficha de cada trabajador.
+  // firestore.rules solo permite listar usuarios_municipales al ALCALDE_ADMIN,
+  // que es exactamente quien está en esta página.
+  useEffect(() => {
+    if (!municipio) return
+    return suscribirFuncionarios(setFuncionarios, municipio.id)
+  }, [municipio])
+
+  // Al saltar desde el detalle de un indicador, el reporte elegido tiene que
+  // verse en el mapa — si el Alcalde estaba en Estadísticas, se vuelve solo.
+  function seleccionarEnMapa(incidenciaId) {
+    setVista('mapa')
+    setSeleccionadaId(incidenciaId)
+  }
+
   if (cargando) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -58,7 +84,7 @@ export default function DashboardGeneralPage() {
 
   if (noEncontrado) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4 text-center text-gray-500">
+      <div className="flex min-h-screen items-center justify-center px-4 text-center text-tinta-suave">
         Tu usuario no tiene una municipalidad válida asociada (municipio_id). Contacta al administrador.
       </div>
     )
@@ -67,8 +93,8 @@ export default function DashboardGeneralPage() {
   // Los filtros aplican tanto al mapa como a la lista, para que ambos muestren
   // siempre el mismo subconjunto — la lista además siempre se acota a "Pendiente"
   // (es la cola de trabajo por hacer), el mapa mantiene todos los estados (vista
-  // de situación completa). Las métricas de arriba (MetricasPorDepartamento) son
-  // a propósito independientes de estos filtros: comparan TODOS los departamentos.
+  // de situación completa). Las métricas de Estadísticas son a propósito
+  // independientes de estos filtros: comparan TODOS los departamentos.
   const incidenciasFiltradas = incidencias
     .filter((inc) => filtroGravedad === 'Todas' || inc.nivel_gravedad === filtroGravedad)
     .filter((inc) => filtroCategoria === 'Todas' || inc.categoria === filtroCategoria)
@@ -84,116 +110,147 @@ export default function DashboardGeneralPage() {
 
   const seleccionada = incidencias.find((inc) => inc.id === seleccionadaId) || null
   const cuadrillasMunicipio = municipio.cuadrillas || []
+  const hayFiltroActivo =
+    filtroGravedad !== 'Todas' || filtroCategoria !== 'Todas' ||
+    filtroCuadrilla !== 'Todas' || filtroDepartamento !== 'Todas' || filtroTexto.trim() !== ''
+
+  function limpiarFiltros() {
+    setFiltroGravedad('Todas')
+    setFiltroCategoria('Todas')
+    setFiltroCuadrilla('Todas')
+    setFiltroDepartamento('Todas')
+    setFiltroTexto('')
+  }
 
   // La página hace scroll normal (min-h-screen), NO se fija a la altura de la
-  // pantalla. Antes era "h-screen + overflow-hidden": con el panel de
-  // indicadores y las métricas arriba, al mapa y a la lista les quedaban unos
-  // pocos cientos de píxeles y se veían cortados, sin forma de desplazarse.
+  // pantalla. El bloque mapa+lista tiene una altura acotada y DEBAJO va un pie
+  // real: antes el mapa era el último elemento y ocupaba el viewport completo,
+  // así que al bajar la página parecía cortada a la mitad, sin final.
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur">
-        <div className="flex flex-wrap items-center gap-3">
-          <EncabezadoMunicipio municipio={municipio} tituloDefecto="Dashboard General — Incidencias Urbanas" />
-          <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
-            {[
-              { id: 'mapa', etiqueta: 'Mapa' },
-              { id: 'estadisticas', etiqueta: 'Estadísticas' },
-            ].map((tab) => (
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-30 border-b border-borde bg-white/85 backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <EncabezadoMunicipio municipio={municipio} tituloDefecto="Panel del Alcalde" />
+
+          {perfil && (
+            <div className="flex items-center gap-1">
+              <Link
+                to="/dashboard/cuenta-publica"
+                className="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-tinta transition-colors hover:bg-tinta-fuerte/5 sm:flex"
+              >
+                <FileBarChart size={16} /> Cuenta pública
+              </Link>
+              <Link
+                to="/dashboard/funcionarios"
+                className="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-tinta transition-colors hover:bg-tinta-fuerte/5 sm:flex"
+              >
+                <Users size={16} /> Funcionarios
+              </Link>
+              <Link to="/dashboard/cuenta-publica" className="toque rounded-xl text-tinta transition-colors hover:bg-tinta-fuerte/5 sm:hidden" aria-label="Cuenta pública">
+                <FileBarChart size={19} />
+              </Link>
+              <Link to="/dashboard/funcionarios" className="toque rounded-xl text-tinta transition-colors hover:bg-tinta-fuerte/5 sm:hidden" aria-label="Funcionarios">
+                <Users size={19} />
+              </Link>
+              <button
+                onClick={cerrarSesion}
+                className="toque rounded-xl text-tinta-suave transition-colors hover:bg-tinta-fuerte/5 hover:text-estado-critico"
+                aria-label="Cerrar sesión"
+                title={`${perfil.nombre} — cerrar sesión`}
+              >
+                <LogOut size={19} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Pestañas con indicador sutil bajo la activa, como una app nativa. */}
+        <div className="flex gap-1 px-4 sm:px-6">
+          {PESTANAS.map((tab) => {
+            const activa = vista === tab.id
+            return (
               <button
                 key={tab.id}
                 onClick={() => setVista(tab.id)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors
-                  ${vista === tab.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`relative flex min-h-[44px] items-center gap-1.5 px-3 text-sm font-medium transition-colors
+                  ${activa ? 'text-primary' : 'text-tinta-suave hover:text-tinta'}`}
               >
+                <tab.icono size={16} />
                 {tab.etiqueta}
+                <span
+                  className={`absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-primary transition-opacity duration-200
+                    ${activa ? 'opacity-100' : 'opacity-0'}`}
+                />
               </button>
-            ))}
-          </div>
+            )
+          })}
         </div>
-        {perfil && (
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-            <Link to="/dashboard/cuenta-publica" className="flex items-center gap-1 text-primary hover:underline">
-              <FileBarChart size={16} /> Cuenta pública
-            </Link>
-            <Link to="/dashboard/funcionarios" className="flex items-center gap-1 text-primary hover:underline">
-              <Users size={16} /> Funcionarios
-            </Link>
-            <span>{perfil.nombre} ({perfil.rol})</span>
-            <button onClick={cerrarSesion} className="text-primary hover:underline">Cerrar sesión</button>
-          </div>
-        )}
       </header>
 
-      <PanelIndicadores incidencias={incidencias} municipioId={municipio.id} />
-      <PanelEvolucion incidencias={incidencias} />
-      <ResumenGastoMensual incidencias={incidencias} />
-      <MetricasPorDepartamento incidencias={incidencias} municipioId={municipio.id} />
-      <PanelSectores
-        incidencias={incidencias}
-        sectores={municipio.sectores}
-        onSeleccionarSector={setSectorEnfocado}
-      />
+      <main className="flex-1">
+        <PanelIndicadores
+          incidencias={incidencias}
+          municipioId={municipio.id}
+          onSeleccionarIncidencia={seleccionarEnMapa}
+        />
 
-      {vista === 'estadisticas' ? (
-        <EstadisticasRapidas incidencias={incidencias} />
-      ) : (
-        // Altura propia y generosa en vez de "lo que sobre": así el mapa y la
-        // lista siempre son usables, y cada uno tiene su propio scroll interno.
-        <div className="flex flex-col md:h-[calc(100vh-4rem)] md:min-h-[520px] md:flex-row">
-          <div className="h-[55vh] w-full shrink-0 md:h-full md:w-[60%]">
-            <MapaIncidencias
-              incidencias={incidenciasFiltradas}
-              incidenciaSeleccionadaId={seleccionadaId}
-              onSeleccionar={setSeleccionadaId}
-              centro={municipio.centro_mapa}
-              sectores={municipio.sectores}
-              sectorEnfocado={sectorEnfocado}
+        {vista === 'estadisticas' ? (
+          <>
+            <PanelEvolucion incidencias={incidencias} />
+            <div className="pb-5">
+              <ResumenGastoMensual incidencias={incidencias} />
+            </div>
+            <MetricasPorDepartamento
+              incidencias={incidencias}
+              municipioId={municipio.id}
+              funcionarios={funcionarios}
             />
-          </div>
+            <PanelSectores
+              incidencias={incidencias}
+              sectores={municipio.sectores}
+              onSeleccionarSector={(sector) => {
+                setSectorEnfocado(sector)
+                setVista('mapa')
+              }}
+            />
+            <EstadisticasRapidas incidencias={incidencias} />
+          </>
+        ) : (
+          <section className="px-4 pb-6 sm:px-6">
+            {/* Una sola fila de filtros, arriba de todo lo que acota — antes
+                estaban metidos dentro del panel de la lista y no se veía que
+                también afectaban al mapa. */}
+            <div className="rounded-2xl bg-white p-3 ring-1 ring-borde">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="relative flex-1">
+                  <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-tinta-tenue" />
+                  <input
+                    type="text"
+                    value={filtroTexto}
+                    onChange={(e) => setFiltroTexto(e.target.value)}
+                    placeholder="Buscar por ticket, dirección o categoría"
+                    className="min-h-[40px] w-full rounded-xl bg-tinta-fuerte/[0.03] py-2 pl-9 pr-3 text-sm text-tinta ring-1 ring-borde transition-shadow placeholder:text-tinta-tenue focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
 
-          <div className="flex-1 overflow-y-auto border-t border-gray-200 bg-gray-50 md:h-full md:w-[40%] md:border-l md:border-t-0">
-            <div className="border-b border-gray-200 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-semibold text-gray-700">Pendientes ({pendientes.length})</h2>
-                <button
-                  onClick={() => exportarIncidenciasCsv(incidenciasFiltradas, `incidencias-${municipio.id}.csv`)}
-                  className="flex items-center gap-1 rounded-lg border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100"
-                  title="Exportar las incidencias filtradas a CSV (Excel)"
-                >
-                  <Download size={13} /> Exportar CSV
-                </button>
+                <div className="flex gap-1.5">
+                  {FILTROS_GRAVEDAD.map((nivel) => (
+                    <button
+                      key={nivel}
+                      onClick={() => setFiltroGravedad(nivel)}
+                      className={`min-h-[40px] rounded-xl px-3.5 text-sm font-medium transition-colors
+                        ${filtroGravedad === nivel
+                          ? 'bg-primary text-white shadow-tarjeta'
+                          : 'bg-tinta-fuerte/[0.04] text-tinta hover:bg-tinta-fuerte/[0.08]'}`}
+                    >
+                      {nivel}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="relative mt-2">
-                <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={filtroTexto}
-                  onChange={(e) => setFiltroTexto(e.target.value)}
-                  placeholder="Buscar por ticket, dirección, categoría..."
-                  className="w-full rounded-lg border border-gray-300 py-1.5 pl-8 pr-2 text-xs"
-                />
-              </div>
-
-              <div className="mt-2 flex gap-1.5">
-                {FILTROS_GRAVEDAD.map((nivel) => (
-                  <button
-                    key={nivel}
-                    onClick={() => setFiltroGravedad(nivel)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition-colors
-                      ${filtroGravedad === nivel ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
-                  >
-                    {nivel}
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-2 flex gap-2">
-                <select
-                  value={filtroCategoria}
-                  onChange={(e) => setFiltroCategoria(e.target.value)}
-                  className="flex-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs"
-                >
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className={CLASE_SELECT}>
                   <option value="Todas">Todas las categorías</option>
                   {GRUPOS_CATEGORIAS.map((grupo) => (
                     <optgroup key={grupo.nombre} label={grupo.nombre}>
@@ -204,46 +261,102 @@ export default function DashboardGeneralPage() {
                   ))}
                 </select>
 
-                <select
-                  value={filtroCuadrilla}
-                  onChange={(e) => setFiltroCuadrilla(e.target.value)}
-                  className="flex-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs"
-                >
+                <select value={filtroCuadrilla} onChange={(e) => setFiltroCuadrilla(e.target.value)} className={CLASE_SELECT}>
                   <option value="Todas">Todas las cuadrillas</option>
                   {cuadrillasMunicipio.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-              </div>
 
-              <div className="mt-2">
-                <select
-                  value={filtroDepartamento}
-                  onChange={(e) => setFiltroDepartamento(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs"
-                >
+                <select value={filtroDepartamento} onChange={(e) => setFiltroDepartamento(e.target.value)} className={CLASE_SELECT}>
                   <option value="Todas">Todos los departamentos</option>
                   {DEPARTAMENTOS.map((dep) => (
                     <option key={dep} value={dep}>{dep}</option>
                   ))}
                 </select>
               </div>
-            </div>
-            <ListaIncidencias
-              incidencias={pendientes}
-              incidenciaSeleccionadaId={seleccionadaId}
-              onSeleccionar={setSeleccionadaId}
-            />
-          </div>
 
-          {seleccionada && (
-            <PanelAsignacion
-              incidencia={seleccionada}
-              cuadrillas={cuadrillasMunicipio}
-              onCerrar={() => setSeleccionadaId(null)}
-            />
-          )}
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-tinta-suave">
+                  {incidenciasFiltradas.length} de {incidencias.length} reportes
+                  {hayFiltroActivo && (
+                    <button onClick={limpiarFiltros} className="ml-2 font-medium text-primary hover:underline">
+                      Limpiar filtros
+                    </button>
+                  )}
+                </p>
+                <button
+                  onClick={() => exportarIncidenciasCsv(incidenciasFiltradas, `incidencias-${municipio.id}.csv`)}
+                  className="flex min-h-[36px] items-center gap-1.5 rounded-xl bg-tinta-fuerte/[0.04] px-3 text-xs font-medium text-tinta transition-colors hover:bg-tinta-fuerte/[0.08]"
+                  title="Exportar los reportes filtrados a CSV (Excel)"
+                >
+                  <Download size={14} /> Exportar CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Altura acotada y explícita. En móvil el mapa tiene alto fijo y la
+                lista fluye con la página (sin scroll anidado, que es lo que hacía
+                que se sintiera "cortado"); desde md vuelven a ser dos paneles. */}
+            <div className="mt-4 overflow-hidden rounded-2xl bg-white ring-1 ring-borde md:flex md:h-[calc(100vh-13rem)] md:min-h-[480px]">
+              <div className="h-[48vh] w-full shrink-0 md:h-full md:w-[58%]">
+                <MapaIncidencias
+                  incidencias={incidenciasFiltradas}
+                  incidenciaSeleccionadaId={seleccionadaId}
+                  onSeleccionar={setSeleccionadaId}
+                  centro={municipio.centro_mapa}
+                  sectores={municipio.sectores}
+                  sectorEnfocado={sectorEnfocado}
+                />
+              </div>
+
+              <div className="flex flex-col border-t border-borde md:h-full md:w-[42%] md:border-l md:border-t-0">
+                <div className="flex items-center justify-between gap-2 border-b border-borde px-4 py-3">
+                  <h2 className="text-sm font-semibold text-tinta-fuerte">
+                    Esperando cuadrilla
+                    <span className="ml-1.5 rounded-full bg-tinta-fuerte/[0.06] px-2 py-0.5 text-xs font-medium text-tinta-suave">
+                      {pendientes.length}
+                    </span>
+                  </h2>
+                </div>
+                <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
+                  <ListaIncidencias
+                    incidencias={pendientes}
+                    incidenciaSeleccionadaId={seleccionadaId}
+                    onSeleccionar={setSeleccionadaId}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+      </main>
+
+      {/* El final de la página. Sin esto, el mapa era el último elemento y al
+          bajar no había forma de saber que ya no venía nada más. */}
+      <footer className="border-t border-borde bg-white px-4 py-6 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-tinta-suave">
+          <p>
+            {municipio.nombre} · Panel del Alcalde
+            {perfil && <span className="text-tinta-tenue"> · {perfil.nombre}</span>}
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link to="/dashboard/cuenta-publica" className="hover:text-primary hover:underline">Cuenta pública</Link>
+            <Link to={`/${municipio.id}/transparencia`} className="hover:text-primary hover:underline">Transparencia</Link>
+            <Link to={`/${municipio.id}`} className="hover:text-primary hover:underline">Ver como vecino</Link>
+          </div>
         </div>
+        <p className="mt-3 text-[11px] text-tinta-tenue">
+          Los datos se actualizan solos, en tiempo real. TuMuniAquí.
+        </p>
+      </footer>
+
+      {seleccionada && (
+        <PanelAsignacion
+          incidencia={seleccionada}
+          cuadrillas={cuadrillasMunicipio}
+          onCerrar={() => setSeleccionadaId(null)}
+        />
       )}
     </div>
   )

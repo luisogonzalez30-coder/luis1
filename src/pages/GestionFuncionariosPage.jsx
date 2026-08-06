@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, AlertTriangle, CheckCircle2, Trash2, UserPlus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { crearFuncionario, eliminarFuncionario, suscribirFuncionarios } from '../services/funcionariosService'
+import { useAccionUnica } from '../hooks/useAccionUnica'
 import { DEPARTAMENTOS } from '../utils/departamento'
 import Boton from '../components/common/Boton'
 import Spinner from '../components/common/Spinner'
@@ -19,7 +20,7 @@ const ETIQUETA_ROL = {
   TERRENO: 'Terreno',
 }
 
-const FORMULARIO_VACIO = { nombre: '', correo: '', contrasena: '', rol: 'JEFE_DEPARTAMENTO', departamento: DEPARTAMENTOS[0] }
+const FORMULARIO_VACIO = { nombre: '', correo: '', contrasena: '', telefono: '', rol: 'JEFE_DEPARTAMENTO', departamento: DEPARTAMENTOS[0] }
 
 // Solo ALCALDE_ADMIN — ver ruta en App.jsx. Reemplaza la creación manual de
 // funcionarios vía consola de Firebase (documentado como pendiente en
@@ -31,7 +32,6 @@ export default function GestionFuncionariosPage() {
   const [funcionarios, setFuncionarios] = useState([])
   const [cargandoLista, setCargandoLista] = useState(true)
   const [form, setForm] = useState(FORMULARIO_VACIO)
-  const [creando, setCreando] = useState(false)
   const [error, setError] = useState(null)
   const [exito, setExito] = useState(null)
   const [eliminandoUid, setEliminandoUid] = useState(null)
@@ -45,11 +45,14 @@ export default function GestionFuncionariosPage() {
     return unsubscribe
   }, [perfil?.municipio_id])
 
-  async function manejarSubmit(e) {
+  // useAccionUnica y no un booleano: el submit del <form> se dispara antes de
+  // que React repinte el botón deshabilitado. Acá eso importaba más que en
+  // otros formularios — un doble Enter creaba DOS cuentas de Firebase Auth, y
+  // borrar una cuenta de Auth no se puede desde la app (requiere la consola).
+  const [manejarSubmit, creando] = useAccionUnica(async (e) => {
     e.preventDefault()
     setError(null)
     setExito(null)
-    setCreando(true)
     try {
       await crearFuncionario({
         nombre: form.nombre.trim(),
@@ -57,6 +60,7 @@ export default function GestionFuncionariosPage() {
         contrasena: form.contrasena,
         rol: form.rol,
         departamento: form.departamento,
+        telefono: form.telefono,
         municipioId: perfil.municipio_id,
       })
       setExito(`Cuenta creada para ${form.nombre}. Comparte el correo y la contraseña con la persona por un canal seguro.`)
@@ -64,10 +68,8 @@ export default function GestionFuncionariosPage() {
     } catch (err) {
       console.error('[GestionFuncionariosPage] Error al crear funcionario:', err)
       setError(MENSAJES_ERROR[err.code] || 'No se pudo crear la cuenta. Intenta nuevamente.')
-    } finally {
-      setCreando(false)
     }
-  }
+  })
 
   async function manejarEliminar(funcionario) {
     if (!window.confirm(`¿Quitar el acceso de ${funcionario.nombre || funcionario.correo}? Podrá seguir existiendo como cuenta de correo, pero ya no podrá entrar al Dashboard.`)) {
@@ -117,6 +119,22 @@ export default function GestionFuncionariosPage() {
           onChange={(e) => setForm((f) => ({ ...f, correo: e.target.value }))}
           className="mb-4 w-full rounded-lg border border-gray-300 p-2.5"
         />
+
+        <label className="mb-1 block text-sm font-medium text-gray-700">
+          Teléfono <span className="font-normal text-gray-400">(opcional)</span>
+        </label>
+        <input
+          type="tel"
+          inputMode="tel"
+          value={form.telefono}
+          onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
+          placeholder="9 1234 5678"
+          className="w-full rounded-lg border border-gray-300 p-2.5"
+        />
+        <p className="mb-4 mt-1 text-xs text-gray-400">
+          Habilita el botón de WhatsApp en la tarjeta de su departamento, para contactarlo directo
+          desde el panel del Alcalde.
+        </p>
 
         <label className="mb-1 block text-sm font-medium text-gray-700">Contraseña temporal</label>
         <input

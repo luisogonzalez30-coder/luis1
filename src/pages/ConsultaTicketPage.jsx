@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Search, AlertTriangle, ArrowLeft, Camera, MessageSquare, Check } from 'lucide-react'
 import { buscarTicketPublico } from '../services/ticketsPublicosService'
 import { calificarIncidencia } from '../services/incidenciasService'
@@ -11,6 +11,7 @@ import BadgeEstado from '../components/common/BadgeEstado'
 import BadgeGravedad from '../components/common/BadgeGravedad'
 import Boton from '../components/common/Boton'
 import EstrellasCalificacion from '../components/common/EstrellasCalificacion'
+import BarraNavegacion from '../components/ciudadano/BarraNavegacion'
 
 const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
 
@@ -177,6 +178,9 @@ function TarjetaResultado({ resultado, onCalificado }) {
 // responde únicamente a ese teléfono — más simple para el vecino y sin pedirle
 // un dato personal sensible.
 export default function ConsultaTicketPage() {
+  // Solo viene definido en la ruta con comuna ("/:municipioSlug/estado"); en
+  // "/estado" a secas queda undefined y la página funciona igual que siempre.
+  const { municipioSlug } = useParams()
   const [numeroTicket, setNumeroTicket] = useState('')
   const [buscando, setBuscando] = useState(false)
   const [resultado, setResultado] = useState(null)
@@ -222,9 +226,17 @@ export default function ConsultaTicketPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-6">
-      <Link to="/" className="mb-4 flex items-center gap-1 text-sm text-gray-500">
-        <ArrowLeft size={16} /> Volver al inicio
+    <>
+    <div
+      className={`mx-auto flex min-h-screen max-w-md flex-col px-4 py-6 ${
+        municipioSlug ? 'pb-[calc(var(--alto-barra-inferior)+env(safe-area-inset-bottom,0px))]' : ''
+      }`}
+    >
+      <Link
+        to={municipioSlug ? `/${municipioSlug}` : '/'}
+        className="mb-4 flex items-center gap-1 text-sm text-tinta-suave hover:text-primary"
+      >
+        <ArrowLeft size={16} /> {municipioSlug ? 'Volver' : 'Volver al inicio'}
       </Link>
 
       <h1 className="text-xl font-bold text-gray-900">Consultar estado de un reporte</h1>
@@ -273,11 +285,16 @@ export default function ConsultaTicketPage() {
       )}
 
       {error && (
-        <div className="mt-4 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+        <div className="mt-4 flex items-start gap-2 rounded-xl bg-estado-critico/[0.07] p-3 text-sm text-estado-critico">
           <AlertTriangle size={18} className="mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
     </div>
+
+    {/* La barra solo aparece en la ruta con comuna (/:slug/estado). En "/estado"
+        a secas no hay tenant, así que no habría a dónde apuntar las pestañas. */}
+    {municipioSlug && <BarraNavegacion municipioSlug={municipioSlug} />}
+    </>
   )
 }

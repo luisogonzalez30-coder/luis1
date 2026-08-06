@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { HardHat, TrafficCone, Zap, Trash2, TreePine, Shield, FileText, Users, AlertTriangle } from 'lucide-react'
+import { HardHat, TrafficCone, Zap, Trash2, TreePine, Shield, FileText, Users, AlertTriangle, Phone, Mail } from 'lucide-react'
 import { DEPARTAMENTOS } from '../../utils/departamento'
 import { suscribirTrabajadoresMunicipio } from '../../services/trabajadoresService'
 import { esDelMesActual, horasDesde } from '../../utils/tiempo'
+import { enlaceWhatsapp } from '../../utils/equipo'
 import ModalTrabajadoresDepartamento from './ModalTrabajadoresDepartamento'
 
 const formatoCLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
@@ -40,7 +41,7 @@ function hoyISO() {
 // ESTADO_PROYECTO.md. Además muestra headcount/asistencia de un vistazo (sin
 // abrir el modal), calculado sobre una única suscripción a todos los
 // trabajadores del municipio (agrupados en memoria por departamento).
-export default function MetricasPorDepartamento({ incidencias, municipioId }) {
+export default function MetricasPorDepartamento({ incidencias, municipioId, funcionarios = [] }) {
   const [departamentoAbierto, setDepartamentoAbierto] = useState(null)
   const [trabajadores, setTrabajadores] = useState([])
 
@@ -94,11 +95,11 @@ export default function MetricasPorDepartamento({ incidencias, municipioId }) {
   const totalVencidasSla = conteos.reduce((total, c) => total + c.altaVencidaSla, 0)
 
   return (
-    <div className="border-b border-gray-200 bg-white p-4">
-      <h2 className="mb-3 font-semibold text-gray-700">Tickets sin resolver por departamento</h2>
+    <div className="px-4 pb-5 sm:px-6">
+      <h2 className="mb-3 text-sm font-semibold text-tinta-fuerte">Tickets sin resolver por departamento</h2>
 
       {totalVencidasSla > 0 && (
-        <div className="mb-3 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="mb-3 flex items-center gap-2 rounded-xl bg-estado-critico/[0.07] px-3.5 py-2.5 text-sm text-estado-critico ring-1 ring-estado-critico/20">
           <AlertTriangle size={16} className="shrink-0" />
           <span>
             <strong>{totalVencidasSla}</strong> {totalVencidasSla === 1 ? 'incidencia de gravedad Alta lleva' : 'incidencias de gravedad Alta llevan'} más
@@ -107,45 +108,103 @@ export default function MetricasPorDepartamento({ incidencias, municipioId }) {
         </div>
       )}
 
-      <div className="flex gap-3 overflow-x-auto pb-1">
+      {/* -mx/px: la fila se desplaza de borde a borde en móvil sin que las
+          tarjetas queden pegadas al filo de la pantalla. */}
+      <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
         {conteos.map(({ departamento, pendientes, asignadas, altaSinResolver, altaVencidaSla, sinResolver, totalTrabajadores, presentes, cuadrillasEnTerreno, gastoMes }) => {
           const Icono = ICONO_POR_DEPARTAMENTO[departamento] || Users
-          return (
-            <button
-              key={departamento}
-              onClick={() => setDepartamentoAbierto(departamento)}
-              className={`min-w-[200px] shrink-0 rounded-xl border p-3 text-left transition-colors hover:shadow-sm
-                ${altaVencidaSla > 0 ? 'border-red-300 bg-red-50/40 hover:border-red-400' : 'border-gray-200 hover:border-primary'}`}
-            >
-              <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
-                <Icono size={14} className="text-primary" />
-                {departamento}
-              </div>
-              <p className="mt-1 text-2xl font-bold text-gray-900">{sinResolver}</p>
-              <p className="mt-1 text-xs text-gray-500">{pendientes} pendientes · {asignadas} en proceso</p>
+          const jefe = funcionarios.find(
+            (f) => f.rol === 'JEFE_DEPARTAMENTO' && f.departamento === departamento
+          )
+          const whatsapp = enlaceWhatsapp(jefe?.telefono)
+          const urgente = altaVencidaSla > 0
 
-              <div className="mt-2 flex items-center justify-between border-t border-gray-100 pt-2 text-xs text-gray-500">
-                <span className="flex items-center gap-1">
-                  <Users size={12} />
-                  {totalTrabajadores > 0 ? `${presentes}/${totalTrabajadores} presentes` : 'Sin personal'}
-                </span>
-                {cuadrillasEnTerreno > 0 && (
-                  <span className="font-medium text-blue-700">{cuadrillasEnTerreno} en terreno</span>
+          // La tarjeta NO puede ser un <button>: adentro van enlaces de contacto
+          // y un <a> dentro de un <button> es HTML inválido (y el clic queda
+          // ambiguo). El área grande es el botón; el contacto vive fuera de él.
+          return (
+            <div
+              key={departamento}
+              className={`w-[230px] shrink-0 snap-start overflow-hidden rounded-2xl bg-white ring-1 transition-shadow duration-200 hover:shadow-tarjeta
+                ${urgente ? 'ring-estado-critico/30' : 'ring-borde'}`}
+            >
+              <button
+                onClick={() => setDepartamentoAbierto(departamento)}
+                className="w-full p-4 text-left transition-colors hover:bg-primary/[0.03]"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-medium text-tinta-suave">
+                  <Icono size={14} className="shrink-0 text-primary" />
+                  <span className="truncate">{departamento}</span>
+                </div>
+
+                <p className="mt-2 text-3xl font-semibold leading-none tracking-tight text-tinta-fuerte">
+                  {sinResolver}
+                </p>
+                <p className="mt-1.5 text-xs text-tinta-suave">
+                  {pendientes} pendientes · {asignadas} en proceso
+                </p>
+
+                {urgente ? (
+                  <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-estado-critico">
+                    <AlertTriangle size={12} className="shrink-0" />
+                    {altaVencidaSla} Alta sin asignar +{SLA_HORAS_ALTA_SIN_ASIGNAR}h
+                  </p>
+                ) : altaSinResolver > 0 ? (
+                  <p className="mt-2 text-xs font-semibold text-estado-critico">
+                    {altaSinResolver} de gravedad Alta
+                  </p>
+                ) : null}
+
+                <div className="mt-3 flex items-center justify-between gap-2 border-t border-borde pt-2.5 text-xs text-tinta-suave">
+                  <span className="flex items-center gap-1">
+                    <Users size={12} className="shrink-0" />
+                    {totalTrabajadores > 0 ? `${presentes}/${totalTrabajadores}` : 'Sin personal'}
+                  </span>
+                  {cuadrillasEnTerreno > 0 && (
+                    <span className="font-medium text-primary">{cuadrillasEnTerreno} en terreno</span>
+                  )}
+                </div>
+
+                <p className="mt-2 text-xs text-tinta-suave">
+                  Gasto del mes{' '}
+                  <span className="font-semibold text-tinta-fuerte">{formatoCLP.format(gastoMes)}</span>
+                </p>
+              </button>
+
+              {/* Contacto directo del jefe, sin abrir el modal: el caso de uso
+                  real es "esto está atrasado, llamo ahora". */}
+              <div className="flex items-center gap-1 border-t border-borde bg-tinta-fuerte/[0.02] px-2 py-1.5">
+                {jefe ? (
+                  <>
+                    <span className="mr-auto min-w-0 truncate pl-1.5 text-[11px] text-tinta-suave">
+                      {jefe.nombre}
+                    </span>
+                    {whatsapp && (
+                      <a
+                        href={whatsapp}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`Escribir por WhatsApp a ${jefe.nombre}`}
+                        className="toque rounded-lg text-tinta-suave transition-colors hover:bg-white hover:text-primary"
+                      >
+                        <Phone size={15} />
+                      </a>
+                    )}
+                    {jefe.correo && (
+                      <a
+                        href={`mailto:${jefe.correo}`}
+                        title={`Escribir un correo a ${jefe.nombre}`}
+                        className="toque rounded-lg text-tinta-suave transition-colors hover:bg-white hover:text-primary"
+                      >
+                        <Mail size={15} />
+                      </a>
+                    )}
+                  </>
+                ) : (
+                  <span className="px-1.5 py-2 text-[11px] text-tinta-tenue">Sin jefe asignado</span>
                 )}
               </div>
-
-              {altaVencidaSla > 0 ? (
-                <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-red-600">
-                  <AlertTriangle size={12} /> {altaVencidaSla} Alta sin asignar +{SLA_HORAS_ALTA_SIN_ASIGNAR}h
-                </p>
-              ) : altaSinResolver > 0 ? (
-                <p className="mt-1 text-xs font-semibold text-red-600">{altaSinResolver} de gravedad Alta</p>
-              ) : null}
-
-              <p className="mt-2 border-t border-gray-100 pt-2 text-xs text-gray-500">
-                Gasto este mes: <span className="font-semibold text-gray-900">{formatoCLP.format(gastoMes)}</span>
-              </p>
-            </button>
+            </div>
           )
         })}
       </div>
@@ -155,6 +214,8 @@ export default function MetricasPorDepartamento({ incidencias, municipioId }) {
           departamento={departamentoAbierto}
           municipioId={municipioId}
           cuadrillasActivas={cuadrillasActivasDelAbierto}
+          incidencias={incidencias}
+          funcionarios={funcionarios}
           soloLectura
           onCerrar={() => setDepartamentoAbierto(null)}
         />

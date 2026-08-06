@@ -129,6 +129,12 @@ function App() {
           <Route path="/:municipioSlug/privacidad" element={conSuspenso(<PrivacidadPage />)} />
           <Route path="/:municipioSlug/terminos" element={conSuspenso(<TerminosPage />)} />
 
+          {/* Misma consulta de ticket que "/estado", pero dentro de la comuna:
+              es lo que permite que la barra inferior del vecino tenga las tres
+              pestañas del mismo tenant. "/estado" se mantiene tal cual para los
+              links y QR ya repartidos. */}
+          <Route path="/:municipioSlug/estado" element={<ConsultaTicketPage />} />
+
           {/* Vista ciudadano pública, sin login, específica de cada municipalidad */}
           <Route path="/:municipioSlug" element={<CiudadanoPage />} />
         </Routes>

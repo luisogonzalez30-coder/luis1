@@ -8,6 +8,7 @@ import { COLOR_POR_GRAVEDAD } from '../utils/gravedad'
 import { promedioHoras } from '../utils/tiempo'
 import EncabezadoMunicipio from '../components/common/EncabezadoMunicipio'
 import Spinner from '../components/common/Spinner'
+import BarraNavegacion from '../components/ciudadano/BarraNavegacion'
 
 const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
 
@@ -114,9 +115,10 @@ export default function TransparenciaPage() {
   const maximoGravedad = Math.max(...conteoPorGravedad.map((c) => c.cantidad), 1)
 
   return (
-    <div className="mx-auto min-h-screen max-w-2xl px-4 py-6">
-      <Link to={`/${municipioSlug}`} className="mb-4 flex items-center gap-1 text-sm text-gray-500">
-        <ArrowLeft size={16} /> Volver al inicio
+    <>
+    <div className="mx-auto min-h-screen max-w-2xl px-4 py-6 pb-[calc(var(--alto-barra-inferior)+env(safe-area-inset-bottom,0px))]">
+      <Link to={`/${municipioSlug}`} className="mb-4 flex items-center gap-1 text-sm text-tinta-suave hover:text-primary">
+        <ArrowLeft size={16} /> Volver
       </Link>
 
       <EncabezadoMunicipio municipio={municipio} tituloDefecto="Transparencia" />
@@ -162,5 +164,8 @@ export default function TransparenciaPage() {
         </>
       )}
     </div>
+
+    <BarraNavegacion municipioSlug={municipioSlug} />
+    </>
   )
 }

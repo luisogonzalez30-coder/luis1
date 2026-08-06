@@ -381,13 +381,16 @@ export default function FormularioCiudadano({ municipio }) {
         </footer>
       )}
 
-      {/* Única puerta de entrada a las páginas públicas de la comuna. Antes, a
-          /transparencia solo se llegaba escribiendo la URL a mano. */}
-      <nav className="mt-8 flex flex-wrap justify-center gap-x-4 gap-y-1 border-t border-gray-100 pt-4 text-xs text-gray-400">
-        <Link to={`/${municipio.id}/transparencia`} className="underline">Cómo vamos</Link>
-        <Link to="/estado" className="underline">Consultar un reporte</Link>
-        <Link to={`/${municipio.id}/privacidad`} className="underline">Privacidad</Link>
-        <Link to={`/${municipio.id}/terminos`} className="underline">Términos</Link>
+      {/* Transparencia y consulta de reportes ya viven en la barra inferior;
+          acá quedan solo los textos legales, que tienen que ser alcanzables
+          desde donde el vecino entrega sus datos (Ley 21.719). */}
+      <nav className="mt-8 flex flex-wrap justify-center gap-x-4 gap-y-1 border-t border-borde pt-4 text-xs text-tinta-tenue">
+        <Link to={`/${municipio.id}/privacidad`} className="hover:text-primary hover:underline">
+          Política de privacidad
+        </Link>
+        <Link to={`/${municipio.id}/terminos`} className="hover:text-primary hover:underline">
+          Términos de servicio
+        </Link>
       </nav>
     </div>
   )

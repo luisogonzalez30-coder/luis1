@@ -8,7 +8,7 @@ import { authSecundario, db, COLECCIONES } from '../firebase/firebase'
 // caso (le niega acceso con un mensaje claro); el Alcalde puede reintentar
 // creando el perfil a mano en la consola, o borrar esa cuenta desde
 // Authentication > Users si prefiere empezar de nuevo.
-export async function crearFuncionario({ nombre, correo, contrasena, rol, departamento, municipioId }) {
+export async function crearFuncionario({ nombre, correo, contrasena, rol, departamento, telefono, municipioId }) {
   const credencial = await createUserWithEmailAndPassword(authSecundario, correo, contrasena)
   const uid = credencial.user.uid
 
@@ -18,6 +18,11 @@ export async function crearFuncionario({ nombre, correo, contrasena, rol, depart
       correo,
       rol,
       departamento: rol === 'JEFE_DEPARTAMENTO' ? departamento : 'todos',
+      // Opcional. Alimenta el botón de WhatsApp del contacto directo en las
+      // tarjetas de departamento del panel del Alcalde. Es un teléfono de
+      // trabajo, no un dato del vecino: no pasa por las reglas de datos
+      // personales de la política de privacidad, que cubre a los ciudadanos.
+      telefono: telefono?.trim() || '',
       municipio_id: municipioId,
       fecha_creacion: serverTimestamp(),
     })

@@ -32,35 +32,37 @@ function variacion(actual, anterior) {
 function Comparacion({ etiqueta, valorActual, valorAnterior, formato, mejorEsMenos = false, nota }) {
   const cambio = variacion(valorActual, valorAnterior)
 
-  let tono = 'text-gray-500'
+  let tono = 'text-tinta-suave'
   let Icono = Minus
   if (cambio !== null && Math.abs(cambio) >= 1) {
     const subio = cambio > 0
     const esBueno = mejorEsMenos ? !subio : subio
-    tono = esBueno ? 'text-[#0ca30c]' : 'text-[#d03b3b]'
+    tono = esBueno ? 'text-[#0a7d0a]' : 'text-estado-critico'
     Icono = subio ? TrendingUp : TrendingDown
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{etiqueta}</p>
-      <p className="mt-2 text-2xl font-semibold leading-none text-gray-900">{formato(valorActual)}</p>
+    <div className="rounded-2xl bg-white p-5 ring-1 ring-borde">
+      <p className="text-xs font-medium text-tinta-suave">{etiqueta}</p>
+      <p className="mt-2.5 text-3xl font-semibold leading-none tracking-tight text-tinta-fuerte">
+        {formato(valorActual)}
+      </p>
 
-      <div className="mt-2 flex items-center gap-1.5 text-xs">
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-1.5 text-xs">
         {cambio === null ? (
-          <span className="text-gray-400">Sin datos del mes anterior para comparar</span>
+          <span className="text-tinta-tenue">Sin datos del mes anterior para comparar</span>
         ) : (
           <>
             <Icono size={13} className={tono} />
             <span className={`font-medium ${tono}`}>
               {cambio > 0 ? '+' : ''}{Math.round(cambio)}%
             </span>
-            <span className="text-gray-500">vs. mes pasado ({formato(valorAnterior)})</span>
+            <span className="text-tinta-suave">vs. mes pasado ({formato(valorAnterior)})</span>
           </>
         )}
       </div>
 
-      {nota && <p className="mt-1.5 text-[11px] leading-snug text-gray-400">{nota}</p>}
+      {nota && <p className="mt-2 text-[11px] leading-snug text-tinta-tenue">{nota}</p>}
     </div>
   )
 }
@@ -90,12 +92,12 @@ export default function PanelEvolucion({ incidencias }) {
   const formatoHoras = (v) => (v === null ? '—' : v < 24 ? `${Math.round(v)} h` : `${(v / 24).toFixed(1)} d`)
 
   return (
-    <section className="border-b border-gray-200 bg-gray-50 px-4 py-5">
-      <h2 className="mb-3 text-sm font-semibold capitalize text-gray-700">
+    <section className="px-4 pb-5 sm:px-6">
+      <h2 className="mb-3 text-sm font-semibold text-tinta-fuerte">
         Cómo vamos en {nombreMes} respecto del mes pasado
       </h2>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Comparacion
           etiqueta="Trabajos terminados"
           valorActual={actual.cerradas}

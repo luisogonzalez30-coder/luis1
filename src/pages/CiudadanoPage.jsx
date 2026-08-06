@@ -3,6 +3,7 @@ import { AlertTriangle, MapPinOff } from 'lucide-react'
 import { useMunicipio } from '../hooks/useMunicipio'
 import Spinner from '../components/common/Spinner'
 import FormularioCiudadano from '../components/ciudadano/FormularioCiudadano'
+import BarraNavegacion from '../components/ciudadano/BarraNavegacion'
 
 export default function CiudadanoPage() {
   const { municipioSlug } = useParams()
@@ -37,5 +38,14 @@ export default function CiudadanoPage() {
     )
   }
 
-  return <FormularioCiudadano municipio={municipio} />
+  // pb: deja libre el alto de la barra inferior fija (más la zona segura del
+  // iPhone), si no el último botón del formulario queda debajo de ella.
+  return (
+    <>
+      <div className="pb-[calc(var(--alto-barra-inferior)+env(safe-area-inset-bottom,0px))]">
+        <FormularioCiudadano municipio={municipio} />
+      </div>
+      <BarraNavegacion municipioSlug={municipio.id} />
+    </>
+  )
 }
