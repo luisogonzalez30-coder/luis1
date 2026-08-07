@@ -1,36 +1,27 @@
 import { useState } from 'react'
-import { ChevronLeft, Camera, AlertTriangle } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import BadgeEstado from '../common/BadgeEstado'
 import EnlaceGoogleMaps from '../common/EnlaceGoogleMaps'
 import GaleriaFotos from '../common/GaleriaFotos'
 import ListaSeguimientos from '../common/ListaSeguimientos'
-import Boton from '../common/Boton'
+import FormularioCierreGasto from '../common/FormularioCierreGasto'
 import { marcarResuelto } from '../../services/incidenciasService'
 import { conTimeout } from '../../utils/timeout'
-import { formatearFecha, formatearDuracion } from '../../utils/tiempo'
+import { formatearFecha } from '../../utils/tiempo'
 
 export default function DetalleTarea({ incidencia, onVolver }) {
-  const [fotoDespues, setFotoDespues] = useState(null)
-  const [horasReales, setHorasReales] = useState('')
-  const [costoFinal, setCostoFinal] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState(null)
   const [resuelto, setResuelto] = useState(incidencia.estado === 'Resuelto')
 
-  const previewUrl = fotoDespues ? URL.createObjectURL(fotoDespues) : null
-  const gastoValido = Number(horasReales) > 0 && Number(costoFinal) >= 0
   const trabajadoresAsignados = incidencia.presupuesto_estimado?.trabajadores_asignados || []
 
-  async function manejarResolucion() {
-    if (!gastoValido) return
+  async function manejarResolucion(fotoDespues, comprobante, gastoReal) {
     setError(null)
     setEnviando(true)
     try {
       await conTimeout(
-        marcarResuelto(incidencia, fotoDespues, {
-          horas_reales: Number(horasReales),
-          costo_final: Number(costoFinal),
-        }),
+        marcarResuelto(incidencia, fotoDespues, comprobante, gastoReal),
         20000,
         'Esto está tardando demasiado. Revisa tu conexión a internet e intenta nuevamente.'
       )
@@ -83,52 +74,7 @@ export default function DetalleTarea({ incidencia, onVolver }) {
         </div>
       ) : (
         <div className="mt-6">
-          <p className="mb-1 text-xs font-medium uppercase text-gray-400">Foto del trabajo terminado (opcional)</p>
-
-          {previewUrl ? (
-            <img src={previewUrl} alt="Después" className="mb-3 max-h-56 w-full rounded-xl object-cover" />
-          ) : (
-            <label className="mb-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 p-8 text-gray-500">
-              <Camera size={28} />
-              <span className="text-sm font-medium">Subir foto de término</span>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) => setFotoDespues(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-            </label>
-          )}
-
-          <label className="mb-1 block text-sm font-medium text-gray-700">Horas reales trabajadas</label>
-          <input
-            type="number"
-            min="1"
-            value={horasReales}
-            onChange={(e) => setHorasReales(e.target.value)}
-            className="mb-3 w-full rounded-lg border border-gray-300 p-2.5"
-          />
-
-          <label className="mb-1 block text-sm font-medium text-gray-700">Costo final de materiales usados (CLP)</label>
-          <input
-            type="number"
-            min="0"
-            value={costoFinal}
-            onChange={(e) => setCostoFinal(e.target.value)}
-            className="mb-3 w-full rounded-lg border border-gray-300 p-2.5"
-          />
-
-          {error && (
-            <div className="mb-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
-              <AlertTriangle size={18} className="mt-0.5 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <Boton className="w-full" cargando={enviando} disabled={!gastoValido} onClick={manejarResolucion}>
-            Marcar como Resuelto
-          </Boton>
+          <FormularioCierreGasto incidencia={incidencia} guardando={enviando} error={error} onResolver={manejarResolucion} />
         </div>
       )}
     </div>

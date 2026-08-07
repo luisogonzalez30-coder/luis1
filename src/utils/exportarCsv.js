@@ -20,7 +20,17 @@ const COLUMNAS = [
   { titulo: 'Dirección', obtener: (inc) => inc.direccion_texto },
   { titulo: 'Fecha creación', obtener: (inc) => formatearFecha(inc.fecha_creacion) },
   { titulo: 'Fecha cierre', obtener: (inc) => formatearFecha(inc.fecha_cierre) },
+  { titulo: 'Horas reales', obtener: (inc) => inc.gasto_real?.horas_reales ?? '' },
+  { titulo: 'Costo mano de obra (CLP)', obtener: (inc) => inc.gasto_real?.costo_mano_obra ?? '' },
+  {
+    titulo: 'Materiales usados',
+    obtener: (inc) =>
+      inc.gasto_real?.materiales_usados?.map((m) => `${m.descripcion} ($${m.costo})`).join('; ') ?? '',
+  },
   { titulo: 'Costo final (CLP)', obtener: (inc) => inc.gasto_real?.costo_final ?? '' },
+  { titulo: 'Requiere revisión', obtener: (inc) => (inc.gasto_real?.requiere_revision ? 'Sí' : 'No') },
+  { titulo: 'Justificación', obtener: (inc) => inc.gasto_real?.justificacion ?? '' },
+  { titulo: 'Cerrado por', obtener: (inc) => inc.gasto_real?.cerrado_por ?? '' },
 ]
 
 // Exporta un array de incidencias a un .csv y dispara la descarga en el navegador.

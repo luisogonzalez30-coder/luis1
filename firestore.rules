@@ -36,6 +36,44 @@ service cloud.firestore {
           perfilFuncionario().departamento == incidenciaData.departamento);
     }
 
+    // --- Control de gasto real (FormularioCierreGasto.jsx) ---
+    // Mismo umbral que UMBRAL_DESVIACION en utils/costeo.js: si cambias uno,
+    // cambia el otro. Se repite acá porque las reglas no pueden importar JS.
+    //
+    // La UI ya calcula esto y exige justificación cuando corresponde, pero un
+    // cliente que llame a Firestore directo (sin pasar por la app) podría
+    // mandar requiere_revision:false aunque los números estén disparados —
+    // por eso esta función NO confía en el campo que manda el cliente, lo
+    // vuelve a calcular comparando contra el presupuesto ya guardado
+    // (resource.data, que el cliente no controla en este request).
+    function desviacionSignificativa(presupuesto, gastoReal) {
+      let horasEst = presupuesto.get('horas_estimadas', 0);
+      let costoEst = presupuesto.get('costo_aprox', 0);
+      return (horasEst > 0 && gastoReal.horas_reales > horasEst * 1.4) ||
+        (costoEst > 0 && gastoReal.costo_final > costoEst * 1.4);
+    }
+
+    // Exige que horas_reales/costo_final tengan forma válida, y que si el
+    // cierre se desvía del presupuesto (según la función de arriba, no según
+    // lo que mande el cliente) venga con una justificación de texto no vacía.
+    // No valida el monto exacto de costo_final (sumaría tarifa_hora de cada
+    // trabajador, que las reglas no pueden recorrer con un loop) — es defensa
+    // en profundidad para la desviación y la justificación, no un recálculo
+    // completo del costeo.
+    function gastoRealValido(incidenciaAntes, gastoReal) {
+      return gastoReal.horas_reales is number && gastoReal.horas_reales > 0 &&
+        gastoReal.costo_final is number && gastoReal.costo_final >= 0 &&
+        (!desviacionSignificativa(incidenciaAntes.get('presupuesto_estimado', {}), gastoReal) ||
+          (gastoReal.get('justificacion', '') is string && gastoReal.justificacion.size() > 0));
+    }
+
+    // true si este update no toca gasto_real, o si lo toca con un valor válido.
+    function noTocaGastoRealOEsValido(incidenciaAntes, datosNuevos) {
+      return !('gasto_real' in datosNuevos) ||
+        datosNuevos.gasto_real == null ||
+        gastoRealValido(incidenciaAntes, datosNuevos.gasto_real);
+    }
+
     // Roster de trabajadores (Órdenes de Trabajo y Costeo, ver ESTADO_PROYECTO.md):
     // a diferencia de incidencias, acá SOLO el Jefe de Departamento de ESE
     // departamento puede escribir (ni el Alcalde ni otro Jefe) — es su propia
@@ -165,7 +203,8 @@ service cloud.firestore {
                       request.resource.data.dispositivo_id.size() > 0 &&
                       respetaEnfriamiento(request.resource.data.dispositivo_id);
 
-      allow update: if puedeGestionarIncidencia(resource.data) ||
+      allow update: if (puedeGestionarIncidencia(resource.data) &&
+                          noTocaGastoRealOEsValido(resource.data, request.resource.data)) ||
                       esVotoValidoIncidencia(resource.data, request.resource.data) ||
                       esCalificacionValida(resource.data, request.resource.data);
 

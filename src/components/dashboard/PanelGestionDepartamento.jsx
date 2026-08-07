@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X, User, Camera, AlertTriangle, MapPin } from 'lucide-react'
+import { X, User, AlertTriangle, MapPin, Receipt } from 'lucide-react'
 import BadgeEstado from '../common/BadgeEstado'
 import BadgeGravedad from '../common/BadgeGravedad'
 import EnlaceGoogleMaps from '../common/EnlaceGoogleMaps'
@@ -7,6 +7,7 @@ import GaleriaFotos from '../common/GaleriaFotos'
 import ListaSeguimientos from '../common/ListaSeguimientos'
 import Boton from '../common/Boton'
 import ModalPresupuesto from './ModalPresupuesto'
+import FormularioCierreGasto from '../common/FormularioCierreGasto'
 import MapaSeleccionUbicacion from '../ciudadano/MapaSeleccionUbicacion'
 import { asignarCuadrilla, marcarResuelto } from '../../services/incidenciasService'
 import { suscribirUbicacionesCuadrilla, actualizarUbicacionCuadrilla } from '../../services/ubicacionesCuadrillaService'
@@ -14,24 +15,21 @@ import { conTimeout } from '../../utils/timeout'
 import { formatearFecha, formatearDuracion } from '../../utils/tiempo'
 import { calcularCostoManoObra as costoManoObra } from '../../utils/costeo'
 
+const formatoCLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
+
 // Panel de gestión para el Jefe de Departamento: a diferencia de PanelAsignacion
 // (solo asigna, lo usa el Alcalde) y DetalleTarea (solo resuelve, lo usa Terreno),
 // este panel cubre todo el ciclo dentro del departamento del jefe: Pendiente ->
 // presupuesto + asigna cuadrilla -> En Proceso -> gasto real + marca resuelto -> Resuelto.
-export default function PanelGestionDepartamento({ incidencia, cuadrillas = [], onCerrar }) {
+export default function PanelGestionDepartamento({ incidencia, incidencias = [], cuadrillas = [], onCerrar }) {
   const [cuadrilla, setCuadrilla] = useState(incidencia.cuadrilla_asignada || '')
   const [mostrarModalPresupuesto, setMostrarModalPresupuesto] = useState(false)
-  const [fotoDespues, setFotoDespues] = useState(null)
-  const [horasReales, setHorasReales] = useState('')
-  const [costoFinal, setCostoFinal] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState(null)
   const [ubicacionesCuadrilla, setUbicacionesCuadrilla] = useState([])
   const [editandoUbicacion, setEditandoUbicacion] = useState(false)
   const [guardandoUbicacion, setGuardandoUbicacion] = useState(false)
 
-  const previewUrl = fotoDespues ? URL.createObjectURL(fotoDespues) : null
-  const gastoValido = Number(horasReales) > 0 && Number(costoFinal) >= 0
   const trabajadoresAsignados = incidencia.presupuesto_estimado?.trabajadores_asignados || []
 
   useEffect(() => {
@@ -79,16 +77,12 @@ export default function PanelGestionDepartamento({ incidencia, cuadrillas = [], 
     }
   }
 
-  async function manejarResolucion() {
-    if (!gastoValido) return
+  async function manejarResolucion(fotoDespues, comprobante, gastoReal) {
     setError(null)
     setGuardando(true)
     try {
       await conTimeout(
-        marcarResuelto(incidencia, fotoDespues, {
-          horas_reales: Number(horasReales),
-          costo_final: Number(costoFinal),
-        }),
+        marcarResuelto(incidencia, fotoDespues, comprobante, gastoReal),
         20000,
         'Esto está tardando demasiado. Revisa tu conexión a internet e intenta nuevamente.'
       )
@@ -219,70 +213,10 @@ export default function PanelGestionDepartamento({ incidencia, cuadrillas = [], 
             )}
           </div>
 
-          {incidencia.presupuesto_estimado && (
-            <div className="mt-2 rounded-lg bg-gray-50 p-2 text-xs text-gray-600">
-              {trabajadoresAsignados.length > 0 && (
-                <p>
-                  Personal ({trabajadoresAsignados.length}): {trabajadoresAsignados.map((t) => t.nombre).join(', ')}
-                </p>
-              )}
-              <p>Horas estimadas: {incidencia.presupuesto_estimado.horas_estimadas}h</p>
-              {trabajadoresAsignados.length > 0 && (
-                <p>
-                  Costo mano de obra (estimado): $
-                  {costoManoObra(trabajadoresAsignados, incidencia.presupuesto_estimado.horas_estimadas).toLocaleString('es-CL')}
-                </p>
-              )}
-              <p>Materiales: {incidencia.presupuesto_estimado.materiales}</p>
-              <p>Costo aprox total: ${incidencia.presupuesto_estimado.costo_aprox.toLocaleString('es-CL')}</p>
-            </div>
-          )}
-
-          <p className="mb-1 mt-3 text-xs font-medium uppercase text-gray-400">Foto del trabajo terminado (opcional)</p>
-
-          {previewUrl ? (
-            <img src={previewUrl} alt="Después" className="mb-3 max-h-56 w-full rounded-xl object-cover" />
-          ) : (
-            <label className="mb-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 p-6 text-gray-500">
-              <Camera size={24} />
-              <span className="text-sm font-medium">Subir foto de término</span>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) => setFotoDespues(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-            </label>
-          )}
-
-          <label className="mb-1 block text-sm font-medium text-gray-700">Horas reales trabajadas</label>
-          <input
-            type="number"
-            min="1"
-            value={horasReales}
-            onChange={(e) => setHorasReales(e.target.value)}
-            className="mb-3 w-full rounded-lg border border-gray-300 p-2.5"
-          />
-
-          {trabajadoresAsignados.length > 0 && Number(horasReales) > 0 && (
-            <p className="mb-3 rounded-lg bg-blue-50 p-2 text-xs text-blue-800">
-              Costo de mano de obra (calculado): ${costoManoObra(trabajadoresAsignados, Number(horasReales)).toLocaleString('es-CL')}
-            </p>
-          )}
-
-          <label className="mb-1 block text-sm font-medium text-gray-700">Costo final de materiales usados (CLP)</label>
-          <input
-            type="number"
-            min="0"
-            value={costoFinal}
-            onChange={(e) => setCostoFinal(e.target.value)}
-            className="mb-3 w-full rounded-lg border border-gray-300 p-2.5"
-          />
-
-          <Boton className="w-full" cargando={guardando} disabled={!gastoValido} onClick={manejarResolucion}>
-            Marcar como Resuelto
-          </Boton>
+          <div className="mt-3">
+            {/* Sin prop "error": ya se muestra en el bloque global de arriba. */}
+            <FormularioCierreGasto incidencia={incidencia} guardando={guardando} onResolver={manejarResolucion} />
+          </div>
         </div>
       )}
 
@@ -291,7 +225,7 @@ export default function PanelGestionDepartamento({ incidencia, cuadrillas = [], 
           <div className="rounded-xl bg-green-50 p-4 text-center text-green-800">
             Esta incidencia ya fue marcada como resuelta.
           </div>
-          <div className="mt-3 rounded-lg bg-gray-50 p-2 text-xs text-gray-600">
+          <div className="mt-3 rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
             {trabajadoresAsignados.length > 0 && (
               <p>
                 Personal ({trabajadoresAsignados.length}): {trabajadoresAsignados.map((t) => t.nombre).join(', ')}
@@ -300,13 +234,51 @@ export default function PanelGestionDepartamento({ incidencia, cuadrillas = [], 
             {incidencia.gasto_real && (
               <>
                 <p>Horas reales: {incidencia.gasto_real.horas_reales}h</p>
-                {trabajadoresAsignados.length > 0 && (
-                  <p>
-                    Costo mano de obra (real): $
-                    {costoManoObra(trabajadoresAsignados, incidencia.gasto_real.horas_reales).toLocaleString('es-CL')}
-                  </p>
+                <p>
+                  Costo mano de obra:{' '}
+                  {formatoCLP.format(
+                    incidencia.gasto_real.costo_mano_obra ??
+                      costoManoObra(trabajadoresAsignados, incidencia.gasto_real.horas_reales)
+                  )}
+                </p>
+                {incidencia.gasto_real.materiales_usados?.length > 0 ? (
+                  <div className="mt-1">
+                    <p className="font-medium text-gray-700">Materiales usados:</p>
+                    <ul className="ml-3 list-disc">
+                      {incidencia.gasto_real.materiales_usados.map((m, i) => (
+                        <li key={i}>
+                          {m.descripcion} — {formatoCLP.format(m.costo)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p>Materiales usados: ninguno reportado</p>
                 )}
-                <p>Costo final total: ${incidencia.gasto_real.costo_final.toLocaleString('es-CL')}</p>
+                {incidencia.gasto_real.comprobante_url && (
+                  <a
+                    href={incidencia.gasto_real.comprobante_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 flex items-center gap-1 text-primary hover:underline"
+                  >
+                    <Receipt size={12} /> Ver comprobante
+                  </a>
+                )}
+                <p className="mt-1 border-t border-gray-200 pt-1 text-sm font-semibold text-gray-900">
+                  Costo final total: {formatoCLP.format(incidencia.gasto_real.costo_final)}
+                </p>
+                {incidencia.gasto_real.requiere_revision && (
+                  <div className="mt-2 rounded-lg bg-orange-50 p-2 text-orange-800">
+                    <p className="flex items-center gap-1 font-medium">
+                      <AlertTriangle size={12} /> Se salió del presupuesto — revisar
+                    </p>
+                    {incidencia.gasto_real.justificacion && <p className="mt-0.5">"{incidencia.gasto_real.justificacion}"</p>}
+                  </div>
+                )}
+                {incidencia.gasto_real.cerrado_por && (
+                  <p className="mt-1 text-gray-400">Cerrado por: {incidencia.gasto_real.cerrado_por}</p>
+                )}
               </>
             )}
           </div>
@@ -317,6 +289,8 @@ export default function PanelGestionDepartamento({ incidencia, cuadrillas = [], 
         <ModalPresupuesto
           municipioId={incidencia.municipio_id}
           departamento={incidencia.departamento}
+          categoria={incidencia.categoria}
+          incidencias={incidencias}
           guardando={guardando}
           onCancelar={() => setMostrarModalPresupuesto(false)}
           onGuardar={manejarGuardarPresupuesto}

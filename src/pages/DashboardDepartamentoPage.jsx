@@ -178,6 +178,7 @@ export default function DashboardDepartamentoPage() {
         {seleccionada && (
           <PanelGestionDepartamento
             incidencia={seleccionada}
+            incidencias={incidencias}
             cuadrillas={cuadrillasMunicipio}
             onCerrar={() => setSeleccionadaId(null)}
           />

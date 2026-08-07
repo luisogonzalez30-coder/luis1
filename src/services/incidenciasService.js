@@ -268,13 +268,15 @@ export async function asignarCuadrilla(incidencia, cuadrilla, presupuestoEstimad
 }
 
 // Usado por la Vista Cuadrilla Terreno y por el Jefe de Departamento (cuando resuelve
-// directo): cierra la incidencia y, si se adjuntó, sube la foto de "después". La foto
-// es opcional (igual que en el reporte del ciudadano) para no bloquear el cierre si
-// Storage no está disponible; gastoReal SÍ es obligatorio (horas_reales/costo_final)
+// directo): cierra la incidencia y, si se adjuntaron, sube la foto de "después" y el
+// comprobante de materiales. Ambas fotos son opcionales (igual que en el reporte del
+// ciudadano) para no bloquear el cierre si Storage no está disponible; gastoReal SÍ es
+// obligatorio (horas_reales/costo_final/materiales_usados, ver FormularioCierreGasto.jsx)
 // — alimenta el KPI financiero del Alcalde (ResumenGastoMensual.jsx), así que ambas
-// vistas de cierre validan estos campos en el formulario antes de llamar a esta función.
+// vistas de cierre validan estos campos en el formulario antes de llamar a esta función,
+// y firestore.rules los vuelve a validar del lado del servidor (gastoRealValido).
 // Recibe la incidencia completa (no solo el id) por la misma razón que asignarCuadrilla.
-export async function marcarResuelto(incidencia, fotoDespues, gastoReal) {
+export async function marcarResuelto(incidencia, fotoDespues, comprobante, gastoReal) {
   const fechaCierre = serverTimestamp()
 
   await updateDoc(doc(db, COLECCIONES.INCIDENCIAS, incidencia.id), {
@@ -292,6 +294,14 @@ export async function marcarResuelto(incidencia, fotoDespues, gastoReal) {
       .then((url) => updateDoc(doc(db, COLECCIONES.INCIDENCIAS, incidencia.id), { foto_despues_url: url }))
       .catch((error) => {
         console.error('[incidenciasService] Incidencia resuelta pero falló la subida de foto:', error)
+      })
+  }
+
+  if (comprobante) {
+    subirImagen(comprobante, `incidencias/${incidencia.id}/comprobante`)
+      .then((url) => updateDoc(doc(db, COLECCIONES.INCIDENCIAS, incidencia.id), { 'gasto_real.comprobante_url': url }))
+      .catch((error) => {
+        console.error('[incidenciasService] Incidencia resuelta pero falló la subida del comprobante:', error)
       })
   }
 }
