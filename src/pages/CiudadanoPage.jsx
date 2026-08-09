@@ -3,7 +3,6 @@ import { AlertTriangle, MapPinOff } from 'lucide-react'
 import { useMunicipio } from '../hooks/useMunicipio'
 import Spinner from '../components/common/Spinner'
 import FormularioCiudadano from '../components/ciudadano/FormularioCiudadano'
-import BarraNavegacion from '../components/ciudadano/BarraNavegacion'
 
 export default function CiudadanoPage() {
   const { municipioSlug } = useParams()
@@ -38,14 +37,10 @@ export default function CiudadanoPage() {
     )
   }
 
-  // pb: deja libre el alto de la barra inferior fija (más la zona segura del
-  // iPhone), si no el último botón del formulario queda debajo de ella.
-  return (
-    <>
-      <div className="pb-[calc(var(--alto-barra-inferior)+env(safe-area-inset-bottom,0px))]">
-        <FormularioCiudadano municipio={municipio} />
-      </div>
-      <BarraNavegacion municipioSlug={municipio.id} />
-    </>
-  )
+  // Sin BarraNavegacion a propósito: mientras se está llenando el formulario,
+  // el botón "Reportar" de esa barra queda fijo en pantalla sin hacer nada
+  // (ya se está ahí) — confundía a la gente, que lo tocaba pensando que era
+  // el paso siguiente en vez de "Siguiente" (que sí está en el formulario).
+  // Las demás pantallas (estado, transparencia) sí la mantienen.
+  return <FormularioCiudadano municipio={municipio} />
 }
