@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
+import { useEffect, useState } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet'
 import { Satellite, Map as MapIcon } from 'lucide-react'
 import { aplicarFixIconosLeaflet } from '../../utils/leafletIconFix'
 import { crearIconoPin } from '../../utils/iconoPin'
@@ -28,6 +28,25 @@ const CAPAS = {
   },
 }
 
+// Mueve el mapa cuando la ubicación la fijó algo que NO es el mapa mismo: el
+// botón de GPS o el buscador de direcciones. Sin esto, buscar una dirección
+// dejaba el pin fuera de la vista (el mapa solo se centra solo la primera vez,
+// ver el comentario de la `key` más abajo) y el vecino no tenía forma de saber
+// que la búsqueda había funcionado.
+//
+// Depende de `enfoque.id`, no de las coordenadas: así un toque en el mapa —que
+// también cambia las coordenadas— no arrastra la vista debajo del dedo.
+function CentradorMapa({ enfoque }) {
+  const mapa = useMap()
+
+  useEffect(() => {
+    if (typeof enfoque?.lat !== 'number' || typeof enfoque?.lng !== 'number') return
+    mapa.setView([enfoque.lat, enfoque.lng], enfoque.zoom || 17)
+  }, [enfoque?.id])
+
+  return null
+}
+
 function ManejadorClicksMapa({ onSeleccionar }) {
   useMapEvents({
     click(e) {
@@ -43,7 +62,7 @@ function ManejadorClicksMapa({ onSeleccionar }) {
 // `incidenciasCercanas` (opcional) pinta además los reportes activos de la
 // municipalidad — estilo Waze: tocar uno abre un popup con la opción de votar
 // "+1" en vez de crear un reporte duplicado (ver PopupVotoIncidencia.jsx).
-export default function MapaSeleccionUbicacion({ coordenadas, centroPorDefecto, onCambiar, incidenciasCercanas = [] }) {
+export default function MapaSeleccionUbicacion({ coordenadas, centroPorDefecto, enfoque, onCambiar, incidenciasCercanas = [] }) {
   const [capa, setCapa] = useState('calle')
 
   const centroInicial = coordenadas
@@ -60,6 +79,7 @@ export default function MapaSeleccionUbicacion({ coordenadas, centroPorDefecto, 
       <MapContainer key={coordenadas ? 'con-ubicacion' : 'sin-ubicacion'} center={centroInicial} zoom={coordenadas ? 16 : 13} className="h-full w-full">
         <TileLayer key={capa} attribution={CAPAS[capa].attribution} url={CAPAS[capa].url} />
         <ManejadorClicksMapa onSeleccionar={onCambiar} />
+        <CentradorMapa enfoque={enfoque} />
 
         {incidenciasCercanas
           .filter((t) => t.coordenadas?.lat && t.coordenadas?.lng)

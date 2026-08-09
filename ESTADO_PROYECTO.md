@@ -256,8 +256,8 @@ Validado en `firestore.rules` igual que `nivel_gravedad` (si el cliente manda `d
 
 ## 11. Vista Ciudadano — wizard de 3 pasos (`src/components/ciudadano/`)
 
-1. **PasoUbicacion.jsx** — botón GPS automático **+ mapa interactivo** (`MapaSeleccionUbicacion.jsx`) donde el ciudadano puede tocar/arrastrar para fijar la ubicación a mano. Toggle "Ver satelital" (Esri World Imagery) / "Ver calles" (OSM) abajo a la derecha del mapa.
-2. **PasoCategoria.jsx** — select agrupado de 58 categorías, aviso de seguridad condicional, "Referencias de ubicación (opcional)" (placeholder rural: *"Ej: Pasando el puente, frente a la escuela"*), "Detalles adicionales (opcional)".
+1. **PasoUbicacion.jsx** — **tres formas de fijar la ubicación** (ver §37): botón GPS automático, **buscador de direcciones escritas** (`BuscadorDireccion.jsx`, 09-ago-2026) y **mapa interactivo** (`MapaSeleccionUbicacion.jsx`) donde el ciudadano puede tocar/arrastrar para fijar la ubicación a mano. Toggle "Ver satelital" (Esri World Imagery) / "Ver calles" (OSM) abajo a la derecha del mapa.
+2. **PasoCategoria.jsx** — select agrupado de 58 categorías, aviso de seguridad condicional, "¿Dónde exactamente?" (placeholder rural: *"Ej: Pasando el puente, frente a la escuela"*; llega prellenado con la dirección del punto marcado, ver §37.5), "Cuéntanos qué pasa". Los dos campos de texto son obligatorios desde §29.
 3. **PasoFoto.jsx** — hasta **3 fotos opcionales** (`fotos_antes_urls: string[]`, antes era una sola `foto_antes_url: string` — ver migración de esquema más abajo) + checkbox **"Quiero que me avisen cuando resuelvan mi reporte"** (31-jul-2026, antes decía "Quiero dejar mis datos de contacto (opcional)" — se reformuló para que quede explícito el motivo de dejar los datos) con una advertencia visible en ámbar: *"sin tu RUT y un WhatsApp o correo, no vamos a poder avisarte cuando se resuelva tu problema"*. Al marcarlo, revela "Tu nombre" / **"Tu RUT"** (nuevo) / "WhatsApp o correo". **La app sigue siendo 100% anónima por defecto** — nada de esto es obligatorio, es una decisión explícita del usuario tras pedir en un principio que el RUT fuera obligatorio y decidir después no hacerlo así.
 
 `FormularioCiudadano.jsx` orquesta los 3 pasos, mantiene `coordenadas` como estado editable (sincronizado desde el hook GPS pero también sobreescribible por clicks en el mapa), y maneja el envío (ver §10).
@@ -1038,3 +1038,55 @@ Lógica de `equipo.js` verificada con casos límite: incidencia sin presupuesto,
 - **Por qué jsPDF acá y no imprimir como la Cuenta Pública (§31)**: son documentos distintos. La Cuenta Pública lleva gráficos, y ahí imprimir gana porque los gráficos en canvas salen cortados o en blanco al pasar por una librería de PDF. Esto es texto y tabla, sin un solo gráfico, así que jsPDF da un archivo idéntico en cualquier computador.
 
 **Verificación**: el panel y la barra inferior se revisaron **renderizados** (capturas a 390 px y 1440 px) con datos de prueba, no solo compilados — así se encontraron el bug de los tokens y la duplicación de cifras. El PDF se generó de verdad en el navegador y se revisó página por página (2 páginas, tildes y ñ correctas). La capa de calor se verificó con tres racimos sembrados a propósito. Lo que **falta que confirme el usuario** es todo lo que requiere sesión real: el panel con datos de producción y la ficha de trabajador con roster real.
+
+## 37. Buscador de direcciones en el Paso 1 (09-ago-2026)
+
+Pedido del usuario sobre una captura del Paso 1: poder **escribir la dirección a mano y que la app la encuentre**, sin quitar el GPS que ya estaba. El Paso 1 pasó de dos formas de fijar la ubicación a **tres, a propósito redundantes**, porque ninguna sirve para todo el mundo: el GPS falla justo donde más se reporta (adentro de la casa, celular viejo con 200 m de error), tocar el mapa exige saber leerlo, y escribir "Los Aromos 320" es como ubica un lugar un adulto mayor.
+
+### 37.1 Piezas nuevas
+
+- **`services/geocodificacionService.js`** — `buscarDirecciones()` (dirección → coordenadas) y `obtenerDireccionAproximada()` (coordenadas → dirección). Único punto de contacto con el proveedor de geocodificación.
+- **`hooks/useBusquedaDirecciones.js`** — busca mientras el vecino escribe, con rebote de 700 ms y `AbortController` (cada tecla cancela la búsqueda anterior).
+- **`hooks/useDireccionInversa.js`** — averigua qué dirección es el punto marcado, con rebote de 900 ms para no consultar en cada milímetro de arrastre del pin.
+- **`components/ciudadano/BuscadorDireccion.jsx`** — el campo con lista de resultados, navegable con teclado (flechas/Enter/Escape) y `role="combobox"`/`listbox`.
+- **`utils/sectores.js` → `buscarSectoresPorNombre()`** y **`utils/busqueda.js` → `normalizarTexto()`** (quita tildes; el vecino escribe "licanten" desde el teclado del celular).
+
+### 37.2 Por qué Nominatim (OpenStreetMap) y no Google Places
+
+Es el mismo proyecto que ya provee los tiles del mapa, es gratis, y **no pide API key ni cuenta con facturación** — el mismo criterio por el que la capa satelital es Esri (§11). Sin tarjeta (el bloqueante #1 de §27) Google Places no es una opción. La contrapartida es su política de uso justo: **1 petición por segundo y sin autocompletado agresivo**, respetada con tres cosas que hay que mantener si alguien toca este código:
+
+1. **Espaciado forzado** entre peticiones (`esperarTurno`, 1100 ms), que además serializa búsqueda e inversa.
+2. **Caché en memoria** de la pestaña (40 entradas por tipo): corregir una letra y borrarla no gasta peticiones.
+3. **Rebote** en los dos hooks.
+
+Medido en el navegador con el flujo completo (5 búsquedas + 2 puntos marcados): **8 peticiones, separación mínima 1986 ms**. Si algún día el volumen deja de caber en esa política, `geocodificacionService.js` es el único archivo a cambiar (instancia propia o proveedor pago).
+
+### 37.3 Dos fuentes de resultados, y por qué la segunda importa en comuna rural
+
+- **Sectores del municipio** (`municipalidades/{id}.sectores`, §33): resuelven **al instante y sin red**, porque vienen con el documento del tenant que ya está en memoria. Van **primero** en la lista: son los nombres que el vecino de la comuna realmente usa.
+- **Nominatim** para calles y números.
+
+En Licantén, OSM sí conoce calles ("Agustín Besoaín"), rutas ("Ruta J-60") y localidades ("Iloca", "Duao", "La Pesca", "Punta Duao"), pero **no las villas**. Ahí es donde entran los sectores — y hoy no aportan nada todavía, porque el documento de `licanten` no tiene sectores con coordenadas cargados (es el pendiente #2 de `RETOMAR-AQUI.md`: 16 de 19 sin confirmar). El código ya está y se enciende solo al correr `scripts/configurar-sectores.mjs`.
+
+### 37.4 Acotado a la comuna, con reintento
+
+La consulta sale con el nombre de la comuna pegado al final (`"los aromos 123, Licantén, Chile"`), `countrycodes=cl` y un `viewbox` de ±0,25° alrededor de `centro_mapa`. Además se **filtran los resultados a 30 km del centro**: sin ese filtro, escribir "Los Aromos" devuelve calles de Santiago, que en esta app no son un resultado válido.
+
+**Solo si la primera pasada viene vacía** se reintenta con el texto tal cual: en zona rural el camino existe en OSM pero no está asociado a la comuna, y pegarle el nombre hace que no encuentre nada. `nombreComuna()` limpia el "Municipalidad de" del nombre institucional del tenant, que como consulta arrastra los resultados al edificio municipal.
+
+### 37.5 La dirección del punto se copia al Paso 2
+
+El campo "¿Dónde exactamente?" del Paso 2 (obligatorio desde §29) **llega escrito** con la dirección del punto marcado, con un aviso en el color del tenant de que la completó la app. Es la misma información que el vecino ya dio en el Paso 1; volver a pedírsela a mano es la fricción que hace que abandone el formulario.
+
+- **En cuanto el vecino toca ese campo, su texto no se sobreescribe nunca más** (`direccionEditadaAMano`, un `useRef` y no estado: lo lee el efecto de la sugerencia, que no debe volver a correr cuando el vecino escribe). Verificado: se escribió "Agustín Besoaín 45, frente a la escuela", se volvió al Paso 1, se movió el pin, y el texto siguió intacto.
+- **La dirección elegida en el buscador le gana a la inversa**, y cuando existe **la inversa no se consulta** (0 peticiones medidas): ya sabemos cómo se llama el punto.
+- Si el punto cae en campo abierto y Nominatim contesta solo "Región del Maule", **no se muestra nada**: es un extra, y una región no es una dirección que le sirva a la cuadrilla.
+
+### 37.6 Detalles que salieron de probarlo, no de escribirlo
+
+- **`CentradorMapa`** (nuevo, dentro de `MapaSeleccionUbicacion.jsx`): el mapa solo se centraba solo la primera vez (la `key` que fuerza un remount), así que **buscar una dirección dejaba el pin fuera de la vista** y el vecino no tenía señal de que la búsqueda funcionó. Depende de `enfoque.id` —un id nuevo por pedido— y no de las coordenadas, para que un toque en el mapa no arrastre la vista debajo del dedo. Los resultados aproximados (sector o localidad) abren con **zoom 15 y no 17**: el punto exacto está en algún lugar alrededor de ese centro.
+- **Aviso de "dirección aproximada"**: un sector o una localidad resuelven a su centro, que puede quedar a cientos de metros. Se le pide explícitamente arrastrar el pin, para que no llegue una cuadrilla al lugar equivocado.
+- **Sin conexión el buscador no desaparece**: se apaga solo la parte de red (0 peticiones al aire), los sectores siguen buscándose y el mensaje dice qué hacer ("usa el GPS o toca el mapa").
+- **`z-[1100]`** en la lista de resultados: el contenedor y los controles de Leaflet llegan hasta `z-1000`.
+
+**Verificado en el navegador contra Firestore de producción** (`/licanten/reportar`, viewport 375×812): búsqueda con y sin tildes, calle → pin + mapa centrado + Paso 2 prellenado, localidad → aviso de aproximada, geocodificación inversa al tocar el mapa ("Paseo Borde Costero de Iloca, Iloca"), texto editado a mano que sobrevive a mover el pin, modo sin conexión, y `buscarSectoresPorNombre` con casos límite (sector sin coordenadas, una sola letra, lista vacía). Sin errores de consola. **`npm run build` pasa. NO está desplegado** — sigue pendiente el despliegue de §35 en adelante.

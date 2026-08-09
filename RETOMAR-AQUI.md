@@ -1,19 +1,21 @@
 # Dónde quedamos — 4 de agosto de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (35 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (37 secciones).
 
 ## Estado
 
 La app funciona y está en producción: https://app-incidencias-urbanas.web.app/licanten
 
-Lo último que se hizo (todo commiteado; §35 **no está desplegado todavía**):
+Lo último que se hizo (**nada de §35 en adelante está desplegado todavía**):
 - Panel de control del Alcalde con indicadores de gestión — §30
 - Cuenta Pública imprimible en un clic — §31
 - Alerta de emergencias al WhatsApp del Alcalde — §32
 - Vista por sectores del municipio — §33
 - Comparación mes contra mes — §34
 - **Propuesta comercial, políticas legales y sectores reales — §35**
+- Rediseño del panel del Alcalde y capa visual tipo app nativa — §36
+- **Buscador de direcciones escritas en el Paso 1 del vecino — §37** (09-ago-2026)
 
 ## Lo último (§35), en tres líneas
 

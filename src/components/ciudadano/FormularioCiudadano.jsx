@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Send, AlertTriangle } from 'lucide-react'
 import { useGeolocation } from '../../hooks/useGeolocation'
+import { useDireccionInversa } from '../../hooks/useDireccionInversa'
 import { crearIncidencia, generarIdIncidencia, votarIncidencia } from '../../services/incidenciasService'
 import { suscribirTicketsActivos, suscribirUltimosTickets } from '../../services/ticketsPublicosService'
 import { conTimeout } from '../../utils/timeout'
@@ -52,13 +53,52 @@ export default function FormularioCiudadano({ municipio }) {
   const [esVotoExistente, setEsVotoExistente] = useState(false)
 
   const [coordenadas, setCoordenadas] = useState(null)
+  // Dirección que el vecino eligió en el buscador del Paso 1 (ver
+  // BuscadorDireccion.jsx). Se guarda aparte de la geocodificación inversa
+  // porque le gana: si eligió "Los Aromos 320" de la lista, esa es la dirección
+  // que quiso decir, aunque el punto reverse-geocodifique con otro nombre.
+  const [direccionElegida, setDireccionElegida] = useState(null)
+  // Punto al que el mapa tiene que moverse, con un `id` que cambia en cada
+  // pedido: solo lo fijan el GPS y el buscador, nunca un toque en el mapa (ver
+  // CentradorMapa en MapaSeleccionUbicacion.jsx).
+  const [enfoqueMapa, setEnfoqueMapa] = useState(null)
   const { coordenadas: coordenadasGPS, cargando, error, obtenerUbicacion } = useGeolocation()
 
-  // El GPS es una de las dos formas de fijar la ubicación (la otra es tocar el mapa
-  // a mano en PasoUbicacion); cuando el GPS responde, adopta esa posición como la actual.
+  // La geocodificación inversa solo corre cuando el punto lo puso el GPS o un
+  // toque en el mapa: si el vecino eligió la dirección de la lista, ya la
+  // sabemos y preguntarla de nuevo sería gastar una petición al aire.
+  const { direccion: direccionInversa, cargando: buscandoDireccion } = useDireccionInversa(coordenadas, {
+    activo: !direccionElegida,
+  })
+  const direccionDelPunto = direccionElegida?.texto || direccionInversa
+
+  // El GPS es una de las tres formas de fijar la ubicación (las otras son
+  // escribir la dirección y tocar el mapa a mano, ambas en PasoUbicacion);
+  // cuando el GPS responde, adopta esa posición como la actual y lleva el mapa
+  // ahí. La dirección elegida a mano se descarta: el punto ya es otro.
   useEffect(() => {
-    if (coordenadasGPS) setCoordenadas(coordenadasGPS)
+    if (!coordenadasGPS) return
+    setCoordenadas(coordenadasGPS)
+    setDireccionElegida(null)
+    setEnfoqueMapa({ ...coordenadasGPS, zoom: 17, id: Date.now() })
   }, [coordenadasGPS])
+
+  // Un toque o un arrastre en el mapa es la ubicación más precisa que hay (el
+  // vecino está señalando el problema con el dedo), así que invalida la
+  // dirección que se hubiera elegido antes en el buscador.
+  function fijarCoordenadasDesdeMapa(nuevas) {
+    setCoordenadas(nuevas)
+    setDireccionElegida(null)
+  }
+
+  function elegirDireccionBuscada(resultado) {
+    setCoordenadas(resultado.coordenadas)
+    setDireccionElegida({ texto: resultado.etiqueta, aproximada: resultado.aproximada })
+    // Un sector o una localidad se muestran más alejados a propósito: el punto
+    // exacto está en algún lugar alrededor de ese centro, y el vecino necesita
+    // ver el entorno para poder mover el pin.
+    setEnfoqueMapa({ ...resultado.coordenadas, zoom: resultado.aproximada ? 15 : 17, id: Date.now() })
+  }
 
   // La foto es obligatoria SALVO que el celular esté sin señal: las fotos no se
   // pueden guardar en la cola offline (un File no cabe en localStorage, ver §10),
@@ -90,6 +130,31 @@ export default function FormularioCiudadano({ municipio }) {
       cancelarUltimos()
     }
   }, [municipio?.id])
+
+  // El campo "¿Dónde exactamente?" del Paso 2 llega escrito con la dirección del
+  // punto marcado: es la misma información que el vecino ya dio en el Paso 1, y
+  // volver a pedírsela a mano es la clase de fricción que hace que abandone el
+  // formulario. Sigue siendo editable, y de hecho se espera que la complete
+  // ("frente a la escuela").
+  //
+  // El ref es lo que garantiza que su texto nunca se sobreescriba: en cuanto
+  // toca el campo, deja de aceptar sugerencias. Va en ref y no en estado porque
+  // lo lee el efecto de abajo, que no debe volver a correr cuando el vecino
+  // escribe.
+  const direccionEditadaAMano = useRef(false)
+  const [direccionAutocompletada, setDireccionAutocompletada] = useState(false)
+
+  function cambiarDireccionTexto(valor) {
+    direccionEditadaAMano.current = true
+    setDireccionAutocompletada(false)
+    setDireccionTexto(valor)
+  }
+
+  useEffect(() => {
+    if (!direccionDelPunto || direccionEditadaAMano.current) return
+    setDireccionTexto(direccionDelPunto)
+    setDireccionAutocompletada(true)
+  }, [direccionDelPunto])
 
   // Ya nada es opcional en el formulario (decisión del usuario, ver §29): la
   // municipalidad necesita saber DÓNDE exactamente, QUÉ pasa, cómo se ve, y a
@@ -203,6 +268,10 @@ export default function FormularioCiudadano({ municipio }) {
     setPendienteSincronizar(false)
     setFotoDescartadaOffline(false)
     setCoordenadas(null)
+    setDireccionElegida(null)
+    setEnfoqueMapa(null)
+    direccionEditadaAMano.current = false
+    setDireccionAutocompletada(false)
     setDuplicadoDetectado(null)
     setEsVotoExistente(false)
   }
@@ -319,8 +388,14 @@ export default function FormularioCiudadano({ municipio }) {
                 cargando={cargando}
                 error={error}
                 onObtenerUbicacion={obtenerUbicacion}
-                onCambiarCoordenadas={setCoordenadas}
-                centroPorDefecto={municipio?.centro_mapa}
+                onCambiarCoordenadas={fijarCoordenadasDesdeMapa}
+                onElegirDireccion={elegirDireccionBuscada}
+                municipio={municipio}
+                sinConexion={sinConexion}
+                enfoqueMapa={enfoqueMapa}
+                direccionAproximada={direccionDelPunto}
+                buscandoDireccion={buscandoDireccion}
+                pedirAjustarPin={Boolean(direccionElegida?.aproximada)}
                 incidenciasCercanas={incidenciasActivas}
                 ultimosReportes={ultimosReportes}
               />
@@ -330,8 +405,9 @@ export default function FormularioCiudadano({ municipio }) {
                 categoria={categoria}
                 direccionTexto={direccionTexto}
                 detallesAdicionales={detallesAdicionales}
+                direccionAutocompletada={direccionAutocompletada}
                 onCambiarCategoria={setCategoria}
-                onCambiarDireccion={setDireccionTexto}
+                onCambiarDireccion={cambiarDireccionTexto}
                 onCambiarDetalles={setDetallesAdicionales}
               />
             )}

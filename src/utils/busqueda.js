@@ -2,6 +2,19 @@ import { CATEGORIAS } from './categorias'
 
 const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
 
+// Quita tildes, espacios de sobra y pasa a minúscula: el vecino escribe "licanten"
+// o "iloca" sin acentos y desde el teclado del celular, y igual tiene que
+// encontrar "Licantén". Se usa en el buscador de direcciones (ver
+// services/geocodificacionService.js) y en la búsqueda de sectores.
+export function normalizarTexto(texto) {
+  return (texto || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 // Búsqueda de texto libre en los Dashboards: compara contra los campos que un
 // funcionario probablemente recuerde de una incidencia (ticket, dirección,
 // categoría en su forma legible, detalles, cuadrilla) — no contra datos del

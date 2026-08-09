@@ -1,15 +1,36 @@
-import { MapPin, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { MapPin, CheckCircle2, AlertTriangle, Move } from 'lucide-react'
 import Boton from '../common/Boton'
+import BuscadorDireccion from './BuscadorDireccion'
 import MapaSeleccionUbicacion from './MapaSeleccionUbicacion'
 import UltimosReportes from './UltimosReportes'
 
-export default function PasoUbicacion({ coordenadas, cargando, error, onObtenerUbicacion, onCambiarCoordenadas, centroPorDefecto, incidenciasCercanas, ultimosReportes }) {
+// Paso 1. Tres formas de fijar la ubicación, a propósito redundantes porque
+// ninguna funciona para todo el mundo: el GPS (falla adentro de la casa y en
+// celulares viejos), escribir la dirección (no siempre existe en el mapa, sobre
+// todo en zona rural) y tocar el mapa a mano (exige saber leerlo). El vecino usa
+// la que le resulte y puede corregir con otra.
+export default function PasoUbicacion({
+  coordenadas,
+  cargando,
+  error,
+  onObtenerUbicacion,
+  onCambiarCoordenadas,
+  onElegirDireccion,
+  municipio,
+  sinConexion,
+  enfoqueMapa,
+  direccionAproximada,
+  buscandoDireccion,
+  pedirAjustarPin,
+  incidenciasCercanas,
+  ultimosReportes,
+}) {
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="text-lg font-semibold text-gray-900">1. Ubicación</h2>
         <p className="text-sm text-gray-500">
-          Usa tu GPS, o toca directamente el mapa para marcar el lugar exacto.
+          Usa tu GPS, escribe tu dirección, o toca directamente el mapa para marcar el lugar exacto.
         </p>
         {incidenciasCercanas?.length > 0 && (
           <p className="mt-1 text-xs text-gray-400">
@@ -23,9 +44,18 @@ export default function PasoUbicacion({ coordenadas, cargando, error, onObtenerU
         {coordenadas ? 'Actualizar con mi GPS' : 'Obtener mi ubicación GPS'}
       </Boton>
 
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-borde" />
+        <span className="text-xs font-medium uppercase tracking-wide text-tinta-tenue">o busca tu dirección</span>
+        <span className="h-px flex-1 bg-borde" />
+      </div>
+
+      <BuscadorDireccion municipio={municipio} sinConexion={sinConexion} onElegir={onElegirDireccion} />
+
       <MapaSeleccionUbicacion
         coordenadas={coordenadas}
-        centroPorDefecto={centroPorDefecto}
+        centroPorDefecto={municipio?.centro_mapa}
+        enfoque={enfoqueMapa}
         onCambiar={onCambiarCoordenadas}
         incidenciasCercanas={incidenciasCercanas}
       />
@@ -33,10 +63,33 @@ export default function PasoUbicacion({ coordenadas, cargando, error, onObtenerU
       {coordenadas ? (
         <div className="flex items-start gap-2 rounded-2xl bg-green-50 p-3 text-sm text-green-800 ring-1 ring-green-100">
           <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-          <span>Ubicación marcada en el mapa</span>
+          <span>
+            Ubicación marcada en el mapa
+            {/* La dirección del punto es una confirmación en palabras de lo que
+                el pin ya dice en el mapa: para quien no lee bien un mapa, es la
+                única señal de que marcó el lugar correcto. */}
+            {direccionAproximada && (
+              <span className="mt-0.5 block text-xs text-green-700">≈ {direccionAproximada}</span>
+            )}
+            {!direccionAproximada && buscandoDireccion && (
+              <span className="mt-0.5 block text-xs text-green-700">Buscando la dirección de este punto...</span>
+            )}
+          </span>
         </div>
       ) : (
         <p className="text-xs text-gray-400">Toca el mapa para fijar la ubicación a mano.</p>
+      )}
+
+      {/* Un sector o una localidad resuelven a su centro, que puede quedar a
+          cientos de metros del problema. Decirlo evita que llegue una cuadrilla
+          al lugar equivocado. */}
+      {pedirAjustarPin && (
+        <div className="flex items-start gap-2 rounded-2xl bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-100">
+          <Move size={18} className="mt-0.5 shrink-0" />
+          <span>
+            Esa dirección es aproximada: te dejamos en el centro del lugar. Arrastra el pin del mapa hasta el punto exacto del problema.
+          </span>
+        </div>
       )}
 
       {error && (

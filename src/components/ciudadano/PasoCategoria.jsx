@@ -1,4 +1,4 @@
-import { ShieldAlert } from 'lucide-react'
+import { ShieldAlert, Wand2 } from 'lucide-react'
 import { CATEGORIAS } from '../../utils/categorias'
 import SelectorCategoria from './SelectorCategoria'
 
@@ -9,7 +9,7 @@ const MIN_DETALLES = 5
 // 02-ago-2026 (decisión del usuario, ver §29): saber el punto en el mapa no
 // alcanza para que la cuadrilla llegue al lugar exacto ni para dimensionar el
 // trabajo antes de salir.
-export default function PasoCategoria({ categoria, direccionTexto, detallesAdicionales, onCambiarCategoria, onCambiarDireccion, onCambiarDetalles }) {
+export default function PasoCategoria({ categoria, direccionTexto, detallesAdicionales, direccionAutocompletada = false, onCambiarCategoria, onCambiarDireccion, onCambiarDetalles }) {
   const categoriaSeleccionada = CATEGORIAS.find((cat) => cat.valor === categoria)
 
   const direccionCorta = direccionTexto.trim().length > 0 && direccionTexto.trim().length < MIN_DIRECCION
@@ -46,9 +46,23 @@ export default function PasoCategoria({ categoria, direccionTexto, detallesAdici
             direccionCorta ? 'border-red-400 focus:ring-red-200' : 'border-gray-300 focus:border-primary focus:ring-primary/30'
           }`}
         />
-        <p className={`mt-1 text-xs ${direccionCorta ? 'text-red-600' : 'text-gray-400'}`}>
-          Una referencia que ayude a la cuadrilla a llegar al lugar exacto.
-        </p>
+        {/* Cuando el texto lo puso la app (dirección del punto marcado en el
+            Paso 1), hay que decirlo: si no, el vecino cree que ese campo ya
+            está resuelto y no le agrega la referencia que la cuadrilla
+            necesita para encontrar el problema dentro de la cuadra. */}
+        {direccionAutocompletada && !direccionCorta ? (
+          <p className="mt-1 flex items-start gap-1.5 text-xs text-primary">
+            <Wand2 size={13} className="mt-0.5 shrink-0" />
+            <span>
+              La completamos con la dirección del punto que marcaste. Corrígela si no calza, y agrégale una
+              referencia ("frente a la escuela").
+            </span>
+          </p>
+        ) : (
+          <p className={`mt-1 text-xs ${direccionCorta ? 'text-red-600' : 'text-gray-400'}`}>
+            Una referencia que ayude a la cuadrilla a llegar al lugar exacto.
+          </p>
+        )}
       </div>
 
       <div>

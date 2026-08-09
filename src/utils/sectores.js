@@ -1,4 +1,5 @@
 import { distanciaMetros } from './distancia'
+import { normalizarTexto } from './busqueda'
 
 // Los alcaldes piensan el municipio por territorio —villas, poblaciones,
 // sectores rurales— y la pregunta política que se hacen es "¿qué sector estoy
@@ -34,6 +35,34 @@ export function sectorDeCoordenada(coordenadas, sectores) {
   }
 
   return mejor
+}
+
+// Busca sectores por nombre, para el buscador de direcciones del Paso 1
+// (components/ciudadano/BuscadorDireccion.jsx).
+//
+// Existe porque en comuna rural OpenStreetMap no conoce las calles, pero el
+// municipio sí cargó sus localidades (ver §33): escribir "Iloca" o "La Pesca"
+// tiene que resolver a algo aunque Nominatim no devuelva nada — y resuelve al
+// instante, sin red, porque los sectores vienen con el documento del municipio
+// que ya está en memoria. El punto que devuelve es el centro del sector, no una
+// dirección exacta: por eso van marcados como `aproximada` y la UI le pide al
+// vecino mover el pin.
+export function buscarSectoresPorNombre(texto, sectores) {
+  const consulta = normalizarTexto(texto)
+  if (consulta.length < 2 || !sectores?.length) return []
+
+  return sectores
+    .filter((s) => typeof s.lat === 'number' && typeof s.lng === 'number')
+    .filter((s) => normalizarTexto(s.nombre).includes(consulta))
+    .map((s) => ({
+      id: `sector-${s.nombre}`,
+      etiqueta: s.nombre,
+      detalle: 'Sector de la comuna',
+      coordenadas: { lat: s.lat, lng: s.lng },
+      aproximada: true,
+      distancia: null,
+      origen: 'sector',
+    }))
 }
 
 // Agrupa incidencias por sector y calcula lo que le importa al Alcalde de cada
