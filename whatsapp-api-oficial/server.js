@@ -16,6 +16,7 @@
 
 const express = require('express')
 const admin = require('firebase-admin')
+const axios = require('axios')
 
 const { enviarTemplate, explicarError, formatearParaGraphApi } = require('./whatsapp')
 const { etiquetaCategoria } = require('./categorias')
@@ -197,6 +198,32 @@ if (WHATSAPP_VERIFY_TOKEN && WHATSAPP_APP_SECRET) {
 }
 
 app.listen(PORT, () => console.log(`[server] Escuchando en el puerto ${PORT}.`))
+
+// --- Auto-ping: evita que Render duerma el servicio ---
+// El plan Free de Render apaga el proceso a los ~15 min sin peticiones HTTP
+// entrantes — y como este servicio no recibe tráfico de nadie (nadie visita
+// esta URL, solo escucha Firestore), se dormía solo entre reportes. Mientras
+// duerme, los listeners de arriba NO corren, así que un aviso podía tardar
+// horas en salir (recién cuando algo lo despertaba). Esto lo evita pegándose
+// a sí mismo cada 10 minutos: como el pedido sale y vuelve a entrar por la
+// URL pública, Render lo cuenta como actividad real y nunca llega a los 15.
+// RENDER_EXTERNAL_URL la inyecta Render solo en cada Web Service — no hace
+// falta configurarla a mano. Si no existe (ej. corriendo en local), esto
+// simplemente no hace nada.
+const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL
+if (RENDER_EXTERNAL_URL) {
+  const INTERVALO_PING_MS = 10 * 60 * 1000
+  setInterval(() => {
+    axios.get(RENDER_EXTERNAL_URL, { timeout: 15000 }).catch((error) => {
+      // No es grave si un ping puntual falla (ej. el servicio ya estaba
+      // despertando por otra razón) — el siguiente intento en 10 min corrige solo.
+      console.error('[server] Auto-ping falló (no crítico):', error.message)
+    })
+  }, INTERVALO_PING_MS)
+  console.log(`[server] Auto-ping activo cada ${INTERVALO_PING_MS / 60000} min a ${RENDER_EXTERNAL_URL} — el servicio ya no debería dormirse solo.`)
+} else {
+  console.log('[server] RENDER_EXTERNAL_URL no está definida — auto-ping desactivado (¿corriendo local?).')
+}
 
 escucharNuevosTickets()
 escucharTicketsResueltos()
