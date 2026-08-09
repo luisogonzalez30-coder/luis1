@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Trash2, TrendingUp } from 'lucide-react'
+import { Plus, Trash2, TrendingUp, AlertTriangle } from 'lucide-react'
 import Modal from '../common/Modal'
 import Boton from '../common/Boton'
 import { suscribirTrabajadores } from '../../services/trabajadoresService'
 import { construirCatalogoMateriales, buscarPrecioReferencia, promedioHistoricoPorCategoria } from '../../utils/catalogoMateriales'
+import { evaluarDesviacion } from '../../utils/costeo'
 
 const formatoCLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
 
@@ -28,6 +29,7 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
   const [seleccionados, setSeleccionados] = useState([])
   const [form, setForm] = useState(FORMULARIO_VACIO)
   const [materiales, setMateriales] = useState([MATERIAL_VACIO])
+  const [justificacion, setJustificacion] = useState('')
 
   useEffect(() => {
     const unsubscribe = suscribirTrabajadores(setTrabajadores, municipioId, departamento)
@@ -53,7 +55,24 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
   const costoMateriales = materialesValidos.reduce((total, m) => total + Number(m.costo), 0)
   const costoTotal = costoManoObra + costoMateriales
 
-  const esValido = seleccionados.length > 0 && Number(form.horas_estimadas) > 0 && !materialesIncompletos
+  // Mismo control que en el cierre real (FormularioCierreGasto.jsx), pero un
+  // paso antes: si ESTE presupuesto ya se aleja mucho del promedio histórico
+  // de la categoría, después nada se va a ver "fuera de rango" al cerrar,
+  // aunque el gasto real termine siendo absurdo — el presupuesto inflado se
+  // vuelve la nueva "normalidad" contra la que se compara. No bloquea (puede
+  // ser un caso legítimamente más grande o complejo), pero exige decir por qué.
+  const { requiereRevision, horasDesviadas, costoDesviado } = evaluarDesviacion({
+    horasEstimadas: promedioCategoria?.horas || 0,
+    costoAprox: promedioCategoria?.costo || 0,
+    horasReales: Number(form.horas_estimadas) || 0,
+    costoTotal,
+  })
+
+  const esValido =
+    seleccionados.length > 0 &&
+    Number(form.horas_estimadas) > 0 &&
+    !materialesIncompletos &&
+    (!requiereRevision || justificacion.trim().length > 0)
 
   function alternarSeleccion(id) {
     setSeleccionados((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]))
@@ -85,6 +104,8 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
       materiales_estimados: materialesValidos.map((m) => ({ descripcion: m.descripcion.trim(), costo: Number(m.costo) })),
       costo_materiales_estimado: costoMateriales,
       costo_aprox: costoTotal,
+      requiere_revision: requiereRevision,
+      justificacion: justificacion.trim() || null,
     })
   }
 
@@ -205,6 +226,24 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
         <div className="mb-4 rounded-lg bg-gray-50 p-2 text-xs text-gray-700">
           Costo aproximado total: <strong>{formatoCLP.format(costoTotal)}</strong> (mano de obra + materiales)
         </div>
+
+        {requiereRevision && (
+          <div className="mb-4 rounded-lg bg-orange-50 p-3 text-xs text-orange-800">
+            <p className="mb-1 flex items-center gap-1 font-medium">
+              <AlertTriangle size={14} /> Esto se aleja bastante del promedio histórico
+            </p>
+            {horasDesviadas && <p>Las horas estimadas superan bastante el promedio de esta categoría.</p>}
+            {costoDesviado && <p>El costo total estimado supera bastante el promedio de esta categoría.</p>}
+            <label className="mb-1 mt-2 block font-medium text-orange-900">Explica por qué este trabajo va a costar más de lo habitual</label>
+            <textarea
+              value={justificacion}
+              onChange={(e) => setJustificacion(e.target.value)}
+              rows={2}
+              className="w-full rounded-lg border border-orange-200 p-2 text-xs"
+              placeholder="Ej: hay que reemplazar todo el tramo de vereda, no solo un parche"
+            />
+          </div>
+        )}
 
         <Boton type="submit" className="w-full" cargando={guardando} disabled={!esValido}>
           Guardar y asignar cuadrilla

@@ -10,10 +10,17 @@ const formatoCLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency:
 // incidencia Resuelta del mes (acotada al mismo filtro de departamento), con
 // horas reales, costo de mano de obra calculado, materiales ítem por ítem
 // (no un solo número) y costo final total — para que el Alcalde vea EN QUÉ se
-// gastó, no solo cuánto. Las incidencias que FormularioCierreGasto.jsx marcó
-// "a revisar" (gasto_real.requiere_revision) se destacan y se pueden aislar
-// con el filtro de abajo — es la forma de detectar cierres manipulados sin
-// tener que leer una por una.
+// gastó, no solo cuánto. Se destacan y se pueden aislar con el filtro de abajo
+// dos tipos de alerta, que son distintas a propósito: gasto_real.requiere_revision
+// (lo que gastó la cuadrilla se alejó del presupuesto) y
+// presupuesto_estimado.requiere_revision (el presupuesto YA se alejó del
+// promedio histórico antes de gastar nada — ver ModalPresupuesto.jsx). Un
+// presupuesto inflado a propósito nunca dispararía la primera alerta, por eso
+// hace falta la segunda.
+function tieneAlerta(inc) {
+  return Boolean(inc.gasto_real?.requiere_revision || inc.presupuesto_estimado?.requiere_revision)
+}
+
 export default function ModalDetalleGasto({ incidencias, departamento, onCerrar }) {
   const [soloRevision, setSoloRevision] = useState(false)
 
@@ -22,7 +29,7 @@ export default function ModalDetalleGasto({ incidencias, departamento, onCerrar 
       incidencias
         .filter((inc) => inc.estado === 'Resuelto' && esDelMesActual(inc.fecha_cierre))
         .filter((inc) => departamento === 'Todos' || inc.departamento === departamento)
-        .filter((inc) => !soloRevision || inc.gasto_real?.requiere_revision)
+        .filter((inc) => !soloRevision || tieneAlerta(inc))
         .sort((a, b) => (b.fecha_cierre?.toMillis?.() || 0) - (a.fecha_cierre?.toMillis?.() || 0)),
     [incidencias, departamento, soloRevision]
   )
@@ -34,7 +41,7 @@ export default function ModalDetalleGasto({ incidencias, departamento, onCerrar 
           inc.estado === 'Resuelto' &&
           esDelMesActual(inc.fecha_cierre) &&
           (departamento === 'Todos' || inc.departamento === departamento) &&
-          inc.gasto_real?.requiere_revision
+          tieneAlerta(inc)
       ).length,
     [incidencias, departamento]
   )
@@ -61,7 +68,7 @@ export default function ModalDetalleGasto({ incidencias, departamento, onCerrar 
         <label className="mb-3 flex items-center gap-2 rounded-lg bg-orange-50 p-2 text-xs font-medium text-orange-800">
           <input type="checkbox" checked={soloRevision} onChange={(e) => setSoloRevision(e.target.checked)} />
           <AlertTriangle size={14} />
-          {totalARevisar} {totalARevisar === 1 ? 'cierre se salió' : 'cierres se salieron'} del presupuesto — mostrar solo esos
+          {totalARevisar} {totalARevisar === 1 ? 'caso tiene una alerta' : 'casos tienen alguna alerta'} (presupuesto o cierre) — mostrar solo esos
         </label>
       )}
 
@@ -97,7 +104,7 @@ export default function ModalDetalleGasto({ incidencias, departamento, onCerrar 
                 <li
                   key={inc.id}
                   className={`rounded-xl border p-3 text-sm ${
-                    inc.gasto_real?.requiere_revision ? 'border-orange-300 bg-orange-50/40' : 'border-gray-200'
+                    tieneAlerta(inc) ? 'border-orange-300 bg-orange-50/40' : 'border-gray-200'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -142,6 +149,17 @@ export default function ModalDetalleGasto({ incidencias, departamento, onCerrar 
                     )}
                     {inc.gasto_real?.cerrado_por && <p>Cerrado por: {inc.gasto_real.cerrado_por}</p>}
                   </div>
+
+                  {inc.presupuesto_estimado?.requiere_revision && (
+                    <div className="mt-2 rounded-lg bg-orange-100 p-2 text-xs text-orange-800">
+                      <p className="flex items-center gap-1 font-medium">
+                        <AlertTriangle size={12} /> El presupuesto ya se alejaba del promedio histórico
+                      </p>
+                      <p className="mt-0.5">
+                        {inc.presupuesto_estimado.justificacion ? `"${inc.presupuesto_estimado.justificacion}"` : 'Sin justificación registrada.'}
+                      </p>
+                    </div>
+                  )}
 
                   {inc.gasto_real?.requiere_revision && (
                     <div className="mt-2 rounded-lg bg-orange-100 p-2 text-xs text-orange-800">
