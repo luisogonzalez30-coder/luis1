@@ -58,7 +58,10 @@ const db = admin.firestore()
 
 // --- EVENTO 1: nuevo ticket -> template "alerta_nuevo_ticket" ---
 // Variables del body en ESE orden (deben calzar con el template aprobado en
-// Meta Business Manager): {{1}} número de ticket, {{2}} categoría legible.
+// Meta Business Manager): {{1}} categoría legible, {{2}} número de ticket.
+// OJO: el orden quedó así (no ticket-primero) porque así fue como se armó el
+// texto aprobado en Meta ("recibimos tu reporte de {{1}} ... es {{2}}") — si
+// alguna vez se reemplaza el template, hay que revisar este orden de nuevo.
 async function procesarNuevoTicket(id, incidencia) {
   const ref = db.collection('incidencias').doc(id)
   const para = formatearParaGraphApi(incidencia.contacto_ciudadano)
@@ -75,7 +78,7 @@ async function procesarNuevoTicket(id, incidencia) {
     await enviarTemplate({
       para,
       template: 'alerta_nuevo_ticket',
-      parametrosBody: [incidencia.numero_ticket || id, etiquetaCategoria(incidencia.categoria)],
+      parametrosBody: [etiquetaCategoria(incidencia.categoria), incidencia.numero_ticket || id],
     })
     await ref.update({ notificado_whatsapp_creacion: true })
     console.log(`[server] ${incidencia.numero_ticket || id} (creación): WhatsApp enviado a ${para}.`)
