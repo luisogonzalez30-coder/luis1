@@ -23,7 +23,6 @@ const { etiquetaCategoria } = require('./categorias')
 const { crearRouter: crearRouterWebhook } = require('./webhook')
 
 const PORT = process.env.PORT || 3000
-const PORTAL_URL_ESTADO = process.env.PORTAL_URL_ESTADO || 'https://app-incidencias-urbanas.web.app/estado'
 
 // Solo hacen falta para el webhook (respuestas a consultas del vecino). Si no
 // están, el servicio arranca igual y los avisos automáticos funcionan: lo único
@@ -118,19 +117,12 @@ function escucharNuevosTickets() {
 // --- EVENTO 2: ticket resuelto -> template "ticket_resuelto" ---
 // Dispara cuando estado ENTRA a "Resuelto" (no antes) sin importar de qué
 // estado venía — el flujo real casi siempre pasa por "En Proceso" primero.
-// Variables del body: {{1}} número de ticket, {{2}} link con la foto de
-// término, o al portal si la foto todavía no se subió.
-//
-// OJO: foto_despues_url se escribe en una SEGUNDA escritura asíncrona
-// DESPUÉS de que estado ya quedó en "Resuelto" (ver marcarResuelto en
-// incidenciasService.js — a propósito, para no bloquear el cierre con mala
-// señal en terreno). Esta función casi siempre corre ANTES de que la foto
-// exista, así que manda el link al portal como fallback en ese caso. Si tu
-// template "ticket_resuelto" espera la foto como IMAGEN en el header (no
-// como variable de texto), esto no te sirve tal cual — o rediseñas el
-// template para no depender de la foto, o agregas un tercer listener sobre
-// notificado_whatsapp_foto (bandera nueva) que dispare cuando foto_despues_url
-// deja de estar vacío.
+// El template aprobado quedó con UNA sola variable ({{1}} = número de
+// ticket); el link al portal se escribió fijo dentro del texto aprobado, no
+// como variable — por eso acá NO se manda foto_despues_url/PORTAL_URL_ESTADO
+// como segundo parámetro (Meta rechaza si la cantidad no calza exacto). Si
+// en algún momento el template aprobado cambia para incluir el link como
+// variable, hay que agregarlo de nuevo acá.
 async function procesarTicketResuelto(id, incidencia) {
   const ref = db.collection('incidencias').doc(id)
   const para = formatearParaGraphApi(incidencia.contacto_ciudadano)
@@ -145,7 +137,7 @@ async function procesarTicketResuelto(id, incidencia) {
     await enviarTemplate({
       para,
       template: 'ticket_resuelto',
-      parametrosBody: [incidencia.numero_ticket || id, incidencia.foto_despues_url || PORTAL_URL_ESTADO],
+      parametrosBody: [incidencia.numero_ticket || id],
     })
     await ref.update({ notificado_whatsapp: true })
     console.log(`[server] ${incidencia.numero_ticket || id} (resuelto): WhatsApp enviado a ${para}.`)
