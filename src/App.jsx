@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import RutaProtegida from './components/common/RutaProtegida'
 import Spinner from './components/common/Spinner'
 import LandingPage from './pages/LandingPage'
+import MunicipioLandingPage from './pages/MunicipioLandingPage'
 import CiudadanoPage from './pages/CiudadanoPage'
 import LoginPage from './pages/LoginPage'
 import CuadrillaPage from './pages/CuadrillaPage'
@@ -135,8 +136,15 @@ function App() {
               links y QR ya repartidos. */}
           <Route path="/:municipioSlug/estado" element={<ConsultaTicketPage />} />
 
-          {/* Vista ciudadano pública, sin login, específica de cada municipalidad */}
-          <Route path="/:municipioSlug" element={<CiudadanoPage />} />
+          {/* Formulario de reporte propiamente tal — antes vivía directo en
+              "/:municipioSlug"; se corrió acá para que esa ruta pueda mostrar
+              la portada (MunicipioLandingPage) primero. */}
+          <Route path="/:municipioSlug/reportar" element={<CiudadanoPage />} />
+
+          {/* Portada de cada municipalidad: logo grande, tema del tenant, y las
+              3 opciones (reportar / consultar / acceso funcionarios). Sin login,
+              específica de cada municipalidad. */}
+          <Route path="/:municipioSlug" element={<MunicipioLandingPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

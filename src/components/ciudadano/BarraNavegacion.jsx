@@ -19,10 +19,10 @@ export default function BarraNavegacion({ municipioSlug }) {
       activo: pathname.startsWith(`${base}/estado`),
     },
     {
-      to: base,
+      to: `${base}/reportar`,
       icono: Plus,
       etiqueta: 'Reportar',
-      activo: pathname === base,
+      activo: pathname.startsWith(`${base}/reportar`),
       principal: true,
     },
     {
