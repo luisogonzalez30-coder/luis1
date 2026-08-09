@@ -290,8 +290,15 @@ export async function marcarResuelto(incidencia, fotoDespues, comprobante, gasto
   if (fotoDespues) {
     // Sin "await": la incidencia ya quedó marcada como resuelta. Si Storage no está
     // disponible o la conexión falla, no debe dejar a la cuadrilla esperando.
+    // También se copia a tickets_publicos (mismo criterio que fotos_antes_urls en
+    // crearIncidencia): es lo único que el ciudadano puede leer sin login, así que
+    // sin esto la foto de término nunca le llega, ni por WhatsApp (que enlaza a
+    // /estado) ni entrando directo a consultar su ticket.
     subirImagen(fotoDespues, `incidencias/${incidencia.id}/despues`)
-      .then((url) => updateDoc(doc(db, COLECCIONES.INCIDENCIAS, incidencia.id), { foto_despues_url: url }))
+      .then((url) => {
+        updateDoc(doc(db, COLECCIONES.INCIDENCIAS, incidencia.id), { foto_despues_url: url })
+        actualizarEstadoTicketPublico(incidencia.numero_ticket, { foto_despues_url: url })
+      })
       .catch((error) => {
         console.error('[incidenciasService] Incidencia resuelta pero falló la subida de foto:', error)
       })

@@ -9,6 +9,7 @@ import { CATEGORIAS } from '../utils/categorias'
 import { formatearNumeroTicket } from '../utils/ticket'
 import BadgeEstado from '../components/common/BadgeEstado'
 import BadgeGravedad from '../components/common/BadgeGravedad'
+import GaleriaFotos from '../components/common/GaleriaFotos'
 import Boton from '../components/common/Boton'
 import EstrellasCalificacion from '../components/common/EstrellasCalificacion'
 import BarraNavegacion from '../components/ciudadano/BarraNavegacion'
@@ -145,6 +146,13 @@ function TarjetaResultado({ resultado, onCalificado }) {
           </div>
         )}
       </dl>
+
+      {resultado.estado === 'Resuelto' && resultado.foto_despues_url && (
+        <div className="mt-4 border-t border-gray-100 pt-3">
+          <p className="mb-1 text-xs font-medium uppercase text-gray-400">Foto del trabajo terminado</p>
+          <GaleriaFotos urls={[resultado.foto_despues_url]} alt="Trabajo terminado" />
+        </div>
+      )}
 
       {resultado.estado === 'Resuelto' && (
         <div className="mt-4 border-t border-gray-100 pt-3">
