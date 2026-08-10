@@ -10,9 +10,14 @@ export default function TicketConfirmacion({ numeroTicket, pendienteSincronizar,
         <>
           <CloudOff size={56} className="text-amber-600" />
           <h2 className="text-xl font-semibold text-gray-900">Guardado sin conexión</h2>
+          {/* Las dos condiciones van dichas a propósito: useSincronizacionOffline
+              reacciona al evento 'online' (se envía solo, sin que el vecino haga
+              nada, si dejó la app abierta) y también al volver a primer plano.
+              Decir solo "la próxima vez que abras la app" hacía pensar que había
+              que hacer algo a mano. */}
           <p className="text-gray-500">
-            Se guardó en tu dispositivo y se enviará automáticamente la próxima vez que abras la app con señal.
-            Anota este número:
+            Se guardó en tu teléfono y se enviará automáticamente <strong>en cuanto vuelva la señal</strong>, o la
+            próxima vez que abras la app. Anota este número:
           </p>
         </>
       ) : esVotoExistente ? (

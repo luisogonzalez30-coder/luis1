@@ -153,7 +153,15 @@ export async function crearIncidencia({
   // El lote también es lo que hace cumplible el anti-spam: firestore.rules exige
   // con getAfter() que dispositivos/{id} se selle en este mismo commit, así no
   // se puede saltar el límite simplemente no escribiendo la marca (§28).
-  for (let intento = 1; ; intento++) {
+  // El techo del reintento va en el ENCABEZADO del for, no escondido dentro del
+  // catch. Antes el límite existía igual (era una condición más del booleano que
+  // decide si reintentar), pero ahí es frágil: basta que alguien reordene esa
+  // condición o le agregue un `||` para que el techo desaparezca sin que nada lo
+  // advierta, y esto corre en el celular del vecino contra una base que se paga
+  // por escritura. Un límite tiene que poder leerse de una.
+  let creada = false
+
+  for (let intento = 1; intento <= MAX_INTENTOS_TICKET && !creada; intento++) {
     const lote = writeBatch(db)
     agregarTicketPublicoAlLote(lote, {
       numeroTicket,
@@ -169,7 +177,7 @@ export async function crearIncidencia({
 
     try {
       await lote.commit()
-      break
+      creada = true
     } catch (error) {
       // Todo rechazo llega como permission-denied, sin decir por qué. La única
       // causa que se puede resolver reintentando es la colisión de número de
@@ -179,14 +187,24 @@ export async function crearIncidencia({
       const esColision =
         !esRetry &&
         error.code === 'permission-denied' &&
-        intento < MAX_INTENTOS_TICKET &&
         Boolean(await obtenerTicketPublico(numeroTicket))
 
       if (!esColision) throw error
 
-      console.warn(`[incidenciasService] El ticket ${numeroTicket} ya estaba tomado, generando otro (intento ${intento}).`)
+      console.warn(`[incidenciasService] El ticket ${numeroTicket} ya estaba tomado, generando otro (intento ${intento} de ${MAX_INTENTOS_TICKET}).`)
       numeroTicket = generarNumeroTicket()
     }
+  }
+
+  // Se agotaron los intentos y todos fueron colisiones. Con un millón de
+  // números y ~90 tickets en uso esto es prácticamente imposible, así que si
+  // ocurre no es mala suerte: es una señal de que algo más está mal (por
+  // ejemplo, generarNumeroTicket devolviendo siempre lo mismo). El mensaje va
+  // en español porque FormularioCiudadano lo muestra tal cual al vecino.
+  if (!creada) {
+    const error = new Error('No pudimos asignarle un número a tu reporte. Intenta nuevamente en un momento.')
+    error.esColisionRepetida = true
+    throw error
   }
 
   if (fotosAntes?.length) {
