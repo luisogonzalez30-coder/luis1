@@ -8,7 +8,6 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  setDoc,
   updateDoc,
   where,
 } from 'firebase/firestore'
@@ -31,17 +30,20 @@ const ticketsPublicosRef = collection(db, COLECCIONES.TICKETS_PUBLICOS)
 const MAX_TICKETS_ACTIVOS = 200
 const MAX_TICKETS_RECIENTES = 500
 
-// Registra el ticket público de una incidencia. Usa setDoc con el numero_ticket
-// como ID de documento: si ese número ya lo usó OTRO reporte, Firestore clasifica
-// la escritura como "update" (el doc ya existe) y las reglas la rechazan con
-// permission-denied, porque no hay allow update para anónimos — así es como se
-// fuerza unicidad real sin necesitar una transacción.
+// El ticket público usa el numero_ticket como ID de documento: si ese número ya
+// lo usó OTRO reporte, Firestore clasifica la escritura como "update" (el doc ya
+// existe) y las reglas la rechazan con permission-denied, porque no hay allow
+// update para anónimos — así es como se fuerza unicidad real sin necesitar una
+// transacción.
 //
-// esRetry indica que este numeroTicket ya se le mostró al ciudadano en un intento
-// anterior (reintento desde la cola offline): si la escritura choca con
-// permission-denied, se asume que fue el propio intento original el que lo creó,
-// y se trata como éxito en vez de propagar el error.
-export async function registrarTicketPublico({
+// Datos del ticket público, sin escribirlos: los agrega al lote que se le pasa,
+// para que se creen en el MISMO commit atómico que la incidencia (ver
+// crearIncidencia). Antes esto se escribía por separado y antes que la
+// incidencia — si la incidencia después era rechazada, el ticket quedaba
+// huérfano: visible para los vecinos en el mapa y en "Últimos reportes", pero
+// invisible para el municipio, sin número entregado y sin WhatsApp. Había 7 en
+// producción (ver §40).
+export function agregarTicketPublicoAlLote(lote, {
   numeroTicket,
   incidenciaId,
   municipioId,
@@ -49,32 +51,57 @@ export async function registrarTicketPublico({
   nivelGravedad,
   coordenadas,
   direccionTexto,
-  esRetry = false,
 }) {
+  lote.set(doc(db, COLECCIONES.TICKETS_PUBLICOS, numeroTicket), datosTicketPublico({
+    incidenciaId,
+    municipioId,
+    categoria,
+    nivelGravedad,
+    coordenadas,
+    direccionTexto,
+  }))
+}
+
+// Lectura pública (allow get: if true en firestore.rules). La usa crearIncidencia
+// para dos cosas que no se pueden resolver de otra forma desde un cliente sin
+// login:
+//  - distinguir una colisión de número de ticket de cualquier otro rechazo (todos
+//    llegan como permission-denied, sin motivo);
+//  - saber si un reintento de la cola offline ya está registrado, mirando si el
+//    ticket apunta a ese mismo documento de incidencia (la incidencia en sí no se
+//    puede leer sin ser funcionario).
+// Devuelve null también si falla la red: quien llama debe tratar "no sé" como
+// "no reintentar a ciegas".
+export async function obtenerTicketPublico(numeroTicket) {
   try {
-    await setDoc(doc(db, COLECCIONES.TICKETS_PUBLICOS, numeroTicket), {
-      incidencia_id: incidenciaId,
-      municipio_id: municipioId,
-      categoria,
-      nivel_gravedad: nivelGravedad || null,
-      coordenadas,
-      // Referencia de ubicación ("frente a la escuela"). Se agregó el
-      // 02-ago-2026 para que el vecino vea DÓNDE fue al tocar un reporte de la
-      // lista (§29). No agrega exposición real: las coordenadas exactas ya
-      // eran públicas acá desde el mapa tipo Waze. Los "detalles adicionales"
-      // siguen FUERA a propósito — ese campo es texto libre y puede contener
-      // referencias a personas; este solo describe un lugar.
-      direccion_texto: direccionTexto || '',
-      upvotes: 1,
-      fotos_antes_urls: [],
-      estado: 'Pendiente',
-      calificacion_ciudadano: null,
-      fecha_creacion: serverTimestamp(),
-      fecha_cierre: null,
-    })
+    const snap = await getDoc(doc(db, COLECCIONES.TICKETS_PUBLICOS, numeroTicket))
+    return snap.exists() ? snap.data() : null
   } catch (error) {
-    if (esRetry && error.code === 'permission-denied') return
-    throw error
+    console.error('[ticketsPublicosService] No se pudo leer el ticket público:', error)
+    return null
+  }
+}
+
+function datosTicketPublico({ incidenciaId, municipioId, categoria, nivelGravedad, coordenadas, direccionTexto }) {
+  return {
+    incidencia_id: incidenciaId,
+    municipio_id: municipioId,
+    categoria,
+    nivel_gravedad: nivelGravedad || null,
+    coordenadas,
+    // Referencia de ubicación ("frente a la escuela"). Se agregó el
+    // 02-ago-2026 para que el vecino vea DÓNDE fue al tocar un reporte de la
+    // lista (§29). No agrega exposición real: las coordenadas exactas ya
+    // eran públicas acá desde el mapa tipo Waze. Los "detalles adicionales"
+    // siguen FUERA a propósito — ese campo es texto libre y puede contener
+    // referencias a personas; este solo describe un lugar.
+    direccion_texto: direccionTexto || '',
+    upvotes: 1,
+    fotos_antes_urls: [],
+    estado: 'Pendiente',
+    calificacion_ciudadano: null,
+    fecha_creacion: serverTimestamp(),
+    fecha_cierre: null,
   }
 }
 

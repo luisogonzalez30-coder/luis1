@@ -246,6 +246,17 @@ export default function FormularioCiudadano({ municipio }) {
         // Las fotos NO se persisten en la cola offline (un File no cabe razonablemente
         // en localStorage) — el reporte se guarda igual, sin ellas.
         encolarSinConexion(datosReporte, fotos.length > 0)
+      } else if (err.code === 'permission-denied') {
+        // Firestore contesta "Missing or insufficient permissions." en inglés y
+        // sin decir por qué. Al vecino eso no le dice nada —lo vio en pantalla
+        // el 10-ago-2026 y parecía un error de la app— así que se traduce a la
+        // causa que de verdad ocurre: el enfriamiento anti-spam de 60 s (§28).
+        // El motivo técnico queda en la consola para poder diagnosticar.
+        console.error('[FormularioCiudadano] Firestore rechazó la escritura del reporte:', err)
+        setErrorEnvio(
+          'No pudimos registrar tu reporte. Si acabas de enviar otro, espera un minuto e intenta de nuevo. ' +
+            'Si vuelve a pasar, avísale a la municipalidad.'
+        )
       } else {
         console.error('[FormularioCiudadano] Error al enviar incidencia:', err)
         setErrorEnvio(err.message || 'No se pudo enviar tu reporte. Revisa tu conexión a internet e intenta nuevamente.')

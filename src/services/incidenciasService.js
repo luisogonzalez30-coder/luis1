@@ -20,7 +20,8 @@ import { generarNumeroTicket } from '../utils/ticket'
 import { calcularGravedad } from '../utils/gravedad'
 import { calcularDepartamento } from '../utils/departamento'
 import {
-  registrarTicketPublico,
+  agregarTicketPublicoAlLote,
+  obtenerTicketPublico,
   actualizarEstadoTicketPublico,
   incrementarUpvotesTicketPublico,
   actualizarCalificacionTicketPublico,
@@ -76,45 +77,10 @@ export async function crearIncidencia({
   const { nivel_gravedad, color_pin } = calcularGravedad(categoria)
   const departamento = calcularDepartamento(categoria)
 
-  // Registra (o confirma) el ticket público ANTES de escribir la incidencia: si
-  // numeroTicketExistente choca con el ticket de otro reporte, hay que resolver
-  // eso primero para no dejar la incidencia con un numero_ticket que en realidad
-  // le pertenece a otra persona.
   let numeroTicket = numeroTicketExistente || generarNumeroTicket()
   const esRetry = Boolean(numeroTicketExistente)
 
-  for (let intento = 1; ; intento++) {
-    try {
-      await registrarTicketPublico({
-        numeroTicket,
-        incidenciaId: docRef.id,
-        municipioId,
-        categoria,
-        nivelGravedad: nivel_gravedad,
-        coordenadas,
-        direccionTexto,
-        esRetry,
-      })
-      break
-    } catch (error) {
-      // Un reintento offline nunca debe generar un ticket nuevo (el ciudadano ya
-      // anotó el que se le mostró); si choca por otra razón que no sea colisión,
-      // o si ya se agotaron los intentos, hay que dejar que el error suba.
-      if (esRetry || error.code !== 'permission-denied' || intento >= MAX_INTENTOS_TICKET) {
-        throw error
-      }
-      numeroTicket = generarNumeroTicket()
-    }
-  }
-
-  // Anti-spam: la incidencia y la "marca de tiempo" del dispositivo se escriben
-  // en UN SOLO lote atómico. firestore.rules exige (con getAfter) que ese
-  // dispositivos/{id} se esté sellando en este mismo lote y que haya pasado el
-  // enfriamiento desde el reporte anterior — sin el lote, bastaría con no
-  // escribir nunca la marca para saltarse el límite. Ver §28 en ESTADO_PROYECTO.md.
-  const lote = writeBatch(db)
-
-  lote.set(docRef, {
+  const datosIncidencia = (numeroTicket) => ({
     categoria,
     coordenadas,
     direccion_texto: direccionTexto || '',
@@ -139,15 +105,14 @@ export async function crearIncidencia({
     presupuesto_estimado: null,
     gasto_real: null,
     calificacion_ciudadano: null, // 1-5, la pone el ciudadano desde /estado una vez Resuelto (ver calificarIncidencia)
-    // Las 3 banderas de notificado_whatsapp_* las pone en true el bot (whatsapp-bot/)
-    // tras avisar al vecino por WhatsApp en cada momento del ciclo de vida —
-    // creación, asignación de cuadrilla, y resuelto (ver ESTADO_PROYECTO.md §23).
+    // Las banderas notificado_whatsapp_* las pone en true el bot al avisarle al
+    // vecino (ver §39). OJO: hoy solo se usan dos, creación y resuelto —
+    // notificado_whatsapp_asignacion y alertado_alcalde se escriben pero NADIE
+    // las consume, esas dos funciones se perdieron en la migración a la API
+    // oficial de Meta (ver §39.3).
     notificado_whatsapp_creacion: false,
     notificado_whatsapp_asignacion: false,
     notificado_whatsapp: false,
-    // El bot avisa al celular del Alcalde cuando entra algo de gravedad Alta
-    // (ver §32). Bandera aparte de las de arriba porque el destinatario es
-    // otro: el Alcalde, no el vecino.
     alertado_alcalde: false,
     // UUID aleatorio del navegador (utils/dispositivo.js), NO un dato personal:
     // es lo que permite aplicar el límite anti-spam del lado servidor. El mismo
@@ -160,9 +125,69 @@ export async function crearIncidencia({
     fecha_cierre: null,
   })
 
-  lote.set(doc(db, COLECCIONES.DISPOSITIVOS, dispositivoId), { ultimo_reporte: serverTimestamp() })
+  // Reintento desde la cola offline: si el intento original sí alcanzó a
+  // escribir (conTimeout se rindió a los 15 s, pero Firestore terminó después),
+  // el ticket público ya existe y apunta a ESTE mismo documento. No hay nada que
+  // reescribir —y no se podría: las reglas no dejan que un anónimo actualice una
+  // incidencia ya creada— así que se devuelve como éxito para que la cola lo dé
+  // por sincronizado en vez de reintentarlo para siempre.
+  if (esRetry) {
+    const yaRegistrado = await obtenerTicketPublico(numeroTicket)
+    if (yaRegistrado?.incidencia_id === docRef.id) {
+      console.info(`[incidenciasService] El reporte ${numeroTicket} ya estaba registrado desde el intento original.`)
+      return { id: docRef.id, numeroTicket }
+    }
+  }
 
-  await lote.commit()
+  // TODO se escribe en UN SOLO lote atómico: la incidencia, su ticket público y
+  // la marca anti-spam del dispositivo. O quedan las tres, o no queda ninguna.
+  //
+  // Antes el ticket público se escribía aparte y ANTES que la incidencia. Cuando
+  // la incidencia era rechazada —el caso real: el enfriamiento anti-spam
+  // responde permission-denied— el ticket quedaba **huérfano**: aparecía en el
+  // mapa y en "Últimos reportes de la comuna", hacía saltar el aviso de "posible
+  // duplicado" al vecino siguiente, y sin embargo el municipio no lo veía, el
+  // vecino no recibía su número y el bot no mandaba nada. Había 7 en producción
+  // cuando se detectó (ver §40).
+  //
+  // El lote también es lo que hace cumplible el anti-spam: firestore.rules exige
+  // con getAfter() que dispositivos/{id} se selle en este mismo commit, así no
+  // se puede saltar el límite simplemente no escribiendo la marca (§28).
+  for (let intento = 1; ; intento++) {
+    const lote = writeBatch(db)
+    agregarTicketPublicoAlLote(lote, {
+      numeroTicket,
+      incidenciaId: docRef.id,
+      municipioId,
+      categoria,
+      nivelGravedad: nivel_gravedad,
+      coordenadas,
+      direccionTexto,
+    })
+    lote.set(docRef, datosIncidencia(numeroTicket))
+    lote.set(doc(db, COLECCIONES.DISPOSITIVOS, dispositivoId), { ultimo_reporte: serverTimestamp() })
+
+    try {
+      await lote.commit()
+      break
+    } catch (error) {
+      // Todo rechazo llega como permission-denied, sin decir por qué. La única
+      // causa que se puede resolver reintentando es la colisión de número de
+      // ticket, y se distingue mirando si ese ticket ya existe (lectura
+      // pública). Cualquier otra —el enfriamiento anti-spam, un dato inválido—
+      // sube tal cual: reintentar con otro número sería esconderla.
+      const esColision =
+        !esRetry &&
+        error.code === 'permission-denied' &&
+        intento < MAX_INTENTOS_TICKET &&
+        Boolean(await obtenerTicketPublico(numeroTicket))
+
+      if (!esColision) throw error
+
+      console.warn(`[incidenciasService] El ticket ${numeroTicket} ya estaba tomado, generando otro (intento ${intento}).`)
+      numeroTicket = generarNumeroTicket()
+    }
+  }
 
   if (fotosAntes?.length) {
     // Sin "await": la incidencia ya quedó registrada, así que el ticket se muestra de
@@ -173,10 +198,25 @@ export async function crearIncidencia({
     fotosAntes.forEach((archivo, indice) => {
       subirImagen(archivo, `incidencias/${docRef.id}/antes`)
         .then((url) => {
-          updateDoc(doc(db, COLECCIONES.INCIDENCIAS, docRef.id), { fotos_antes_urls: arrayUnion(url) })
-          // Best-effort, igual que el resto de la sincronización con el ticket público:
-          // así el mapa ciudadano también puede mostrar la foto en el pin.
-          updateDoc(doc(db, COLECCIONES.TICKETS_PUBLICOS, numeroTicket), { fotos_antes_urls: arrayUnion(url) }).catch(() => {})
+          // Los dos updates llevan su propio .catch() a propósito. Este es el
+          // que importa (es la foto que ve el funcionario), y ANTES no tenía
+          // ninguno: firestore.rules rechazaba el update anónimo con
+          // permission-denied, la promesa quedaba rechazada sin manejar, y la
+          // foto simplemente no aparecía en el Dashboard sin que nada lo dijera.
+          // La regla ya lo permite (ver esFotoCiudadanoValida en
+          // firestore.rules), y si alguna vez vuelve a fallar ahora se ve.
+          updateDoc(doc(db, COLECCIONES.INCIDENCIAS, docRef.id), { fotos_antes_urls: arrayUnion(url) }).catch((error) => {
+            console.error(
+              `[incidenciasService] La foto ${indice + 1} se subió pero no se pudo guardar en la incidencia ${docRef.id}:`,
+              error
+            )
+          })
+          // El ticket público es best-effort (así el pin del mapa ciudadano
+          // también muestra la foto), pero el error se registra igual: un
+          // catch vacío fue justamente lo que ocultó este mismo problema.
+          updateDoc(doc(db, COLECCIONES.TICKETS_PUBLICOS, numeroTicket), { fotos_antes_urls: arrayUnion(url) }).catch((error) => {
+            console.warn(`[incidenciasService] La foto ${indice + 1} no se reflejó en el ticket público ${numeroTicket}:`, error)
+          })
         })
         .catch((error) => {
           console.error(`[incidenciasService] Incidencia creada pero falló la subida de la foto ${indice + 1}:`, error)

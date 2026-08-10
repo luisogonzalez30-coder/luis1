@@ -14,7 +14,7 @@ resueltas al día de hoy. Enviarla sin resolverlas es vender algo que no puedes 
 |---|---|---|---|
 | 1 | *"Estamos inscritos como proveedor en Mercado Público"* (§9) | Sin verificar | Inscribir la SpA en mercadopublico.cl. Es gratis y online. **Si no está hecho, borra esa frase antes de enviar.** |
 | 2 | Dominio propio institucional en la semana 2 (§5) | Hoy es `app-incidencias-urbanas.web.app` | Comprar `tumuniaqui.cl` en NIC Chile (~$10.000/año) y configurar `licanten.tumuniaqui.cl`. Requiere el plan Blaze de Firebase, que requiere tarjeta. |
-| 3 | Alerta de emergencias al celular del Alcalde (§3.3) | Funciona, pero por un bot **no oficial** que corre en tu PC. Solo envía con la PC prendida, y el número puede ser bloqueado por WhatsApp sin aviso ni apelación. | **Este es el riesgo más grande de todos.** Detalle abajo, sección 3. |
+| 3 | Alerta de emergencias al celular del Alcalde (§3.3) | **No existe.** (Corregido el 09-ago-2026: antes esta fila decía que funcionaba por un bot no oficial.) El bot ya está migrado a la **API oficial de Meta** y corre en Render, así que el riesgo de bloqueo del número está cerrado — pero **la alerta al Alcalde se perdió en esa migración**: el bot oficial solo avisa "reporte recibido" y "reporte resuelto". En producción: 7 emergencias, 0 alertas. | **Sigue siendo el problema más grave de la propuesta, por otro motivo.** Reponerla necesita un listener nuevo + una plantilla aprobada en Meta. Mientras no esté, sácala de §3.3 o márcala como próxima etapa. Detalle abajo, sección 3. |
 | 4 | Respaldo diario automático (§7.3) | El script existe y funciona, pero nunca confirmaste haber creado la tarea programada de Windows, y respalda solo a tu disco local. | Confirmar la tarea (§25 de ESTADO_PROYECTO.md) y subir el respaldo a la nube. |
 | 5 | Manual de uso escrito, entregado en la semana 3 (§5) | No existe | Escribirlo. Son unas 10 páginas con capturas: una para el jefe de dirección, otra para la cuadrilla. |
 
@@ -58,31 +58,42 @@ precio: hace que el plan Comuna se lea barato en comparación.
 
 ---
 
-## 3. El bot de WhatsApp — decide esto antes de firmar nada
+## 3. El bot de WhatsApp — reescrito el 09-ago-2026
 
-La propuesta compromete la alerta de emergencias al celular del Alcalde. Hoy eso funciona
-con `@whiskeysockets/baileys` sobre el número +56977701624, que es automatización **no
-oficial** de WhatsApp. Dos problemas distintos:
+**La salida A ya se tomó: el bot está migrado a la Cloud API oficial de Meta** (carpeta
+`whatsapp-api-oficial/`, corriendo en Render, no en tu PC). El riesgo que dominaba esta
+sección —que Meta bloqueara el número sin aviso por usar automatización no oficial—
+**está cerrado**. Ver §39 de `ESTADO_PROYECTO.md`.
 
-1. **Viola los términos de servicio de WhatsApp.** El número puede quedar bloqueado en
-   cualquier momento, sin aviso, sin soporte y sin apelación. Asumir ese riesgo para ti
-   es una cosa; asumirlo en un contrato firmado con un municipio es otra. Si se cae el
-   día que hay una emergencia real, es un incumplimiento contractual.
-2. **Corre en tu PC.** Si la apagas, el Alcalde no recibe la alerta.
+Verificado contra producción el 09-ago-2026: todos los reportes desde el 1 de agosto
+tienen su aviso de recepción enviado, y los resueltos tienen su aviso de resolución.
+La cadena funciona de verdad, no en teoría.
 
-Tres salidas, en orden de lo que yo recomendaría:
+Pero quedan cuatro cosas que sí afectan lo que puedes prometer por escrito:
 
-- **A. Migrar a la API oficial de Meta (Cloud API) antes de firmar.** Es la correcta para
-  un municipio. Requiere plan Blaze (tarjeta) y verificación de negocio en Meta, que con
-  la SpA ya constituida es un trámite viable. Es cambiar el backend del bot, no el resto
-  del flujo.
-- **B. Firmar sin la alerta de WhatsApp**, sacarla de la sección 3.3, y ofrecerla después
-  como mejora una vez migrada. Pierdes tu función más vendedora.
-- **C. Firmar con el bot no oficial** y que el contrato diga explícitamente que las
-  notificaciones por WhatsApp se prestan en la medida de lo posible, sin compromiso de
-  disponibilidad. Es honesto, pero un asesor jurídico municipal va a preguntar por qué.
-
-Lo mismo aplica a las notificaciones de estado al vecino, que usan el mismo bot.
+1. **La alerta de emergencias al Alcalde NO existe hoy.** Se perdió en la migración: el
+   bot oficial solo notifica dos momentos (reporte recibido y reporte resuelto). No hay
+   código que lea `whatsapp_alcalde` ni que reaccione a la gravedad Alta — configurar el
+   número del Alcalde **no la activa**. En producción hay 7 emergencias registradas y 0
+   alertas enviadas. **Es la función más vendedora de la propuesta (sección 3.3) y
+   ahora mismo no se puede cumplir.** Reponerla requiere un listener nuevo *y* una
+   plantilla aprobada por Meta (con la API oficial no se puede mandar texto libre fuera
+   de la ventana de 24 h desde que el vecino escribe). Hasta que eso pase: sácala de la
+   propuesta o márcala explícitamente como "próxima etapa".
+2. **El bot corre en el plan Free de Render**, que apaga el proceso a los ~15 minutos sin
+   tráfico. Hay un auto-ping cada 10 min que lo mantiene despierto y funciona, pero un
+   plan gratuito no tiene SLA. Si el municipio te va a exigir disponibilidad —y la
+   sección 7.2 de la propuesta compromete un descuento por indisponibilidad— esto tiene
+   que estar en un plan pagado antes de firmar. Es barato; no firmes sin ello.
+3. **Meta cobra por mensaje de plantilla.** Cada reporte genera al menos dos mensajes
+   (recepción y resolución). Verifica la tarifa vigente de mensajes de *utilidad* en
+   Chile y métela en tus números: hoy la propuesta afirma que "no hay cobro por cantidad
+   de reportes", lo que es cierto para lo que le cobras al municipio pero no para lo que
+   te cuesta a ti. Un municipio con mucho volumen te puede dejar el margen en cero.
+4. **Un fallo de plantilla es parcial y silencioso.** Editar una plantilla ya aprobada la
+   manda de vuelta a revisión (y Meta limita cuántas veces se puede editar). Si te
+   rechazan una, ese aviso deja de salir mientras el otro sigue funcionando, y el único
+   registro es el log de Render. Antes de vender soporte, define cómo te vas a enterar.
 
 ---
 

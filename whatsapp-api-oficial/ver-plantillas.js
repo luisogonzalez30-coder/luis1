@@ -20,9 +20,18 @@ const TOKEN = process.env.WHATSAPP_TOKEN
 const WABA_ID = process.env.WHATSAPP_WABA_ID
 
 // Lo que server.js manda hoy. Si cambias los parametrosBody allá, cambia esto.
+//
+// Corregido el 10-ago-2026: esta lista estaba desactualizada y decía justo lo
+// contrario de lo que hace server.js — el orden de alerta_nuevo_ticket invertido,
+// y ticket_resuelto con 2 variables cuando manda 1. Una herramienta de
+// diagnóstico que miente es peor que no tenerla: habría dado "todo calza"
+// mirando la plantilla equivocada.
 const LO_QUE_MANDAMOS = {
-  alerta_nuevo_ticket: { variables: 2, detalle: '{{1}} número de ticket · {{2}} categoría' },
-  ticket_resuelto: { variables: 2, detalle: '{{1}} número de ticket · {{2}} link (foto o portal)' },
+  // server.js: parametrosBody: [etiquetaCategoria(categoria), numero_ticket]
+  alerta_nuevo_ticket: { variables: 2, detalle: '{{1}} categoría legible · {{2}} número de ticket' },
+  // server.js: parametrosBody: [numero_ticket] — el link va fijo en el texto
+  // aprobado, NO como variable.
+  ticket_resuelto: { variables: 1, detalle: '{{1}} número de ticket' },
 }
 const IDIOMA_ESPERADO = process.env.WHATSAPP_TEMPLATE_LANG || 'es_CL'
 

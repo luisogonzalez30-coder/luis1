@@ -1,6 +1,8 @@
 # TuMuniAquí — Resumen técnico maestro
 
 > Documento generado para continuar el trabajo en una nueva conversación. Refleja el estado real del código al 31-jul-2026 (actualizado tras implementar consulta pública de ticket, despliegue a Hosting, PWA, derivación automática por departamento, RBAC de 3 roles, agrupación de reportes estilo Waze con upvotes/detección de duplicados, autoservicio de creación de funcionarios, migración de subida de fotos de Firebase Storage a Cloudinary por falta de tarjeta para Blaze, el módulo de Órdenes de Trabajo y Costeo, roster de trabajadores/asistencia por departamento, un arreglo de responsividad mobile en ambos Dashboards, hasta 3 fotos por reporte, RUT opcional del ciudadano con consulta de tickets por RUT, y un bot de WhatsApp no oficial (`whatsapp-bot/`) que notifica al ciudadano en 3 momentos del ciclo de vida y responde consultas de estado — ver §23; más, en la misma sesión, búsqueda/exportar CSV/alertas de SLA en los Dashboards, calificación y seguimiento ciudadano post-reporte, una página pública de transparencia por comuna, y un script de respaldo diario de Firestore — ver §24 y §25). Si algo acá no coincide con el código, **confía en el código** (esto es una foto, no la fuente de verdad).
+>
+> ⚠️ **Sobre WhatsApp, este encabezado y §21/§23/§32 están desactualizados**: el bot no oficial (`whatsapp-bot/`, Baileys) se retiró y hoy corre la **Cloud API oficial de Meta** (`whatsapp-api-oficial/`). Empieza por **§39**, que es lo único verificado contra el código y contra producción — incluye las tres funciones que se perdieron en esa migración.
 
 ## 1. Qué es esta app
 
@@ -264,7 +266,7 @@ Validado en `firestore.rules` igual que `nivel_gravedad` (si el cliente manda `d
 
 **`src/utils/rut.js`** (nuevo): `esRutValido(rut)` (módulo 11, dígito verificador), `formatearRut(rut)`, `limpiarRut(rut)`. El campo RUT es opcional, pero si el ciudadano escribe algo, se valida — el botón "Enviar reporte" queda deshabilitado con un RUT inválido (a diferencia del resto de los campos de este paso, que nunca bloquean el envío).
 
-**Migración de esquema — fotos múltiples (31-jul-2026)**: `incidencias.foto_antes_url: string` pasó a ser `incidencias.fotos_antes_urls: string[]` (0 a 3), mismo cambio en `tickets_publicos`. `crearIncidencia` ahora sube cada foto por separado en segundo plano y las agrega con `arrayUnion` (pueden terminar en cualquier orden). Se creó `src/components/common/GaleriaFotos.jsx` (fila de miniaturas con scroll horizontal) para no repetir el render en cada panel — se actualizaron `TarjetaIncidencia.jsx`, `PanelGestionDepartamento.jsx`, `PanelAsignacion.jsx`, `DetalleTarea.jsx`, `PopupVotoIncidencia.jsx` y `AvisoPosibleDuplicado.jsx` (estos dos últimos y `TarjetaIncidencia.jsx` muestran solo la primera foto + "+N" por espacio, los paneles de gestión muestran la galería completa). La foto "después" (`foto_despues_url`, la que sube la cuadrilla al resolver) **sigue siendo una sola** — no se pidió cambiarla.
+**Migración de esquema — fotos múltiples (31-jul-2026)**: `incidencias.foto_antes_url: string` pasó a ser `incidencias.fotos_antes_urls: string[]` (0 a 3), mismo cambio en `tickets_publicos`. ⚠️ **Esta migración vino con un bug que dejó a los funcionarios sin ver ninguna foto hasta el 09-ago-2026 — ver §38.** `crearIncidencia` ahora sube cada foto por separado en segundo plano y las agrega con `arrayUnion` (pueden terminar en cualquier orden). Se creó `src/components/common/GaleriaFotos.jsx` (fila de miniaturas con scroll horizontal) para no repetir el render en cada panel — se actualizaron `TarjetaIncidencia.jsx`, `PanelGestionDepartamento.jsx`, `PanelAsignacion.jsx`, `DetalleTarea.jsx`, `PopupVotoIncidencia.jsx` y `AvisoPosibleDuplicado.jsx` (estos dos últimos y `TarjetaIncidencia.jsx` muestran solo la primera foto + "+N" por espacio, los paneles de gestión muestran la galería completa). La foto "después" (`foto_despues_url`, la que sube la cuadrilla al resolver) **sigue siendo una sola** — no se pidió cambiarla.
 
 **Decisión de privacidad**: `nombre_ciudadano`/`contacto_ciudadano`/`rut_ciudadano` se muestran en `PanelAsignacion.jsx` (Dashboard Alcalde) y en `PanelGestionDepartamento.jsx` (Dashboard Jefe de Departamento) — **nunca** en `DetalleTarea.jsx`/`TarjetaTarea.jsx` (Cuadrilla Terreno), porque la cuadrilla no necesita el contacto para el trabajo físico. Firestore Rules no puede ocultar campos por rol dentro de un mismo doc, así que esto es una decisión de UI, no de seguridad. **`rut_ciudadano` NUNCA se escribe en `tickets_publicos`** (colección de lectura pública) — ver "Consulta de tickets por RUT" en §15 para el motivo.
 
@@ -470,6 +472,20 @@ service cloud.firestore {
         despues.upvotes == antes.get('upvotes', 1) + 1 &&
         despues.usuarios_afectados.size() == antes.get('usuarios_afectados', []).size() + 1;
     }
+    // Foto del vecino que llega DESPUÉS de crear el reporte (sin login, ver §38):
+    // SOLO fotos_antes_urls, agregando UNA URL de Cloudinary al final, hasta 3.
+    // El concat() impide reordenar, pisar o borrar las fotos ya cargadas.
+    function esFotoCiudadanoValida(antes, despues) {
+      let previas = antes.get('fotos_antes_urls', []);
+      let nuevas = despues.fotos_antes_urls;
+      let agregada = nuevas.size() > 0 ? nuevas[nuevas.size() - 1] : '';
+      return request.auth == null &&
+        despues.diff(antes).affectedKeys().hasOnly(['fotos_antes_urls']) &&
+        previas.size() < 3 && nuevas.size() == previas.size() + 1 &&
+        nuevas == previas.concat([agregada]) &&
+        agregada is string && agregada.size() <= 500 &&
+        agregada.matches('https://res[.]cloudinary[.]com/.+');
+    }
     // Calificación ciudadana (1-5, sin login, ver §24): SOLO calificacion_ciudadano,
     // solo si Resuelto, solo una vez (no se puede pisar una calificación ya puesta).
     function esCalificacionValida(antes, despues) {
@@ -500,7 +516,8 @@ service cloud.firestore {
                             'Aseo y Ornato', 'Medio Ambiente', 'Seguridad Ciudadana', 'Oficina de Partes'
                           ]);
       allow update: if puedeGestionarIncidencia(resource.data) || esVotoValidoIncidencia(resource.data, request.resource.data)
-                      || esCalificacionValida(resource.data, request.resource.data);
+                      || esCalificacionValida(resource.data, request.resource.data)
+                      || esFotoCiudadanoValida(resource.data, request.resource.data);
       allow delete: if esAlcalde() && esDelMismoMunicipio(resource.data.municipio_id);
     }
 
@@ -536,9 +553,11 @@ service cloud.firestore {
                       && (!('nivel_gravedad' in request.resource.data) || request.resource.data.nivel_gravedad in ['Alta','Media','Baja'])
                       && (!('coordenadas' in request.resource.data) || (request.resource.data.coordenadas.lat is number && request.resource.data.coordenadas.lng is number));
       // Funcionario del mismo municipio refleja cambios de estado; cualquier
-      // ciudadano sin login puede votar "+1" (solo upvotes) o reflejar su
-      // calificación ya puesta en incidencias/{id} (solo una vez).
+      // ciudadano sin login puede votar "+1" (solo upvotes), reflejar su
+      // calificación ya puesta en incidencias/{id} (solo una vez), o agregar la
+      // URL de su foto cuando termina de subir (misma función que en incidencias).
       allow update: if esDelMismoMunicipio(resource.data.municipio_id) ||
+                      esFotoCiudadanoValida(resource.data, request.resource.data) ||
                       (request.auth == null &&
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes']) &&
                         request.resource.data.upvotes == resource.data.get('upvotes', 1) + 1) ||
@@ -617,6 +636,7 @@ service cloud.firestore {
   - **Vía elegida: NO oficial** (igual que la tienda del usuario) — automatización tipo "WhatsApp Web" (librería `@whiskeysockets/baileys`) sobre el número **+56977701624**, en vez de la API oficial de Meta (Cloud API). Se le explicó el riesgo real: esto viola los términos de servicio de WhatsApp y el número podría quedar bloqueado sin aviso y sin soporte de Meta — el usuario decidió asumir ese riesgo conscientemente.
   - **Hosting elegido: esta misma computadora**, corrida manual (el usuario eligió esto en vez de PM2/segundo plano) — solo envía mientras `node index.js` esté corriendo, la PC prendida y con internet. Lo resuelto mientras está apagado se notifica retroactivamente apenas se vuelve a arrancar (ver §23).
   - Se descartó la vía oficial (Meta Cloud API + Cloud Function) por el mismo motivo que bloqueó Storage: exige Blaze (tarjeta). Si el usuario consigue tarjeta y hace la verificación de negocio en Meta más adelante, esa vía sigue siendo la recomendada para un municipio (sin riesgo de bloqueo) — sería cuestión de cambiar el backend, no el resto del flujo.
+  - ✅ **Esta decisión se revirtió: la migración a la Cloud API oficial YA SE HIZO** (`whatsapp-api-oficial/`, corriendo en Render, no en la PC). El riesgo de bloqueo del número está cerrado. Ver **§39** para lo que quedó implementado, lo que se perdió en el camino, y los riesgos que sí siguen vigentes.
 - ~~**Terminar de activar Storage**~~ — descartado el 30-jul-2026: Firebase exige Blaze (con tarjeta) para el bucket y el municipio no tiene tarjeta. Se resolvió usando **Cloudinary** en su lugar (ver §19) — las fotos ya funcionan en producción, no hace falta Blaze. Si algún día el municipio consigue una tarjeta, `storage.rules` sigue listo en el repo por si se quiere migrar de vuelta.
 - **Capacitor** (empaquetar como app nativa Android/iOS real): mencionado como opción futura, no iniciado.
 - **Service worker / caching de app shell**: para que la carga inicial también funcione offline (hoy solo la cola de reportes ya creados es offline-first).
@@ -646,6 +666,8 @@ Luego: `http://localhost:5173/demo` (ciudadano), `http://localhost:5173/login` (
 Para build de producción: `npm run build` (verificar que `recharts` quede en chunks separados — `DashboardGeneralPage-*.js` y `DashboardDepartamentoPage-*.js` —, no en el `index-*.js` principal — code-splitting ya configurado en `App.jsx` con `React.lazy`).
 
 ## 23. Bot de WhatsApp — notificaciones + consulta conversacional (implementado 31-jul/01-ago-2026)
+
+> ⚠️ **SECCIÓN HISTÓRICA — este bot ya no existe.** Todo lo de abajo describe el bot no oficial (Baileys) que se retiró: la carpeta `whatsapp-bot/` **no está en el repo**. Lo que corre hoy es la **Cloud API oficial de Meta** en `whatsapp-api-oficial/` — **ver §39**, que además detalla las dos funciones que se perdieron en la migración. Esta sección se conserva porque explica decisiones que siguen vigentes (las banderas por momento del ciclo de vida, el reintento al reconectar, el gotcha del build desplegado), no como descripción del sistema actual.
 
 **Ubicación**: `whatsapp-bot/` en la raíz del proyecto (junto a `src/`, no dentro) — proyecto Node **independiente**, con su propio `package.json`/`node_modules`, no se bundlea con Vite ni forma parte del build del front. Decisiones de diseño (vía no oficial, número, hosting manual) documentadas en §21 — acá va el cómo quedó construido.
 
@@ -745,13 +767,13 @@ La app **funciona** end-to-end y está en producción; esta sección es sobre qu
 
 **Bloqueantes antes de abrirla a vecinos reales:**
 1. ~~Consulta sin límite a `tickets_publicos`~~ — ✅ **resuelto**, ver §26.
-2. **Contraseña débil de la cuenta del bot** (`whatsapp-bot/.env`): sigue siendo trivial, y esa cuenta tiene permiso de escritura sobre `incidencias` en producción. Cambiarla desde Firebase Console (Authentication) y actualizar el `.env`. Ver §23.
+2. ~~**Contraseña débil de la cuenta del bot**~~ — ✅ **dejó de aplicar**: el bot actual usa el **Admin SDK** con una cuenta de servicio, no una cuenta `TERRENO` con correo y contraseña (ver §39.1). Esa cuenta de funcionario ya no la necesita nadie; conviene revocarla si sigue existiendo en `usuarios_municipales`. Lo que sí hay que cuidar ahora es el `FIREBASE_SERVICE_ACCOUNT` y el `WHATSAPP_TOKEN` en las variables de entorno de Render.
 3. **Sin política de privacidad ni términos de servicio**: la app pide RUT (§11). La Ley 21.719 de protección de datos personales lo exige, y ningún municipio debería firmar sin eso.
 4. ~~Sin anti-spam / rate limiting~~ — ✅ **parcialmente resuelto**, ver §28. Queda pendiente App Check para frenar a un atacante decidido (el enfriamiento por dispositivo se evade rotando el `localStorage`).
 5. **Datos de prueba mezclados en producción**: ~89 incidencias sembradas en `municipalidades/demo` (§19) más 1 de prueba en `licanten`. Limpiar antes de entregar a un municipio real.
 
 **Importantes antes de cobrarle a un municipio:**
-6. **Bot de WhatsApp no oficial y dependiente de esta PC** (§21, §23): el número puede bloquearse sin aviso, y solo notifica con la PC prendida.
+6. ~~**Bot de WhatsApp no oficial y dependiente de esta PC**~~ — ✅ **resuelto**: migrado a la Cloud API oficial de Meta y movido a Render (ver §39). Ya no hay riesgo de bloqueo del número ni dependencia de la PC. **Lo que quedó abierto en su lugar**, y hay que resolver antes de cobrarle a un municipio: (a) **la alerta de emergencias al Alcalde se perdió en la migración y no funciona** (§39.3) — es la función más vendedora de la propuesta; (b) el bot corre en el **plan Free de Render**, sin SLA; (c) **Meta cobra por mensaje de plantilla**, costo que no está en los números de la propuesta.
 7. **Sin dominio propio**: `app-incidencias-urbanas.web.app` no proyecta seriedad institucional. Algo tipo `licanten.tumuniaqui.cl`.
 8. **Cero tests automatizados** (verificado: no hay `test`/`spec` en el repo ni script de test en `package.json`). Toda la verificación es manual contra producción, agravado porque el emulador está roto en esta máquina (§20.1).
 9. **Respaldo**: la tarea programada de Windows nunca se confirmó creada (§25), y solo respalda local.
@@ -762,7 +784,7 @@ La app **funciona** end-to-end y está en producción; esta sección es sobre qu
 12. Sin service worker: la carga inicial no funciona offline (§20.4).
 13. Sin UI para crear/editar municipalidades — todo a mano vía script con Admin SDK (§4).
 14. `gasto_real` no se puede corregir después de cerrar un caso (§17).
-15. Las notificaciones nuevas del bot (creación/asignación) y la consulta conversacional no se verificaron end-to-end una por una (§23).
+15. La **consulta conversacional** del bot (el vecino escribe su ticket por WhatsApp) no se verificó end-to-end con un mensaje real. Las notificaciones de creación y de resuelto **sí están verificadas** contra las banderas de producción (§39.4). El aviso de "cuadrilla asignada" ya no existe (§39.3).
 
 ## 28. Anti-spam de reportes ciudadanos (02-ago-2026)
 
@@ -810,6 +832,8 @@ Tanda pedida por el usuario a partir de capturas de la app corriendo en su celul
 **Se dejó de pedir el RUT.** Decisión del usuario para no manejar datos personales sensibles sin necesidad (y evitar la exposición legal que eso implica). Se eliminó `src/utils/rut.js`, el campo del formulario, el índice local por RUT en `utils/dispositivo.js` y la pestaña "Por mi RUT" de `/estado`. `incidencias.rut_ciudadano` **ya no se escribe**; los reportes antiguos que lo tienen lo conservan.
 
 **Recuperación de ticket sin datos personales**: el vecino le escribe **"mis reportes"** al WhatsApp municipal y el bot le responde con sus reportes y estados (`responderMisReportes` en `whatsapp-bot/index.js`). La identidad es el propio número desde el que escribe, y la respuesta llega solo a ese teléfono — nadie puede pedir los de otro. Reemplaza a la búsqueda por RUT de §15.
+
+> 🔴 **ESTO YA NO EXISTE (detectado el 09-ago-2026, ver §39.3).** `responderMisReportes` vivía en el bot no oficial, que se retiró: el webhook actual solo reconoce números de ticket, no la frase "mis reportes". Y como acá arriba se eliminó también la pestaña "Por mi RUT" de `/estado`, **hoy un vecino que pierde su número de 6 dígitos no tiene NINGUNA forma de recuperar su reporte**: `/estado` solo acepta el número. Es la consecuencia más grave de la migración no documentada — el reemplazo que justificó quitar la búsqueda por RUT desapareció después, y nadie lo notó.
 
 **Número de ticket corto**: pasó de `INC-YYYYMMDD-XXXX` (17 caracteres con letras) a **6 dígitos** (`482173`, mostrado `482 173`). Es un dato que el vecino anota a mano y dicta por teléfono. `utils/ticket.js` expone `generarNumeroTicket`, `formatearNumeroTicket` y `normalizarNumeroTicket` — esta última acepta espacios/puntos/guiones y **sigue reconociendo los tickets del formato viejo**, que ya están en manos de gente. El bot también reconoce ambos formatos. Un millón de combinaciones con el reintento por colisión que ya existía (§15) alcanza de sobra.
 
@@ -888,6 +912,8 @@ También se cambió `html, body, #root` de `height: 100%` a `min-height: 100%`: 
 **Verificado** replicando los cálculos contra producción (92 reportes de `demo`): la consulta corre con los índices existentes y los números cuadran. **Falta que el usuario confirme visualmente** cómo sale el PDF impreso.
 
 ## 32. Alerta de emergencias al WhatsApp del Alcalde (02-ago-2026)
+
+> 🔴 **NO ESTÁ ACTIVA — se perdió en la migración a la API oficial (ver §39.3).** Esta función la implementaba el bot no oficial, que se retiró. El bot actual (`whatsapp-api-oficial/`) tiene solo dos listeners (nuevo ticket y resuelto): **ningún código lee `whatsapp_alcalde` ni consume `alertado_alcalde`**, así que configurar el número del Alcalde **no la enciende**. Comprobado en producción el 09-ago-2026: 7 reportes de gravedad Alta, 0 alertas. Para revivirla hacen falta un listener nuevo **y** una plantilla aprobada en Meta (con la Cloud API no se puede mandar texto libre fuera de la ventana de 24 h). **No prometerla en la propuesta comercial mientras siga así.** Lo de abajo es el diseño original, que sigue siendo válido como especificación.
 
 Cuando entra una incidencia de **gravedad Alta** (fuga de gas, cableado expuesto, socavón, árbol caído), el bot le escribe al celular del Alcalde con: categoría, número de reporte, departamento, dirección de referencia, detalles del vecino, **link a Google Maps con la ubicación exacta**, la foto y la hora de ingreso. El escenario que esto evita es que el Alcalde se entere de algo grave por un vecino enojado en redes sociales antes que por su propio municipio.
 
@@ -1090,3 +1116,208 @@ El campo "¿Dónde exactamente?" del Paso 2 (obligatorio desde §29) **llega esc
 - **`z-[1100]`** en la lista de resultados: el contenedor y los controles de Leaflet llegan hasta `z-1000`.
 
 **Verificado en el navegador contra Firestore de producción** (`/licanten/reportar`, viewport 375×812): búsqueda con y sin tildes, calle → pin + mapa centrado + Paso 2 prellenado, localidad → aviso de aproximada, geocodificación inversa al tocar el mapa ("Paseo Borde Costero de Iloca, Iloca"), texto editado a mano que sobrevive a mover el pin, modo sin conexión, y `buscarSectoresPorNombre` con casos límite (sector sin coordenadas, una sola letra, lista vacía). Sin errores de consola. **`npm run build` pasa. NO está desplegado** — sigue pendiente el despliegue de §35 en adelante.
+
+## 38. Las fotos del vecino no llegaban al funcionario (09-ago-2026)
+
+**Bug de producción reportado por el usuario**: ni el Alcalde ni ningún funcionario veían la foto que manda el vecino. Estuvo roto desde la migración a fotos múltiples (§11) hasta hoy.
+
+### 38.1 La causa
+
+`crearIncidencia` sube cada foto a Cloudinary **en segundo plano** (a propósito: el vecino recibe su ticket al instante, sin esperar una subida que en zona rural puede tardar mucho) y después escribe la URL con `updateDoc(... arrayUnion(url))`. Ese update lo hace el **vecino, sin login** — y `firestore.rules` no tenía ninguna cláusula que lo permitiera:
+
+- `puedeGestionarIncidencia` exige funcionario autenticado.
+- `esVotoValidoIncidencia` exige `hasOnly(['upvotes','usuarios_afectados'])`.
+- `esCalificacionValida` exige `hasOnly(['calificacion_ciudadano'])`.
+
+Resultado: `permission-denied`. La imagen quedaba subida en Cloudinary y el campo `fotos_antes_urls` del reporte en `[]`, así que `GaleriaFotos` (que devuelve `null` con arreglo vacío) no dibujaba nada. Lo mismo en `tickets_publicos`, o sea que el vecino tampoco veía su propia foto en el pin del mapa.
+
+**Por qué nadie lo notó antes**: ese `updateDoc` era el único de todo el archivo **sin `.catch()`**, así que el rechazo quedaba como promesa rechazada sin manejar; y el de `tickets_publicos` tenía `.catch(() => {})`, que se lo tragaba entero. Dos silencios encadenados.
+
+### 38.2 Cómo se diagnosticó (sin adivinar)
+
+1. **Datos reales**: los 30 tickets más recientes de `tickets_publicos` en producción, por REST (lectura pública), todos con `fotos_antes_urls` vacío — incluidos los de hoy, con la foto ya obligatoria desde §29.
+2. **Descartar Cloudinary**: el bundle desplegado sí trae el `cloud_name` configurado, y una subida de prueba real desde el navegador devolvió `https://res.cloudinary.com/.../pruebas/diagnostico-fotos/...`. La subida nunca fue el problema.
+3. **Descartar deriva de reglas**: se bajó el ruleset **realmente desplegado** con la Rules API (`firebaserules.googleapis.com/v1/.../releases` + el ruleset del release) y se comparó con el repo: **idénticos**. Lo que estaba enforced era exactamente `firestore.rules`.
+
+Vale la pena conservar el método: `diff` entre el ruleset desplegado y el archivo local es la única forma de saber qué se está aplicando de verdad.
+
+### 38.3 El arreglo
+
+**`firestore.rules` → `esFotoCiudadanoValida(antes, despues)`**, agregada al `allow update` de `incidencias` y de `tickets_publicos`. Permite el update anónimo **solo** si:
+
+- toca únicamente `fotos_antes_urls`;
+- el arreglo crece en exactamente 1 y había menos de 3;
+- el arreglo nuevo es **exactamente** `previas.concat([agregada])` — esta comparación es la que impide reordenar, pisar o borrar fotos ya cargadas (sin ella, colar una URL al principio dejaba pasar cualquier host);
+- la URL agregada es un string de ≤500 caracteres bajo `https://res.cloudinary.com/`.
+
+**Límite conocido y aceptado** (mismo criterio que §28): quien conozca un `incidencia_id` —que es público vía `tickets_publicos`— puede colgarle hasta 3 imágenes de Cloudinary. No se restringe a *nuestra* cuenta porque el preset de subida es "unsigned" y público por diseño: cualquiera puede obtener una URL bajo nuestro cloud de todos modos. Lo que sí queda cerrado es apuntar a otro host (un pixel de rastreo, un dominio propio).
+
+**`incidenciasService.js`**: los dos `updateDoc` de la foto ahora tienen `.catch()` que registra el error con el número de foto y el id del documento. El de `tickets_publicos` sigue siendo best-effort, pero **loguea** en vez de tragar.
+
+### 38.4 Verificación
+
+- **Las reglas compilan** contra el proyecto real: `firebase deploy --only firestore:rules --dry-run` → *"rules file firestore.rules compiled successfully"*. Eso valida el `let`, el `concat()`, la comparación de listas y el `matches()`.
+- **La subida a Cloudinary funciona** (prueba real desde el navegador, ver 38.2). Queda un archivo de prueba en `pruebas/diagnostico-fotos/` de Cloudinary que se puede borrar.
+- **El comportamiento de las reglas NO se pudo probar automáticamente en esta máquina**, y hay que ser honesto al respecto: el emulador de Firestore **no arranca acá** (Netty falla con *"failed to create a child event loop"* / `SocketException: Invalid argument`, con y sin sandbox), y la API `firebaserules:test` devuelve **403** porque la cuenta de servicio del repo no tiene el permiso `firebaserules.rulesets.test`. Las dos vías para cerrar esto: darle a esa cuenta el rol *Firebase Rules Admin*, o probar en el emulador desde otra máquina. El set de casos ya está escrito y listo para correr (12 casos: agregar 1ª/2ª/3ª foto, 4ª rechazada, host ajeno, dos URLs de una vez, pisar, borrar, colar al principio, foto+estado, y las regresiones de voto y calificación).
+- **Pendiente de despliegue**: sin `firebase deploy --only firestore:rules` el arreglo no tiene efecto. Es un despliegue independiente del frontend — no arrastra §35/§36/§37.
+
+### 38.5 Los reportes viejos siguen sin foto
+
+Las URLs nunca se guardaron y el `File` del navegador ya no existe, así que el arreglo **no recupera nada hacia atrás**: aplica desde el próximo reporte. Las imágenes en sí muy probablemente siguen en Cloudinary, en carpetas `incidencias/{incidenciaId}/antes/`, o sea que se pueden volver a vincular con un script que las liste y escriba las URLs con el Admin SDK. Eso **requiere las credenciales de la Admin API de Cloudinary** (`api_key` / `api_secret`, que hoy no están en `.env` — solo el cloud name y el preset unsigned).
+
+## 39. WhatsApp: la migración a la Cloud API oficial (estado real al 09-ago-2026)
+
+**Lo más importante de acá: la migración se hizo bien, pero se perdieron tres funciones en el camino y ninguna estaba anotada — la peor deja a un vecino sin forma de recuperar su ticket (39.3).**
+
+**Esta sección existe porque la migración no estaba documentada en ninguna parte.** El usuario reemplazó el bot no oficial por la API oficial de Meta, pero §21, §23, §27 y `docs/PROPUESTA-COMERCIAL-NOTAS.md` seguían describiendo el bot viejo — o sea que cualquier conversación nueva (y la propuesta comercial) partía de una foto equivocada del sistema. Lo de acá está leído del código y verificado contra producción, no de memoria.
+
+### 39.1 Lo que hay hoy
+
+`whatsapp-bot/` (Baileys, §23) **ya no existe en el repo**. Lo reemplazó **`whatsapp-api-oficial/`**, proyecto Node independiente que habla con la **Cloud API oficial de Meta** (`https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/messages`). Dependencias: `axios`, `express`, `firebase-admin`. Nada de `whatsapp-web.js`, Baileys ni Venom.
+
+Diferencias que importan respecto del bot viejo:
+
+| | Bot viejo (§23) | Bot actual |
+|---|---|---|
+| Transporte | Baileys (no oficial, viola los TOS) | Cloud API oficial de Meta |
+| Riesgo de bloqueo del número | Real, sin aviso ni apelación | Ninguno |
+| Autenticación con Firebase | Client SDK con cuenta `TERRENO` dedicada | **Admin SDK** (`FIREBASE_SERVICE_ACCOUNT`), sin cuenta de funcionario |
+| Dónde corre | La PC del usuario, ventana abierta | **Render** (Web Service), con auto-ping cada 10 min |
+| Texto de los mensajes | Libre, armado en código | **Plantillas aprobadas por Meta** (el texto vive en Meta, no en el repo) |
+
+**Archivos**: `server.js` (los listeners de Firestore y el envío), `whatsapp.js` (cliente de la Graph API + traducción de códigos de error de Meta), `webhook.js` (consultas entrantes del vecino), `categorias.js` (copia de las etiquetas), `ver-plantillas.js` y `probar*.js` (utilidades de diagnóstico).
+
+**Variables de entorno** (viven en Render, no en el repo): `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_WABA_ID`, `WHATSAPP_TEMPLATE_LANG` (por defecto `es_CL`), `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, `FIREBASE_SERVICE_ACCOUNT`, `PORTAL_URL_ESTADO`.
+
+**Verificado el 10-ago-2026 contra la Graph API**: el `WHATSAPP_TOKEN` es de **usuario del sistema** (`TuMuniAqui-bot`) y **no expira** — la advertencia del `.env.example` sobre los tokens de 24 h ya no aplica a este servicio. El número es **+56 9 6540 0932** ("TumuniAqui"), con calidad **GREEN**. **Pero `WHATSAPP_WABA_ID` en Render está mal**: tiene el ID del *número de teléfono*, no el de la cuenta de WhatsApp Business. No rompe los envíos (`server.js` no lo usa; solo `ver-plantillas.js`), pero deja el diagnóstico ciego justo cuando se necesita. El valor correcto está en Meta for Developers → app → WhatsApp → Configuración de la API, como "Identificador de la cuenta de WhatsApp Business". Y el usuario del sistema **no tiene ninguna WABA asignada** (`me/assigned_whatsapp_business_accounts` devuelve vacío), así que hoy ese token puede enviar pero no puede listar plantillas.
+
+### 39.2 Qué se sigue notificando, y con qué plantilla
+
+Solo **dos** eventos, cada uno con su plantilla aprobada en Meta y su bandera en `incidencias`:
+
+1. **Nuevo ticket** → plantilla `alerta_nuevo_ticket`, bandera `notificado_whatsapp_creacion`. Dos variables **en este orden**: `{{1}}` categoría legible, `{{2}}` número de ticket.
+2. **Ticket resuelto** → plantilla `ticket_resuelto`, bandera `notificado_whatsapp`. **Una sola** variable: `{{1}}` número de ticket; el link al portal va escrito fijo dentro del texto aprobado.
+
+**La cantidad de variables tiene que calzar exacto** o Meta rechaza el envío entero. Igual el nombre de la plantilla y el idioma: `es_CL` es "Spanish (CHL)" en el editor de Meta, y `es` a secas es otro idioma distinto (error 132001).
+
+**Texto aprobado de las plantillas, para tenerlo versionado acá** (el texto real vive en Meta, no en el repo: si alguien lo edita allá, esto queda desactualizado). Redactado con el usuario el 09-ago-2026, en trato de **usted** y con **un solo asterisco** para la negrita — WhatsApp no entiende el `**` de Markdown, y con `**texto**` al vecino le llegan asteriscos literales:
+
+```
+[alerta_nuevo_ticket]
+Estimado/a vecino/a:
+
+Hemos recibido correctamente su reporte correspondiente a *{{1}}*.
+
+Su número de ticket es *{{2}}*. Le recomendamos conservarlo, ya que será necesario para
+realizar el seguimiento de su solicitud.
+
+Nuestro equipo municipal ha sido informado y se coordinarán las acciones necesarias para
+atender y solucionar el problema reportado a la brevedad posible.
+
+Agradecemos su colaboración y compromiso con nuestra comunidad. Sus reportes nos permiten
+identificar necesidades y seguir trabajando por una mejor comuna de *Licantén*.
+
+Revise aquí el estado de su reporte:
+https://app-incidencias-urbanas.web.app/licanten/estado
+
+*Municipalidad de Licantén*
+```
+
+```
+[ticket_resuelto]
+Estimado/a vecino/a:
+
+Le informamos que su reporte con ticket *{{1}}* ha sido *resuelto*.
+
+Puede revisar el detalle del trabajo realizado aquí:
+https://app-incidencias-urbanas.web.app/licanten/estado
+
+En esa misma página puede calificar la atención recibida. Su evaluación nos ayuda a
+mejorar el servicio.
+
+Agradecemos su colaboración y compromiso con la comuna: con la información que nos
+entregan los vecinos seguimos mejorando Licantén.
+
+*Municipalidad de Licantén*
+```
+
+Detalles que costaron y conviene no volver a descubrir: el **campo "Título"/header no acepta formato** (ahí los asteriscos salen literales, por eso ese campo no tiene el botón `B`); el enlace va en su **propia línea y sin punto final**, porque un punto pegado a la URL puede quedar dentro del link y romperlo; y la muestra de `{{2}}`/`{{1}}` del número de ticket va **sin espacio** (`482173`), porque el bot manda los 6 dígitos crudos — el `482 173` con espacio es solo cómo se muestra en pantalla.
+
+**Consulta conversacional** (`webhook.js`): sobrevivió y quedó mejor que la del bot viejo — reconoce el ticket de 6 dígitos (§15) dentro de una frase cualquiera, responde estado/categoría/fechas/lugar y el link para calificar si ya está resuelto. Solo se monta si están `WHATSAPP_VERIFY_TOKEN` y `WHATSAPP_APP_SECRET` (sin el secret no se puede validar que la petición venga de Meta).
+
+### 39.3 Tres funciones se perdieron en la migración y hay que decir que NO existen
+
+Esto es lo más importante de esta sección. Los campos siguen escribiéndose en cada incidencia nueva (`incidenciasService.js`), pero **no hay una línea de código en ninguna parte que los consuma**:
+
+- **`alertado_alcalde` — la alerta de emergencias al Alcalde (§32) NO está implementada.** El bot oficial tiene exactamente dos listeners (nuevo ticket y resuelto); no hay ninguno para gravedad Alta, y `whatsapp_alcalde` no se lee desde ningún archivo del proyecto (solo lo *escribe* `scripts/configurar-whatsapp-alcalde.mjs`). **Configurar el número no la activa.** Evidencia en producción: 7 reportes de gravedad Alta, `alertado_alcalde: false` en todos, 0 alertas enviadas.
+- **`notificado_whatsapp_asignacion` — el aviso al vecino cuando le asignan cuadrilla tampoco existe.** Era uno de los 3 momentos del bot viejo; el oficial solo cubre 2.
+- **La consulta "mis reportes" tampoco existe, y esta es la peor.** El webhook actual solo reconoce números de ticket (`extraerNumeroTicket`: 6 dígitos o el formato antiguo `INC-...`); no hay nada que responda a la frase "mis reportes" usando el número del remitente como identidad. **El problema es que §29 eliminó la búsqueda por RUT de `/estado` justificándose precisamente en que esa consulta la reemplazaba** — y `/estado` hoy solo acepta el número de ticket. Resultado: **un vecino que pierde sus 6 dígitos no tiene ninguna forma de recuperar su reporte.** Reponerlo es barato y no necesita plantilla nueva: la respuesta cae dentro de la ventana de 24 h porque la dispara el propio mensaje del vecino. Es una consulta a `incidencias` por `contacto_ciudadano` (el Admin SDK del bot ya puede leerla).
+
+Para revivir cualquiera de las dos hace falta, además del listener: **una plantilla nueva aprobada en Meta**, porque con la Cloud API el texto libre solo se puede enviar dentro de la ventana de 24 h desde que el vecino escribió — y una alerta de emergencia no puede depender de eso.
+
+### 39.4 Verificado contra producción (09-ago-2026)
+
+Banderas de los últimos 25 reportes, leídas con el Admin SDK (solo banderas y fechas, sin datos personales):
+
+- **Todos los reportes desde el 01-ago tienen su aviso de creación enviado**, y los resueltos del 06 y del 09-ago tienen también su aviso de resolución. La cadena funciona.
+- Los del 31-jul aparecen sin avisar: son **anteriores** al bot, no una falla actual.
+- **0 de 7 emergencias alertadas al Alcalde** (ver 39.3).
+- En el documento de `licanten` están vacíos **`whatsapp_alcalde`**, **`contacto_datos`** (las páginas legales siguen mandando a la Oficina de Partes, §35) y **`sectores`** (0 cargados, ni los 3 confirmados de §33).
+
+### 39.5 Lo que sigue siendo frágil para prometerle a un municipio
+
+Ya **no** es el riesgo de bloqueo del número — eso quedó cerrado. Los riesgos reales que quedan:
+
+1. **Editar una plantilla corta las notificaciones hasta que Meta la vuelva a aprobar. CONFIRMADO EN PRODUCCIÓN el 10-ago-2026.** Se editaron `alerta_nuevo_ticket` y `ticket_resuelto` el 09-ago (mejoras de redacción, ver 39.2) y las dos quedaron **"En revisión"**. Desde ese momento **falló el 100% de los envíos** durante ~13 horas, sin que nadie se enterara: el último WhatsApp que salió bien fue el 09-ago 22:39, y los 4 reportes siguientes —incluido uno de un vecino real— se quedaron sin aviso.
+
+   **Ojo con el error que devuelve Meta**, porque manda por el camino equivocado: `[132001] Template name does not exist in the translation / template name (alerta_nuevo_ticket) does not exist in es_CL`. Suena a que el nombre o el idioma están mal, y **los dos estaban correctos** (nombre exacto, idioma "Spanish (CHL)" = `es_CL`). Lo que Meta quiere decir es que **no hay versión aprobada disponible para enviar**. Antes de tocar `WHATSAPP_TEMPLATE_LANG` o el nombre en `server.js`, revisar el ESTADO de la plantilla en el Administrador de WhatsApp.
+
+   Consecuencias prácticas: (a) no editar plantillas si se necesita que las notificaciones sigan saliendo, y menos un viernes; (b) **tras la aprobación hay que reiniciar el servicio en Render** para que los pendientes se reintenten (el listener solo reacciona a documentos que *entran* a la consulta, y en un reinicio entran todos los que quedaron en `false`); (c) Meta limita cuántas veces se puede editar una plantilla aprobada.
+2. **El bot corre en el plan Free de Render**, que apaga el proceso a los ~15 min sin tráfico. Hay un auto-ping cada 10 min que lo evita y funciona, pero un plan gratuito no tiene SLA: si Render lo apaga, no sale ninguna notificación y nadie se entera hasta que reclama un vecino. Para un municipio que paga, esto tiene que estar en un plan pagado.
+3. **Meta cobra por mensaje de plantilla.** Es un costo por reporte que hoy no está en los números de la propuesta. Hay que verificar la tarifa vigente de mensajes de utilidad en Chile antes de comprometer volumen.
+4. **Si el envío falla, la bandera no se marca** y el reporte se reintenta en cada reconexión del proceso. Es bueno (reintento gratis), pero significa que un envío que falla *siempre* (número que no existe en WhatsApp) se reintenta indefinidamente sin que nadie lo vea, porque el único registro es el log de Render.
+
+## 40. Reportes fantasma: el ticket se creaba sin la incidencia (10-ago-2026)
+
+**Bug de producción reportado por el usuario**, con una descripción que resultó exacta: *"cuando me tira el error `Missing or insufficient permissions` no se envía el reporte, pero al querer enviar otro me aparece que se ingresó la incidencia igual, y nunca agregó número de ticket ni se envió al vecino"*.
+
+### 40.1 La causa
+
+`crearIncidencia` escribía el ticket público **primero y por separado**, y solo después la incidencia (en su propio lote con la marca anti-spam). Cuando la segunda escritura era rechazada, la primera ya estaba hecha: quedaba un **ticket público huérfano**.
+
+El rechazo es real y esperable: `respetaEnfriamiento` en `firestore.rules` (§28) responde `permission-denied` si el mismo dispositivo ya reportó hace menos de 60 s. Se reprodujo exactamente así —dos `crearIncidencia` seguidos con el mismo `dispositivoId`— y el segundo devolvió `permission-denied / Missing or insufficient permissions.`, dejando el huérfano `224018` en `demo`.
+
+Un huérfano hace daño de tres formas, todas visibles para el vecino y ninguna para el municipio:
+
+1. **Aparece en el mapa y en "Últimos reportes de la comuna"** — el vecino ve un reporte que el municipio jamás recibió.
+2. **Dispara el aviso de "posible duplicado"** (§16) al vecino siguiente, que se suma con un "+1" a un reporte inexistente. Eso explica el *"me aparece que se ingresó la incidencia igual"*: la detección de duplicados lee `tickets_publicos`, no `incidencias`.
+3. **Quema el número de ticket**, que ya no se puede reutilizar.
+
+**Cuántos había**: 23 huérfanos de 110 tickets. **5 de los 9 tickets de Licantén** — o sea que más de la mitad de lo que veía un vecino de la comuna era humo. El más viejo es del 04-ago, así que el bug llevaba días y **es anterior a los cambios de §37/§38** (se comprobó: el despliegue de reglas fue a las 14:31 y el reporte de las 14:41 se creó bien).
+
+**Por qué nadie lo notó**: el vecino veía `Missing or insufficient permissions.` —en inglés, sin motivo— y el funcionario no veía nada de nada. No hay log de servidor en el camino del ciudadano.
+
+**Honestidad sobre el caso puntual del usuario**: el enfriamiento reproduce el síntoma idéntico, pero **no se pudo confirmar que fuera la causa de su envío de las 14:36**: ningún reporte exitoso de ese dispositivo cae dentro de los 60 s previos. La causa exacta de ESE intento quedó sin determinar, y es justamente el motivo por el que el arreglo incluye traducir y registrar el error: hoy la información necesaria no existía en ninguna parte.
+
+### 40.2 El arreglo
+
+- **Un solo lote atómico.** `crearIncidencia` ahora escribe **ticket público + incidencia + marca del dispositivo en un único `writeBatch`**: o quedan los tres, o no queda ninguno. Se verificó repitiendo el escenario del enfriamiento: el segundo intento se rechaza y **no deja ticket**. `registrarTicketPublico` se reemplazó por `agregarTicketPublicoAlLote(lote, {...})`.
+- **La colisión de número de ticket se detecta leyendo, no adivinando.** Todos los rechazos llegan como `permission-denied` sin motivo, así que antes se reintentaba con otro número ante cualquiera. Ahora, tras un rechazo, se consulta `tickets_publicos/{numero}` (lectura pública): si existe, fue colisión y se genera otro número; si no existe, el rechazo vino de otra parte y **sube tal cual** en vez de esconderse detrás de 5 reintentos.
+- **Reintento de la cola offline, agujero cerrado.** Si el intento original sí alcanzó a escribir (el `conTimeout` de 15 s se rindió pero Firestore terminó), el ticket ya existe y apunta a ese mismo `idDocumento`: ahora se detecta y se devuelve éxito, para que la cola lo dé por sincronizado. Antes ese ítem se reintentaba **para siempre**, porque la afirmación de idempotencia del comentario original era falsa: `setDoc` sobre una incidencia ya creada es un *update*, y las reglas no permiten que un anónimo actualice una incidencia (solo votar, calificar y agregar foto).
+- **El vecino ya no ve el error crudo.** `permission-denied` se traduce a *"No pudimos registrar tu reporte. Si acabas de enviar otro, espera un minuto e intenta de nuevo"*, y el error técnico queda en `console.error`.
+
+### 40.3 Verificación
+
+Reproducido y contrastado antes/después con datos reales (municipio `demo`, para no ensuciar Licantén):
+
+| | Antes | Después |
+|---|---|---|
+| 2º reporte dentro de los 60 s | rechazado **+ ticket huérfano** (`224018`) | rechazado, **sin ticket** |
+| Mensaje al vecino | `Missing or insufficient permissions.` | mensaje en español, con qué hacer |
+
+El flujo completo se probó además **por la interfaz** (los 3 pasos, con foto, nombre y WhatsApp) contra `/demo/reportar`, forzando el enfriamiento en el servidor y borrando la marca local para que el aviso amable del cliente no interviniera: el formulario muestra el mensaje nuevo y no se crea ningún ticket. `npm run build` pasa.
+
+### 40.4 Falta hacer dos cosas
+
+1. **Desplegar el frontend**: este arreglo es código de `src/`, así que **producción sigue creando huérfanos hasta que se haga `npm run build && npx firebase deploy --only hosting`**. Ese despliegue arrastra también §36 y §37 (panel nuevo y buscador de direcciones), que no estaban publicados.
+2. **Limpiar los 23 huérfanos** con el script nuevo **`scripts/limpiar-tickets-huerfanos.mjs`**, que por defecto **solo informa** y borra únicamente con `--borrar`. Acepta `--municipio licanten` para acotar. Avisa aparte si un huérfano tiene votos de vecinos, porque ahí se está borrando también participación real.

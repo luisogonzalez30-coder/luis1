@@ -110,6 +110,43 @@ service cloud.firestore {
         despues.calificacion_ciudadano >= 1 && despues.calificacion_ciudadano <= 5;
     }
 
+    // --- Foto del vecino, que llega DESPUÉS de crear el reporte (09-ago-2026) ---
+    // La foto se sube a Cloudinary en segundo plano (ver crearIncidencia): el
+    // vecino recibe su número de ticket al instante, sin esperar una subida que
+    // en zona rural puede tardar mucho. La consecuencia es que la URL entra en
+    // un update POSTERIOR, y el vecino no tiene login.
+    //
+    // Sin esta cláusula ese update se rechazaba con permission-denied y la foto
+    // no llegaba nunca al funcionario: la imagen quedaba en Cloudinary y el
+    // campo del reporte en []. Fue así desde la migración a fotos múltiples
+    // (§11) hasta el 09-ago-2026 — 30 de 30 reportes de producción sin foto.
+    //
+    // Se acota todo lo que se puede: solo toca el campo de fotos, solo agrega
+    // UNA URL al final, hasta 3 en total, y solo si es una URL de Cloudinary.
+    // La comparación con concat() es la que impide reordenar, pisar o borrar las
+    // fotos ya cargadas: obliga a que el arreglo nuevo sea exactamente el
+    // anterior más el elemento agregado, en ese orden.
+    //
+    // Límite conocido y aceptado (mismo criterio que §28): quien conozca un
+    // incidencia_id —que es público en tickets_publicos— puede colgarle hasta 3
+    // imágenes de Cloudinary. No se restringe a NUESTRA cuenta de Cloudinary
+    // porque el preset de subida es "unsigned" y público por diseño: cualquiera
+    // puede obtener una URL bajo nuestro cloud igual. Lo que sí queda cerrado es
+    // apuntar a cualquier otro host (un pixel de rastreo, un dominio propio).
+    function esFotoCiudadanoValida(antes, despues) {
+      let previas = antes.get('fotos_antes_urls', []);
+      let nuevas = despues.fotos_antes_urls;
+      let agregada = nuevas.size() > 0 ? nuevas[nuevas.size() - 1] : '';
+      return request.auth == null &&
+        despues.diff(antes).affectedKeys().hasOnly(['fotos_antes_urls']) &&
+        previas.size() < 3 &&
+        nuevas.size() == previas.size() + 1 &&
+        nuevas == previas.concat([agregada]) &&
+        agregada is string &&
+        agregada.size() <= 500 &&
+        agregada.matches('https://res[.]cloudinary[.]com/.+');
+    }
+
     // --- Anti-spam de reportes ciudadanos (02-ago-2026) ---
     // La app ciudadana no tiene login, así que no hay usuario real que limitar.
     // Se usa el ID de dispositivo (utils/dispositivo.js: un UUID aleatorio en
@@ -206,7 +243,8 @@ service cloud.firestore {
       allow update: if (puedeGestionarIncidencia(resource.data) &&
                           noTocaGastoRealOEsValido(resource.data, request.resource.data)) ||
                       esVotoValidoIncidencia(resource.data, request.resource.data) ||
-                      esCalificacionValida(resource.data, request.resource.data);
+                      esCalificacionValida(resource.data, request.resource.data) ||
+                      esFotoCiudadanoValida(resource.data, request.resource.data);
 
       allow delete: if esAlcalde() && esDelMismoMunicipio(resource.data.municipio_id);
     }
@@ -268,9 +306,12 @@ service cloud.firestore {
 
       // El funcionario del mismo municipio refleja cambios de estado (asignar
       // cuadrilla / marcar resuelto); cualquier ciudadano (sin login) puede votar
-      // "+1" (solo upvotes, +1 exacto) o reflejar su calificación ya puesta en
-      // incidencias/{id} (solo una vez, mismo criterio que esCalificacionValida).
+      // "+1" (solo upvotes, +1 exacto), reflejar su calificación ya puesta en
+      // incidencias/{id} (solo una vez, mismo criterio que esCalificacionValida),
+      // o agregar la URL de su foto cuando termina de subir (misma función que en
+      // incidencias — así el pin del mapa ciudadano también la muestra).
       allow update: if esDelMismoMunicipio(resource.data.municipio_id) ||
+                      esFotoCiudadanoValida(resource.data, request.resource.data) ||
                       (request.auth == null &&
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes']) &&
                         request.resource.data.upvotes == resource.data.get('upvotes', 1) + 1) ||
