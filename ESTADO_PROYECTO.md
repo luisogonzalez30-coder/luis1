@@ -1243,7 +1243,9 @@ entregan los vecinos seguimos mejorando Licantén.
 
 Detalles que costaron y conviene no volver a descubrir: el **campo "Título"/header no acepta formato** (ahí los asteriscos salen literales, por eso ese campo no tiene el botón `B`); el enlace va en su **propia línea y sin punto final**, porque un punto pegado a la URL puede quedar dentro del link y romperlo; y la muestra de `{{2}}`/`{{1}}` del número de ticket va **sin espacio** (`482173`), porque el bot manda los 6 dígitos crudos — el `482 173` con espacio es solo cómo se muestra en pantalla.
 
-**Consulta conversacional** (`webhook.js`): sobrevivió y quedó mejor que la del bot viejo — reconoce el ticket de 6 dígitos (§15) dentro de una frase cualquiera, responde estado/categoría/fechas/lugar y el link para calificar si ya está resuelto. Solo se monta si están `WHATSAPP_VERIFY_TOKEN` y `WHATSAPP_APP_SECRET` (sin el secret no se puede validar que la petición venga de Meta).
+**Consulta conversacional** (`webhook.js`): el código sobrevivió y quedó mejor que el del bot viejo — reconoce el ticket de 6 dígitos (§15) dentro de una frase cualquiera, responde estado/categoría/fechas/lugar y el link para calificar si ya está resuelto.
+
+> 🔴 **PERO NO ESTÁ ENCENDIDO EN PRODUCCIÓN (comprobado el 10-ago-2026).** `GET https://proyectomuni.onrender.com/` responde `200 Status: OK`, pero `GET .../webhook` responde **404**: el router no está montado. `server.js` solo lo monta si están **las dos** variables `WHATSAPP_VERIFY_TOKEN` y `WHATSAPP_APP_SECRET`, y en Render faltan (sin el secret no se puede verificar que la petición venga de Meta, y una URL pública sin firma sirve para hacernos responderle a números arbitrarios). Consecuencia: **hoy el vecino que le escribe al número no recibe ninguna respuesta**, ni siquiera consultando su ticket. Encenderlo es configuración, no código: las dos variables en Render + la Callback URL y el campo `messages` en Meta.
 
 ### 39.3 Tres funciones se perdieron en la migración y hay que decir que NO existen
 
@@ -1321,3 +1323,38 @@ El flujo completo se probó además **por la interfaz** (los 3 pasos, con foto, 
 
 1. **Desplegar el frontend**: este arreglo es código de `src/`, así que **producción sigue creando huérfanos hasta que se haga `npm run build && npx firebase deploy --only hosting`**. Ese despliegue arrastra también §36 y §37 (panel nuevo y buscador de direcciones), que no estaban publicados.
 2. **Limpiar los 23 huérfanos** con el script nuevo **`scripts/limpiar-tickets-huerfanos.mjs`**, que por defecto **solo informa** y borra únicamente con `--borrar`. Acepta `--municipio licanten` para acotar. Avisa aparte si un huérfano tiene votos de vecinos, porque ahí se está borrando también participación real.
+
+## 41. "Mis reportes" por WhatsApp — la promesa cumplida (10-ago-2026)
+
+Cierra el agujero más grave que dejó la migración a la API oficial (§39.3): **el vecino que perdía su número de ticket no tenía ninguna forma de recuperarlo.** `/estado` solo acepta el número, la búsqueda por RUT se eliminó en §29 justificándose en que esta consulta la reemplazaba, y la consulta se perdió después sin que nadie lo anotara — mientras `TicketConfirmacion.jsx` se la seguía prometiendo textualmente a cada vecino.
+
+### 41.1 Cómo funciona
+
+En `whatsapp-api-oficial/webhook.js`, dentro de `responderConsulta`: si el mensaje **no** trae número de ticket y calza con `RE_MIS_REPORTES`, se le responde su lista.
+
+- **La identidad es el teléfono desde el que escribe.** No hay que pedirle nada más, y nadie puede consultar los reportes de otro: WhatsApp garantiza el remitente y la respuesta va solo a ese número.
+- **El ticket manda sobre la frase**: si escribió un número, quiere ESE reporte.
+- **Se reconoce escrito de varias formas**, porque nadie copia la frase exacta: con o sin tildes, en singular, y con las palabras que la gente usa de verdad (`reportes`, `tickets`, `solicitudes`, `denuncias`, `reclamos`). Verificado que "hola", "quiero reportar un bache" y "mi perro se llama reporte" **no** la activan.
+- **No cuesta plata**: la respuesta va como texto libre dentro de la ventana de 24 h que abre el propio mensaje del vecino, así que no necesita plantilla aprobada ni paga por mensaje. Por eso esto se pudo entregar hoy mismo, con las plantillas todavía en revisión.
+
+### 41.2 Dos decisiones técnicas
+
+**Se ordena en memoria, no en Firestore.** `where('contacto_ciudadano','in', variantes)` combinado con `orderBy('fecha_creacion')` exigiría un **índice compuesto** nuevo, o sea otro despliegue. Un vecino tiene un puñado de reportes, no miles: se leen hasta 12, se ordenan en el proceso y se muestran los 5 más recientes.
+
+**Se buscan varias formas del mismo teléfono.** Meta entrega el número como puros dígitos (`56998803719`); desde §29 la app guarda siempre `+56998803719`, pero los reportes anteriores guardaban lo que el vecino escribió. `variantesDeContacto()` cubre `+56…`, `56…`, `+9…` y `9…`. No cubre formatos con espacios o guiones de registros muy viejos — límite conocido y aceptado.
+
+**Si la lectura llega al tope de 12 no se inventa un total.** La primera versión decía "tienes 7 más", que era mentira cuando había más de 12; ahora en ese caso dice "tienes más reportes además de estos" y solo da la cifra exacta cuando la consulta vino por debajo del tope.
+
+### 41.3 Verificado contra producción, sin mandar mensajes
+
+Se probó llamando directamente a la consulta y al armado del texto con el teléfono real del usuario (`scratchpad/probar-mis-reportes.mjs`, exportando `pideSusReportes`, `buscarReportesDelNumero` y `armarListaDeReportes` desde el webhook para poder probarlas sin levantar el servidor):
+
+- 6 formas de escribir la frase reconocidas, 4 mensajes que no deben activarla ignorados.
+- Con el número real: 12 reportes encontrados, los 5 más recientes formateados con emoji de estado, categoría legible, fecha, lugar y el aviso de que hay más. 643 caracteres, cómodo para WhatsApp.
+- Con un número inventado: 0 resultados, responde el texto que explica **por qué** puede no encontrar nada (reportó desde otro celular, o sin dejar su WhatsApp) en vez de un "no encontré" seco.
+
+**El mensaje de ayuda ahora anuncia la función** (`escríbeme *mis reportes* y te mando la lista`), que era la única forma de que el vecino se enterara de que existe.
+
+### 41.4 Lo que falta para que un vecino real la use
+
+El webhook quedó **montado y verificado** el 10-ago-2026 (`GET /webhook` responde 403 en vez de 404, o sea que la ruta existe y rechaza sin token). Falta que Meta entregue los mensajes: la app estaba **sin publicar**, y Meta advierte que una app sin publicar solo recibe webhooks de prueba. Se completó la publicación ese mismo día; queda **probar con un mensaje real** al +56 9 6540 0932 y confirmar en los logs de Render.

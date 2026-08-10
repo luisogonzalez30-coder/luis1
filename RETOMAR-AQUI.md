@@ -1,7 +1,7 @@
 # Dónde quedamos — 9 de agosto de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (40 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (41 secciones).
 
 La app funciona y está en producción: https://app-incidencias-urbanas.web.app/licanten
 
@@ -27,7 +27,7 @@ npx firebase deploy --only firestore:rules
 
 Es un despliegue solo de reglas: no arrastra el frontend, así que no publica nada más de lo que quieras. Detalle completo en **§38**. Después, la prueba real es mandar un reporte con foto desde el celular y abrirlo en el panel. Los reportes viejos **no** recuperan su foto (§38.5).
 
-**2. Un vecino que pierde su número de ticket no puede recuperarlo.** No hay ninguna vía: `/estado` solo acepta los 6 dígitos, la búsqueda por RUT se eliminó (§29) y la consulta "mis reportes" por WhatsApp —que era su reemplazo— se perdió en la migración del bot sin que nadie lo anotara. Es lo más barato de reponer de todo lo pendiente: no necesita plantilla nueva de Meta, es una consulta a `incidencias` por `contacto_ciudadano` en `whatsapp-api-oficial/webhook.js`. Ver **§39.3**.
+**2.** ~~Un vecino que pierde su número de ticket no puede recuperarlo~~ — ✅ **resuelto el 10-ago-2026 (§41)**: escribirle *"mis reportes"* al WhatsApp municipal le devuelve su lista, identificándolo por el teléfono desde el que escribe. Probado contra datos reales. **Falta la prueba de punta a punta**: mandar un mensaje real al +56 9 6540 0932 y confirmarlo en los logs de Render — el webhook quedó montado y la app publicada, pero eso no se ha probado con un mensaje de verdad.
 
 ---
 

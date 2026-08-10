@@ -46,6 +46,112 @@ function formatearNumeroTicket(numeroTicket) {
   return `${numeroTicket.slice(0, 3)} ${numeroTicket.slice(3)}`
 }
 
+// "Mis reportes": el vecino que perdió su número de ticket pide su lista.
+//
+// Esto existe porque §29 eliminó la búsqueda por RUT de /estado justificándose
+// en que esta consulta la reemplazaba — y después la consulta se perdió en la
+// migración a la API oficial (§39.3), dejando al vecino sin NINGUNA forma de
+// recuperar un ticket olvidado. La pantalla de confirmación se lo promete
+// textualmente ("escríbenos 'mis reportes'"), así que hasta hoy era una promesa
+// incumplida.
+//
+// Se acepta escrito de varias formas porque nadie va a copiar la frase exacta:
+// con o sin tildes, en singular, y con las palabras que la gente usa de verdad
+// para referirse a un reporte municipal.
+const RE_MIS_REPORTES = /\bmis?\s*(reportes?|tickets?|solicitudes?|denuncias?|reclamos?)\b/
+
+function normalizarTexto(texto) {
+  return (texto || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function pideSusReportes(texto) {
+  return RE_MIS_REPORTES.test(normalizarTexto(texto))
+}
+
+// Formas en que ese mismo teléfono puede estar guardado en contacto_ciudadano.
+// Meta entrega el número como puros dígitos con código de país ("56998803719").
+// Desde §29 la app guarda siempre "+56998803719" (normalizarWhatsapp en
+// src/utils/telefono.js), pero los reportes anteriores guardaban lo que el
+// vecino escribió, así que se buscan también las variantes razonables.
+function variantesDeContacto(digitos) {
+  const nacional = digitos.startsWith('56') ? digitos.slice(2) : digitos
+  return [...new Set([`+${digitos}`, digitos, `+${nacional}`, nacional])]
+}
+
+const MAX_REPORTES_LISTADOS = 5
+// Se leen algunos más de los que se muestran, para poder decirle al vecino que
+// tiene otros sin listárselos todos. El techo es por la cuota de lecturas del
+// plan Spark. OJO: si la lectura llega al tope no se sabe el total real, así que
+// ahí el mensaje no da un número (ver armarListaDeReportes).
+const MAX_REPORTES_LEIDOS = 12
+
+async function buscarReportesDelNumero(db, digitos) {
+  const snap = await db
+    .collection('incidencias')
+    .where('contacto_ciudadano', 'in', variantesDeContacto(digitos))
+    .limit(MAX_REPORTES_LEIDOS)
+    .get()
+
+  // Se ordena en memoria a propósito: un where('in') combinado con
+  // orderBy('fecha_creacion') exige un índice compuesto en Firestore, y un
+  // vecino tiene un puñado de reportes, no miles. Así esto funciona sin
+  // desplegar un índice nuevo.
+  return snap.docs
+    .map((d) => d.data())
+    .sort((a, b) => (b.fecha_creacion?.toMillis?.() || 0) - (a.fecha_creacion?.toMillis?.() || 0))
+}
+
+function armarListaDeReportes(reportes) {
+  const mostrados = reportes.slice(0, MAX_REPORTES_LISTADOS)
+
+  const lineas = [
+    reportes.length === 1 ? 'Este es tu reporte:' : `Tus reportes (${mostrados.length} de los más recientes):`,
+    '',
+  ]
+
+  for (const r of mostrados) {
+    const emoji = EMOJI_POR_ESTADO[r.estado] || '📋'
+    const fecha = formatearFecha(r.fecha_creacion)
+    lineas.push(`${emoji} ${formatearNumeroTicket(r.numero_ticket)} · ${etiquetaCategoria(r.categoria)}`)
+    lineas.push(`   ${r.estado || 'Pendiente'}${fecha ? ` · ${fecha}` : ''}`)
+    if (r.direccion_texto) lineas.push(`   ${r.direccion_texto}`)
+    lineas.push('')
+  }
+
+  // Si la consulta llegó al tope de lectura, el total puede ser mayor: ahí se
+  // dice que hay más sin inventar una cifra. Solo cuando vino por debajo del
+  // tope el número es real.
+  if (reportes.length > mostrados.length) {
+    const sinMostrar = reportes.length - mostrados.length
+    lineas.push(
+      reportes.length === MAX_REPORTES_LEIDOS
+        ? 'Tienes más reportes además de estos.'
+        : `Tienes ${sinMostrar} más además de ${sinMostrar === 1 ? 'este' : 'estos'}.`,
+      ''
+    )
+  }
+
+  lineas.push('Escríbeme el número de cualquiera para ver su detalle.')
+  lineas.push(`También puedes verlos acá: ${PORTAL_URL_ESTADO}`)
+
+  return lineas.join('\n')
+}
+
+// Cuando no hay nada, la respuesta tiene que explicar POR QUÉ, no solo decir
+// "no encontré": lo más probable es que el vecino haya reportado desde otro
+// teléfono, o sin dejar su WhatsApp.
+const TEXTO_SIN_REPORTES =
+  'No encontré reportes hechos con este número 🤔\n\n' +
+  'Te busco por el teléfono desde el que me escribes, así que puede pasar si ' +
+  'reportaste desde otro celular o si no dejaste tu WhatsApp al reportar.\n\n' +
+  `Si tienes el número de tu ticket a mano, escríbemelo y te digo cómo va. ` +
+  `También puedes consultarlo acá: ${PORTAL_URL_ESTADO}`
+
 const formateadorFecha = new Intl.DateTimeFormat('es-CL', {
   day: '2-digit',
   month: '2-digit',
@@ -104,7 +210,8 @@ const TEXTO_NO_ENCONTRADO = (numeroTicket) =>
 const TEXTO_AYUDA =
   'Hola 👋 Para consultar un reporte, escríbeme solo el número de ticket ' +
   'de 6 dígitos que te entregamos al reportar (por ejemplo: 482173).\n\n' +
-  `Si no lo tienes a mano, puedes buscarlo acá: ${PORTAL_URL_ESTADO}`
+  'Si lo perdiste, escríbeme *mis reportes* y te mando la lista de los tuyos.\n\n' +
+  `También puedes consultarlos acá: ${PORTAL_URL_ESTADO}`
 
 // --- Protecciones en memoria ---
 // Se pierden al reiniciar el servicio, y está bien: son para evitar duplicados
@@ -180,6 +287,18 @@ async function responderConsulta(db, numero, texto) {
   const numeroTicket = extraerNumeroTicket(texto)
 
   if (!numeroTicket) {
+    // El ticket manda por sobre "mis reportes" porque es más específico: si el
+    // vecino escribió un número, quiere ESE reporte.
+    if (pideSusReportes(texto)) {
+      const reportes = await buscarReportesDelNumero(db, numero)
+      await enviarTexto({
+        para: numero,
+        texto: reportes.length > 0 ? armarListaDeReportes(reportes) : TEXTO_SIN_REPORTES,
+      })
+      console.log(`[webhook] ${numero}: pidió sus reportes, se le enviaron ${reportes.length}.`)
+      return
+    }
+
     if (correspondeMandarAyuda(numero)) {
       await enviarTexto({ para: numero, texto: TEXTO_AYUDA })
       console.log(`[webhook] ${numero}: mensaje sin ticket, se envió la ayuda.`)
@@ -288,4 +407,16 @@ function crearRouter({ db, verifyToken, appSecret }) {
   return router
 }
 
-module.exports = { crearRouter, extraerNumeroTicket, armarRespuesta, formatearNumeroTicket }
+module.exports = {
+  crearRouter,
+  extraerNumeroTicket,
+  armarRespuesta,
+  formatearNumeroTicket,
+  // Exportadas para poder probarlas sin levantar el servidor ni mandar mensajes
+  // reales (ver probar-mis-reportes.mjs): la consulta y el armado del texto son
+  // justo lo que conviene revisar contra datos de verdad.
+  pideSusReportes,
+  buscarReportesDelNumero,
+  armarListaDeReportes,
+  TEXTO_SIN_REPORTES,
+}
