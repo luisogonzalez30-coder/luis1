@@ -1,4 +1,4 @@
-# Dónde quedamos — 9 de agosto de 2026
+# Dónde quedamos — 10 de agosto de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
 El detalle técnico completo está en `ESTADO_PROYECTO.md` (41 secciones).
@@ -7,27 +7,23 @@ La app funciona y está en producción: https://app-incidencias-urbanas.web.app/
 
 ---
 
-## Lo primero: tres cosas están rotas en producción ahora mismo
+## Lo único que sigue pendiente en producción
 
-**0. Producción crea "reportes fantasma".** Cuando el envío es rechazado (típicamente el enfriamiento anti-spam de 60 s), quedaba escrito el ticket público **sin** la incidencia: el vecino ve el reporte en el mapa y en "Últimos reportes", se suma con "+1", y el municipio no lo recibió nunca. **5 de los 9 tickets de Licantén son fantasmas.** Ya está arreglado en el repo (§40) pero **el arreglo es código de `src/`, así que hace falta desplegar el frontend**:
+**Los avisos automáticos por WhatsApp no están saliendo, y no es culpa del código.** Las dos plantillas quedaron **"En revisión"** en Meta después de editarles el texto el 09-ago, y mientras están así Meta rechaza todos los envíos. Hay **4 avisos esperando** (992675, 661854, 941158, 955353).
 
-```bash
-npm.cmd run build
-npx.cmd firebase deploy --only hosting
-```
+Cuando el Administrador de WhatsApp diga **"Activa"**: reinicia el servicio en Render —o haz cualquier push, que lo redespliega solo— y los 4 salen automáticamente. Después, verificar que las banderas `notificado_whatsapp_creacion` de esas incidencias pasaron a `true`: que la plantilla diga "Activa" no prueba que el mensaje salió.
 
-Ese despliegue publica también §36 y §37. Después hay que limpiar los 23 huérfanos que ya están: `node scripts/limpiar-tickets-huerfanos.mjs` (solo informa; borra con `--borrar`).
+Ojo con el error que devuelve Meta mientras tanto, porque manda por el camino equivocado: `132001 Template name does not exist in es_CL`. El nombre y el idioma están **bien**; lo que falta es una versión aprobada. Ver §39.5.
 
+---
 
-**1. Ningún reporte guarda la foto del vecino.** Está arreglado en el repo pero **sin desplegar**. Un comando:
+## Lo que se cerró el 10 de agosto (todo desplegado y verificado)
 
-```bash
-npx firebase deploy --only firestore:rules
-```
-
-Es un despliegue solo de reglas: no arrastra el frontend, así que no publica nada más de lo que quieras. Detalle completo en **§38**. Después, la prueba real es mandar un reporte con foto desde el celular y abrirlo en el panel. Los reportes viejos **no** recuperan su foto (§38.5).
-
-**2.** ~~Un vecino que pierde su número de ticket no puede recuperarlo~~ — ✅ **resuelto el 10-ago-2026 (§41)**: el bot ya responde. Y como escribir la frase exacta falla en la vida real (el corrector del teléfono la cambió en la primera prueba), **cualquier mensaje que no entienda muestra un menú de 3 botones tocables**: Mis reportes / Buscar ticket / Nuevo reporte. El vecino no tiene que adivinar ni escribir nada. Probado con el flujo completo simulado contra datos reales; falta probarlo con un mensaje de verdad desde un celular.
+- **Las fotos del vecino llegan al funcionario** (§38). Reglas desplegadas; confirmado con un reporte real.
+- **No se crean más "reportes fantasma"** (§40), y los **23 huérfanos** que había quedaron borrados (respaldo en `backups/tickets-huerfanos-2026-08-10.json`).
+- **Frontend publicado**: buscador de direcciones (§37), panel del Alcalde (§36) y **páginas legales** (§35), que llevaban una semana sin publicarse.
+- **El bot conversacional funciona** (§41): el webhook quedó montado, la app publicada en Meta, y el vecino ya recibe respuesta. Escribirle *"mis reportes"* devuelve su lista, identificándolo por el teléfono desde el que escribe.
+- **Menú de 3 botones tocables** (§41.5) para cualquier mensaje que el bot no entienda — nació de la primera prueba real, donde el corrector del teléfono convirtió "mis reportes" en "mía reportes".
 
 ---
 
@@ -40,7 +36,7 @@ El bot **ya no es** el no oficial (Baileys) que describen esas dos secciones: es
 
 **Funciona y está verificado**: aviso al vecino cuando entra su reporte (`alerta_nuevo_ticket`) y cuando se resuelve (`ticket_resuelto`). Todos los reportes desde el 1 de agosto tienen su aviso enviado.
 
-**Se perdió en la migración y hay que decirlo**: la alerta de emergencia al Alcalde (§32), el aviso de "cuadrilla asignada", y "mis reportes". Los tres campos se siguen escribiendo en cada reporte, pero **ningún código los consume** — configurar `whatsapp_alcalde` no enciende nada.
+**Se perdió en la migración**: la alerta de emergencia al Alcalde (§32), el aviso de "cuadrilla asignada", y "mis reportes" — esta última **ya se repuso** el 10-ago (§41). Las otras dos siguen sin existir: sus campos se escriben en cada reporte pero **ningún código los consume**, así que configurar `whatsapp_alcalde` no enciende nada.
 
 Los textos aprobados de las dos plantillas quedaron guardados en §39.2 (el texto real vive en Meta, así que si lo editas allá, actualiza esa sección).
 
@@ -48,8 +44,8 @@ Los textos aprobados de las dos plantillas quedaron guardados en §39.2 (el text
 
 ## Te toca a ti (bloqueado sin tu acción)
 
-1. **Desplegar las reglas** — arriba. Es lo más urgente de la lista.
-2. **Desplegar el frontend**, si quieres publicar §35 a §37 (páginas legales, panel nuevo, buscador de direcciones): `npm run build && npx firebase deploy --only hosting`. Nada de §35 en adelante está en línea.
+1. ~~Desplegar las reglas~~ — ✅ hecho el 10-ago.
+2. ~~Desplegar el frontend~~ — ✅ hecho el 10-ago: §35 a §37 y §40 están en línea.
 3. **Confirmar las 16 coordenadas de sectores**: `node scripts/configurar-sectores.mjs licanten --revisar` da un link de Google Maps por sector, menos de un minuto cada uno. Hoy el documento de Licantén tiene **0 sectores cargados** — ni los 3 confirmados. Eso apaga la vista por sectores del panel del Alcalde (§33) y le quita al buscador de direcciones su fuente local, la que funciona sin internet (§37.3). Puedes cargar los 3 ya verificados con `--solo-confirmados`.
 4. **Correo de datos personales del municipio**: `node scripts/configurar-contacto-datos.mjs licanten <correo@municipalidad>`. Está vacío, así que las páginas legales mandan al vecino a la Oficina de Partes.
 5. **Revocar la cuenta `TERRENO` del bot viejo** si sigue en `usuarios_municipales`: nadie la usa y tiene permiso de escritura en producción. El bot actual usa cuenta de servicio.
@@ -61,10 +57,10 @@ Los textos aprobados de las dos plantillas quedaron guardados en §39.2 (el text
 
 ## Pendiente para poder vender (§27 tiene la lista completa)
 
-Por orden de importancia. Los puntos 2 y 3 sí son programar, pero no son funciones nuevas: son funciones que la propuesta **ya promete** y que se perdieron en la migración de WhatsApp.
+Por orden de importancia. El punto 3 es programar, pero no es una función nueva: es una que la propuesta **ya promete** y que se perdió en la migración de WhatsApp.
 
 1. **La tarjeta.** Sin ella no hay plan Blaze ni dominio propio. El bot ya está en Render pero en el **plan Free**, sin SLA — y la propuesta compromete un descuento por indisponibilidad (§7.2). La cuota de Firebase sigue siendo la gratis compartida.
-2. **Reponer "mis reportes"** — ver arriba. Barato y le devuelve al vecino su única puerta.
+2. ~~Reponer "mis reportes"~~ — ✅ hecho el 10-ago (§41), con menú de botones incluido.
 3. **Reponer la alerta de emergencias al Alcalde.** Es la función más vendedora de la propuesta (§3.3) y hoy **no existe**: 7 emergencias en producción, 0 alertas. Necesita un listener nuevo **y** una plantilla aprobada en Meta (con la API oficial no se puede mandar texto libre fuera de la ventana de 24 h). Hasta que esté: sácala del documento o márcala como próxima etapa.
 4. **El costo por mensaje de Meta.** Cada reporte genera al menos dos mensajes de plantilla. Verifica la tarifa vigente de mensajes de utilidad en Chile y métela en tus números: la propuesta dice "no hay cobro por cantidad de reportes", cierto para lo que le cobras al municipio, falso para lo que te cuesta a ti.
 5. ~~**Política de privacidad y términos**~~ — ✅ escritas y publicadas (§35.2). Falta que **las revise un abogado** y el acuerdo de tratamiento de datos que la propuesta menciona.
