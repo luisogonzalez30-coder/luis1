@@ -1358,3 +1358,40 @@ Se probó llamando directamente a la consulta y al armado del texto con el telé
 ### 41.4 Lo que falta para que un vecino real la use
 
 El webhook quedó **montado y verificado** el 10-ago-2026 (`GET /webhook` responde 403 en vez de 404, o sea que la ruta existe y rechaza sin token). Falta que Meta entregue los mensajes: la app estaba **sin publicar**, y Meta advierte que una app sin publicar solo recibe webhooks de prueba. Se completó la publicación ese mismo día; queda **probar con un mensaje real** al +56 9 6540 0932 y confirmar en los logs de Render.
+
+### 41.5 Menú de botones: el vecino no tiene que adivinar qué escribir (10-ago-2026)
+
+**La primera prueba real fue la que definió esto.** El usuario le escribió al número la frase que la app promete, y el corrector del teléfono la convirtió en **"Mía reportes"**: el reconocimiento estricto no la aceptó y le contestó la ayuda. Si falla quien sabe exactamente qué escribir, un adulto mayor no tiene ninguna posibilidad. Su observación fue directa: *"¿cómo sabrá el vecino qué preguntarle? ¿no sería mejor dejar una serie de preguntas que lo dirijan?"*. Tenía razón.
+
+**Ahora cualquier mensaje que el bot no entienda muestra un menú de 3 botones tocables**:
+
+```
+¡Hola! 👋 Soy el asistente de la municipalidad.
+¿Qué necesitas? Toca una opción:
+   ( 📋 Mis reportes )  ( 🔍 Buscar ticket )  ( ➕ Nuevo reporte )
+```
+
+- **`enviarBotones()`** nuevo en `whatsapp.js` (tipo `interactive` de la Graph API). **Gratis y sin aprobación de Meta**: es texto libre, así que corre bajo la misma regla que `enviarTexto` —solo dentro de las 24 h que abre el mensaje del vecino—, y el bot **nunca inicia** una conversación. Por eso esto se pudo entregar el mismo día, con las dos plantillas todavía en revisión.
+- **El título de un botón no puede pasar de 20 caracteres**: si se pasa, Meta rechaza el mensaje completo con error 100 y el vecino no recibe nada. Se recorta en `enviarBotones` en vez de confiar en que alguien cuente los caracteres (los tres actuales miden 15, 16 y 15).
+- **Los botones tocados llegan como `type: 'interactive'`**, no como texto. Antes ese tipo caía en la rama de "no es texto" y se respondía la ayuda: o sea que tocar un botón no habría hecho nada.
+- **Audio, foto o sticker también muestran el menú.** No hay nada que leer, pero dejar al vecino sin respuesta es peor.
+- **Se quitó el tope de "una ayuda por hora"**: el menú *es* la respuesta a "no te entendí", y callarse deja al vecino creyendo que el bot está muerto. La protección sigue siendo `excedeLimite` (10 mensajes por minuto y por número), que ya cubría el resto.
+- **`PORTAL_URL_REPORTAR`** (variable de entorno nueva, por defecto `/licanten/reportar`) es a dónde manda el botón de reportar. Va configurable porque el formulario es por comuna y este servicio atiende el número de una municipalidad.
+
+**El reconocimiento de texto igual se hizo tolerante**, porque la gente va a escribir de todas formas: en vez de exigir una frase exacta, pide que aparezca un posesivo Y una palabra de reporte en cualquier orden (`mi|mis|mia|mias|mio|mios` + `reportes|tickets|solicitudes|denuncias|reclamos`), más el caso pegado sin espacio. **Pero ya no es la defensa principal**: cualquier cosa no reconocida termina en el menú, así que un error de tipeo dejó de ser un callejón sin salida.
+
+**Verificado con el flujo completo simulado** (`scratchpad/probar-menu.mjs`: reemplaza los envíos de `whatsapp.js` por funciones que solo registran, y llama a `procesarCuerpo` con cuerpos de webhook armados a mano, contra los datos reales de producción):
+
+| Entrada | Respuesta |
+|---|---|
+| "hola", "buenas tardes", "gracias" | menú de 3 botones |
+| un audio | menú de 3 botones |
+| **"Mía reportes"** (el caso que falló) | su lista de reportes ✅ |
+| "mis reportes", "mias reportes", "mi reporte", "misreportes", "quiero ver mis solicitudes", "estado de mis tickets", "MIS DENUNCIAS" | su lista de reportes |
+| "quiero reportar un bache" | menú (no confunde "reportar" con "mis reportes") |
+| botón 📋 | su lista (12 reportes encontrados) |
+| botón 🔍 | le pide el número de 6 dígitos |
+| botón ➕ | el link al formulario de la comuna |
+| "992675" | el detalle de ese reporte |
+
+**Lo que NO se hizo, a propósito**: no se le pusieron botones a las plantillas de aviso. Se puede, pero obliga a mandarlas de nuevo a revisión de Meta — y ya se sabe lo que eso cuesta (13 horas sin notificaciones, ver §39.5). Cuando las dos estén aprobadas y estables, se puede evaluar.

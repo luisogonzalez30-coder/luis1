@@ -106,11 +106,45 @@ function enviarTexto({ para, texto }) {
   })
 }
 
+// Tope de Meta para el título de un botón de respuesta. No es un consejo: si se
+// pasa, la API rechaza el mensaje completo con error 100 y el vecino no recibe
+// nada. Se recorta acá en vez de confiar en que quien escriba los textos cuente
+// los caracteres a mano.
+const MAX_TITULO_BOTON = 20
+const MAX_BOTONES = 3
+
+// Mensaje con botones tocables (hasta 3). GRATIS y sin aprobación de Meta,
+// porque es texto libre: vale la misma regla que enviarTexto, solo dentro de las
+// 24 h siguientes a un mensaje del vecino.
+//
+// Existe porque pedirle al vecino que ESCRIBA la frase correcta no funciona: en
+// la primera prueba real el corrector del teléfono cambió "mis reportes" por
+// "mía reportes" y el bot no lo reconoció (10-ago-2026). Un botón no se escribe
+// mal. `botones` es [{ id, titulo }] y el id es el que vuelve en el webhook.
+function enviarBotones({ para, texto, botones }) {
+  return postMensaje({
+    messaging_product: 'whatsapp',
+    to: para,
+    type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: { text: texto },
+      action: {
+        buttons: botones.slice(0, MAX_BOTONES).map((b) => ({
+          type: 'reply',
+          reply: { id: b.id, title: b.titulo.slice(0, MAX_TITULO_BOTON) },
+        })),
+      },
+    },
+  })
+}
+
 module.exports = {
   GRAPH_API_VERSION,
   WHATSAPP_TEMPLATE_LANG,
   enviarTemplate,
   enviarTexto,
+  enviarBotones,
   explicarError,
   formatearParaGraphApi,
 }

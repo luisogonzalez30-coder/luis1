@@ -27,7 +27,7 @@ npx firebase deploy --only firestore:rules
 
 Es un despliegue solo de reglas: no arrastra el frontend, así que no publica nada más de lo que quieras. Detalle completo en **§38**. Después, la prueba real es mandar un reporte con foto desde el celular y abrirlo en el panel. Los reportes viejos **no** recuperan su foto (§38.5).
 
-**2.** ~~Un vecino que pierde su número de ticket no puede recuperarlo~~ — ✅ **resuelto el 10-ago-2026 (§41)**: escribirle *"mis reportes"* al WhatsApp municipal le devuelve su lista, identificándolo por el teléfono desde el que escribe. Probado contra datos reales. **Falta la prueba de punta a punta**: mandar un mensaje real al +56 9 6540 0932 y confirmarlo en los logs de Render — el webhook quedó montado y la app publicada, pero eso no se ha probado con un mensaje de verdad.
+**2.** ~~Un vecino que pierde su número de ticket no puede recuperarlo~~ — ✅ **resuelto el 10-ago-2026 (§41)**: el bot ya responde. Y como escribir la frase exacta falla en la vida real (el corrector del teléfono la cambió en la primera prueba), **cualquier mensaje que no entienda muestra un menú de 3 botones tocables**: Mis reportes / Buscar ticket / Nuevo reporte. El vecino no tiene que adivinar ni escribir nada. Probado con el flujo completo simulado contra datos reales; falta probarlo con un mensaje de verdad desde un celular.
 
 ---
 

@@ -15,10 +15,16 @@
 
 const crypto = require('crypto')
 const express = require('express')
-const { enviarTexto, explicarError } = require('./whatsapp')
+const { enviarTexto, enviarBotones, explicarError } = require('./whatsapp')
 const { etiquetaCategoria } = require('./categorias')
 
 const PORTAL_URL_ESTADO = process.env.PORTAL_URL_ESTADO || 'https://app-incidencias-urbanas.web.app/estado'
+// A dónde se manda al vecino que quiere reportar algo nuevo. Va por variable de
+// entorno porque el formulario es POR COMUNA (/:municipio/reportar) y este
+// servicio atiende el número de una municipalidad: si algún día atiende otra,
+// esto cambia sin tocar código.
+const PORTAL_URL_REPORTAR =
+  process.env.PORTAL_URL_REPORTAR || 'https://app-incidencias-urbanas.web.app/licanten/reportar'
 
 // Reconoce el número de ticket dentro de una frase cualquiera ("hola, quiero
 // saber del 482 173 por favor"). Dos formatos, igual que normalizarNumeroTicket
@@ -55,10 +61,21 @@ function formatearNumeroTicket(numeroTicket) {
 // textualmente ("escríbenos 'mis reportes'"), así que hasta hoy era una promesa
 // incumplida.
 //
-// Se acepta escrito de varias formas porque nadie va a copiar la frase exacta:
-// con o sin tildes, en singular, y con las palabras que la gente usa de verdad
-// para referirse a un reporte municipal.
-const RE_MIS_REPORTES = /\bmis?\s*(reportes?|tickets?|solicitudes?|denuncias?|reclamos?)\b/
+// El reconocimiento es a propósito tolerante, y aun así NO es la defensa
+// principal: cualquier mensaje que no se entienda termina mostrando el menú de
+// botones (ver MENU_OPCIONES), así que un error de tipeo nunca deja al vecino
+// sin salida. Esto solo atrapa a quien escribe en vez de tocar.
+//
+// La lista de variantes salió de la primera prueba real (10-ago-2026): el
+// corrector del teléfono convirtió "mis reportes" en **"mía reportes"** y la
+// versión estricta no lo reconoció. Por eso se pide solo que aparezca un
+// posesivo Y una palabra de reporte, en cualquier orden, en vez de una frase
+// exacta: cubre "mia reportes", "mi reporte", "ver mis solicitudes", "estado de
+// mis tickets".
+const RE_PALABRA_REPORTE = /\b(reportes?|tickets?|solicitudes?|denuncias?|reclamos?)\b/
+const RE_POSESIVO = /\bm(?:i|is|ia|ias|io|ios)\b/
+// Sin espacio al medio, que es como queda cuando el teclado los pega.
+const RE_PEGADO = /\bm(?:i|is|ia|ias)(?:reportes?|tickets?|solicitudes?|denuncias?|reclamos?)\b/
 
 function normalizarTexto(texto) {
   return (texto || '')
@@ -70,8 +87,38 @@ function normalizarTexto(texto) {
 }
 
 function pideSusReportes(texto) {
-  return RE_MIS_REPORTES.test(normalizarTexto(texto))
+  const t = normalizarTexto(texto)
+  if (RE_PEGADO.test(t)) return true
+  return RE_PALABRA_REPORTE.test(t) && RE_POSESIVO.test(t)
 }
+
+// --- Menú de botones ---
+// Los ids viajan en el webhook cuando el vecino toca un botón, así que son
+// estables y cortos. Los títulos no pasan de 20 caracteres (tope de Meta; ver
+// enviarBotones en whatsapp.js).
+const OPCION_MIS_REPORTES = 'mis_reportes'
+const OPCION_BUSCAR_TICKET = 'buscar_ticket'
+const OPCION_NUEVO_REPORTE = 'nuevo_reporte'
+
+const MENU_TEXTO =
+  '¡Hola! 👋 Soy el asistente de la municipalidad.\n\n¿Qué necesitas? Toca una opción:'
+
+const MENU_OPCIONES = [
+  { id: OPCION_MIS_REPORTES, titulo: '📋 Mis reportes' },
+  { id: OPCION_BUSCAR_TICKET, titulo: '🔍 Buscar ticket' },
+  { id: OPCION_NUEVO_REPORTE, titulo: '➕ Nuevo reporte' },
+]
+
+const TEXTO_PEDIR_TICKET =
+  'Escríbeme el número de tu ticket 🔍\n\n' +
+  'Son 6 dígitos, como 482173 (o 482 173, da lo mismo).\n\n' +
+  'Si no lo tienes a mano, pídeme *mis reportes* y te mando la lista.'
+
+const TEXTO_NUEVO_REPORTE =
+  'Para reportar algo nuevo, entra acá 👇\n\n' +
+  `${PORTAL_URL_REPORTAR}\n\n` +
+  'Son 3 pasos: marcas el lugar en el mapa, eliges qué pasa y mandas una foto. ' +
+  'Al terminar te llega el número de tu reporte por acá mismo.'
 
 // Formas en que ese mismo teléfono puede estar guardado en contacto_ciudadano.
 // Meta entrega el número como puros dígitos con código de país ("56998803719").
@@ -250,17 +297,11 @@ function excedeLimite(numero) {
   return registro.cuenta > MAX_CONSULTAS
 }
 
-// La ayuda se manda una sola vez por hora al mismo número: si alguien conversa
-// con el bot, no queremos repetirle las instrucciones en cada mensaje.
-const AYUDA_CADA_MS = 60 * 60 * 1000
-const ultimaAyuda = new Map()
-
-function correspondeMandarAyuda(numero) {
-  const ahora = Date.now()
-  if (ahora - (ultimaAyuda.get(numero) || 0) < AYUDA_CADA_MS) return false
-  ultimaAyuda.set(numero, ahora)
-  return true
-}
+// Antes había un tope de "una ayuda por hora" para no repetirle las
+// instrucciones a quien conversaba con el bot. Se quitó al pasar al menú de
+// botones: el menú ES la respuesta a "no te entendí", y callarse deja al vecino
+// creyendo que el bot está muerto. Lo que protege del abuso sigue siendo
+// excedeLimite (10 por minuto), que ya cubría el resto de las respuestas.
 
 // --- Firma de Meta ---
 // Sin esto, cualquiera que descubra la URL puede POSTear mensajes falsos y
@@ -278,6 +319,53 @@ function firmaValida(req, appSecret) {
   return a.length === b.length && crypto.timingSafeEqual(a, b)
 }
 
+// El menú de botones, con el texto de ayuda como respaldo: si la API rechaza el
+// mensaje interactivo (un cliente de WhatsApp muy viejo, un cambio de Meta), el
+// vecino igual recibe las instrucciones escritas en vez de quedarse sin nada.
+async function mostrarMenu(numero) {
+  try {
+    await enviarBotones({ para: numero, texto: MENU_TEXTO, botones: MENU_OPCIONES })
+    console.log(`[webhook] ${numero}: se envió el menú de opciones.`)
+  } catch (error) {
+    console.warn(
+      `[webhook] ${numero}: falló el menú de botones, se manda la ayuda escrita.\n    ${explicarError(error)}`
+    )
+    await enviarTexto({ para: numero, texto: TEXTO_AYUDA })
+  }
+}
+
+async function responderMisReportes(db, numero) {
+  const reportes = await buscarReportesDelNumero(db, numero)
+  await enviarTexto({
+    para: numero,
+    texto: reportes.length > 0 ? armarListaDeReportes(reportes) : TEXTO_SIN_REPORTES,
+  })
+  console.log(`[webhook] ${numero}: pidió sus reportes, se le enviaron ${reportes.length}.`)
+}
+
+// Llega acá cuando el vecino TOCA un botón: no hay texto que interpretar, solo
+// el id que definimos en MENU_OPCIONES.
+async function responderOpcion(db, numero, opcion) {
+  if (excedeLimite(numero)) {
+    console.warn(`[webhook] ${numero}: superó ${MAX_CONSULTAS} consultas por minuto, se ignora.`)
+    return
+  }
+
+  switch (opcion) {
+    case OPCION_MIS_REPORTES:
+      return responderMisReportes(db, numero)
+    case OPCION_BUSCAR_TICKET:
+      console.log(`[webhook] ${numero}: eligió buscar por número.`)
+      return enviarTexto({ para: numero, texto: TEXTO_PEDIR_TICKET })
+    case OPCION_NUEVO_REPORTE:
+      console.log(`[webhook] ${numero}: eligió reportar algo nuevo.`)
+      return enviarTexto({ para: numero, texto: TEXTO_NUEVO_REPORTE })
+    default:
+      console.warn(`[webhook] ${numero}: opción desconocida "${opcion}", se muestra el menú.`)
+      return mostrarMenu(numero)
+  }
+}
+
 async function responderConsulta(db, numero, texto) {
   if (excedeLimite(numero)) {
     console.warn(`[webhook] ${numero}: superó ${MAX_CONSULTAS} consultas por minuto, se ignora.`)
@@ -289,21 +377,11 @@ async function responderConsulta(db, numero, texto) {
   if (!numeroTicket) {
     // El ticket manda por sobre "mis reportes" porque es más específico: si el
     // vecino escribió un número, quiere ESE reporte.
-    if (pideSusReportes(texto)) {
-      const reportes = await buscarReportesDelNumero(db, numero)
-      await enviarTexto({
-        para: numero,
-        texto: reportes.length > 0 ? armarListaDeReportes(reportes) : TEXTO_SIN_REPORTES,
-      })
-      console.log(`[webhook] ${numero}: pidió sus reportes, se le enviaron ${reportes.length}.`)
-      return
-    }
+    if (pideSusReportes(texto)) return responderMisReportes(db, numero)
 
-    if (correspondeMandarAyuda(numero)) {
-      await enviarTexto({ para: numero, texto: TEXTO_AYUDA })
-      console.log(`[webhook] ${numero}: mensaje sin ticket, se envió la ayuda.`)
-    }
-    return
+    // Cualquier otra cosa —un saludo, un error de tipeo, un "gracias"— termina
+    // en el menú. Es la red que hace que ningún mensaje quede sin respuesta.
+    return mostrarMenu(numero)
   }
 
   const snap = await db.collection('tickets_publicos').doc(numeroTicket).get()
@@ -345,12 +423,20 @@ async function procesarCuerpo(db, cuerpo) {
           continue
         }
 
-        // Solo texto. Si el vecino manda audio, foto o sticker, se le explica
-        // qué mandar en vez de dejarlo sin respuesta.
+        // Respuesta a un botón del menú: no trae texto que interpretar, solo el
+        // id. Antes este caso caía en el "no es texto" de abajo y se le
+        // contestaba la ayuda, o sea que tocar un botón no hacía nada.
+        if (mensaje.type === 'interactive') {
+          const opcion =
+            mensaje.interactive?.button_reply?.id || mensaje.interactive?.list_reply?.id || ''
+          await responderOpcion(db, mensaje.from, opcion)
+          continue
+        }
+
+        // Audio, foto o sticker: no hay nada que leer, pero tampoco se lo deja
+        // sin respuesta — se le muestra el menú para que pueda seguir tocando.
         if (mensaje.type !== 'text') {
-          if (correspondeMandarAyuda(mensaje.from)) {
-            await enviarTexto({ para: mensaje.from, texto: TEXTO_AYUDA })
-          }
+          await mostrarMenu(mensaje.from)
           continue
         }
 
@@ -412,11 +498,14 @@ module.exports = {
   extraerNumeroTicket,
   armarRespuesta,
   formatearNumeroTicket,
-  // Exportadas para poder probarlas sin levantar el servidor ni mandar mensajes
-  // reales (ver probar-mis-reportes.mjs): la consulta y el armado del texto son
-  // justo lo que conviene revisar contra datos de verdad.
+  // Exportadas para poder probar sin levantar el servidor ni mandar mensajes
+  // reales: reemplazando enviarTexto/enviarBotones de whatsapp.js por funciones
+  // que solo registran, procesarCuerpo permite simular el flujo completo
+  // —escribir, tocar un botón, mandar un audio— contra datos de producción.
+  procesarCuerpo,
   pideSusReportes,
   buscarReportesDelNumero,
   armarListaDeReportes,
+  MENU_OPCIONES,
   TEXTO_SIN_REPORTES,
 }
