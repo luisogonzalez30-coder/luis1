@@ -1426,3 +1426,21 @@ Muestras para la revisión: `{{1}}` = `482173`, `{{2}}` = `Cuadrilla Municipal`.
 **Crearla es independiente de las dos que están en revisión** (§39.5): agregar una plantilla nueva no las afecta. Pero conviene no hacerlo justo antes de una presentación, porque la aprobación tarda horas y no se puede mostrar.
 
 Queda pendiente el tercero de los avisos perdidos: la **alerta de emergencia al Alcalde** (§32), que necesita lo mismo —listener nuevo más plantilla— y es la función más vendedora de la propuesta comercial.
+
+## 43. Tenant de demostración presentable (10-ago-2026)
+
+Para mostrarle la plataforma a una municipalidad hacía falta un panel con volumen: con los 5 reportes reales de Licantén, el mapa de calor, la comparación mes contra mes y los indicadores se ven vacíos. **La opción descartada fue sembrar reportes falsos en Licantén**: contamina para siempre las estadísticas del Alcalde, la Cuenta Pública y los costos, y obliga a responder "los inventamos" si pregunta de dónde salió uno.
+
+Lo que se hizo en cambio: **`scripts/preparar-demo.mjs`** deja presentable el tenant `demo`, que ya existía con ~100 reportes sembrados y es de pruebas por definición. Informa por defecto y solo escribe con `--aplicar`.
+
+**Hallazgo que cambió el plan**: no hacía falta crear ningún tenant nuevo ni cuenta nueva. El correo personal del usuario (`luis.ogonzalez.30@gmail.com`) es el **ALCALDE_ADMIN del tenant `demo`**, no de Licantén — el panel lleno ya existía y ya tenía la llave. El Alcalde de Licantén es `contacto@alcaldelicanten.com`. Conviene tenerlo claro: entrar con el correo personal esperando ver Licantén muestra el demo.
+
+Qué corrige el script, todo dentro de `demo`:
+
+- **Geografía coherente**: 77 de los 100 reportes estaban en Santiago (del seed original) mientras el resto estaba en la zona de Licantén. Se reubicaron dentro de las **3 localidades con coordenadas verificadas** (centro 48, Iloca 23, Lora 27; 2 quedaron fuera de radio, que es un estado legítimo). El azar es **determinista a partir del id del documento**, así el informe del ensayo coincide exactamente con lo que se escribe y volver a correrlo no mueve todo de nuevo.
+- **Sectores cargados** (los mismos 3), que estaban en 0: sin eso la vista por sectores del panel del Alcalde (§33) se ve vacía.
+- **33 calificaciones ciudadanas** en reportes resueltos, repartidas 5/4/3 con más peso en 5: el indicador de satisfacción estaba en 0.
+- **Tema y nombre**: logo y colores de Licantén, con el nombre **"Municipalidad de Licantén (demostración)"**. El "(demostración)" es deliberado y no se saca — es lo que evita que alguien confunda esa pantalla con datos reales.
+- **89 notificaciones pendientes cerradas.** Esto no es cosmético: entre los reportes de prueba había números de WhatsApp **reales**, y cuando las plantillas de §39.5 queden aprobadas el bot habría intentado escribirles. Verificado después: **0 reportes de demo con contacto real y aviso pendiente**.
+
+**Licantén no se tocó** (verificado por separado tras aplicar).
