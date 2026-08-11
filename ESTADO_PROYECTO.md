@@ -1270,7 +1270,7 @@ Banderas de los últimos 25 reportes, leídas con el Admin SDK (solo banderas y 
 
 Ya **no** es el riesgo de bloqueo del número — eso quedó cerrado. Los riesgos reales que quedan:
 
-1. **Editar una plantilla corta las notificaciones hasta que Meta la vuelva a aprobar. CONFIRMADO EN PRODUCCIÓN el 10-ago-2026.** Se editaron `alerta_nuevo_ticket` y `ticket_resuelto` el 09-ago (mejoras de redacción, ver 39.2) y las dos quedaron **"En revisión"**. Desde ese momento **falló el 100% de los envíos** durante ~13 horas, sin que nadie se enterara: el último WhatsApp que salió bien fue el 09-ago 22:39, y los 4 reportes siguientes —incluido uno de un vecino real— se quedaron sin aviso.
+1. **Editar una plantilla corta las notificaciones hasta que Meta la vuelva a aprobar. CONFIRMADO EN PRODUCCIÓN el 10-ago-2026.** *(Cerrado el 11-ago: Meta aprobó las dos plantillas durante la noche y los 4 avisos pendientes salieron solos al reintentar, sin intervención. El corte duró ~19 horas.)* Se editaron `alerta_nuevo_ticket` y `ticket_resuelto` el 09-ago (mejoras de redacción, ver 39.2) y las dos quedaron **"En revisión"**. Desde ese momento **falló el 100% de los envíos** durante ~13 horas, sin que nadie se enterara: el último WhatsApp que salió bien fue el 09-ago 22:39, y los 4 reportes siguientes —incluido uno de un vecino real— se quedaron sin aviso.
 
    **Ojo con el error que devuelve Meta**, porque manda por el camino equivocado: `[132001] Template name does not exist in the translation / template name (alerta_nuevo_ticket) does not exist in es_CL`. Suena a que el nombre o el idioma están mal, y **los dos estaban correctos** (nombre exacto, idioma "Spanish (CHL)" = `es_CL`). Lo que Meta quiere decir es que **no hay versión aprobada disponible para enviar**. Antes de tocar `WHATSAPP_TEMPLATE_LANG` o el nombre en `server.js`, revisar el ESTADO de la plantilla en el Administrador de WhatsApp.
 
@@ -1444,3 +1444,40 @@ Qué corrige el script, todo dentro de `demo`:
 - **89 notificaciones pendientes cerradas.** Esto no es cosmético: entre los reportes de prueba había números de WhatsApp **reales**, y cuando las plantillas de §39.5 queden aprobadas el bot habría intentado escribirles. Verificado después: **0 reportes de demo con contacto real y aviso pendiente**.
 
 **Licantén no se tocó** (verificado por separado tras aplicar).
+
+## 44. WhatsApp multi-municipio: lo que se rompe con el segundo cliente (11-ago-2026)
+
+Detectado al preguntar el usuario qué pasa cuando tenga 5 municipalidades, porque Meta solo le dejaba agregar 2 números. **El límite de números no es el problema real.**
+
+### 44.1 El límite de 2 números se levanta con un trámite
+
+Es el tope de un negocio **sin verificar** en Meta. Con la **verificación de negocio** (RUT de la SpA, dirección, documentos de la sociedad) sube a **hasta 20 números por WABA**, y se puede tener más de una WABA. Para 5 municipalidades no hay problema técnico: hay que hacer el trámite, que además ya estaba pendiente en la propuesta comercial. Conviene hacerlo con tiempo porque Meta tarda días y a veces vuelve a pedir documentos.
+
+### 44.2 Lo que sí se rompe: los mensajes son de un solo municipio
+
+Verificado en el código:
+
+- **Los listeners YA son multi-municipio**: `server.js` escucha `incidencias` sin ningún filtro por `municipio_id`, así que atiende a todos los tenants sin cambios.
+- **Pero los textos no**: las dos plantillas aprobadas dicen *"Municipalidad de Licantén"* dentro del cuerpo y llevan el link `/licanten/estado` fijo (ver §39.2), y `PORTAL_URL_REPORTAR` del webhook apunta por defecto a `/licanten/reportar`.
+
+O sea que **con el segundo municipio, sus vecinos recibirían mensajes firmados "Municipalidad de Licantén"**. Eso es lo que hay que arreglar antes del cliente 2, y no tiene relación con la cantidad de números.
+
+### 44.3 La decisión: número compartido o número por municipio
+
+| | Un número por municipalidad | Un número compartido de la plataforma |
+|---|---|---|
+| Lo que ve el vecino | el WhatsApp de *su* municipio | el de "TuMuniAquí" |
+| Operación | una línea y un `PHONE_NUMBER_ID` por cliente | una sola |
+| Requiere | verificación de negocio + un chip por municipio | nada extra |
+
+**Recomendación: el número compartido como estándar, y el número propio como servicio premium** que se cobra aparte. Simplifica la operación y da algo más que vender.
+
+### 44.4 Lo que hay que hacer en cualquiera de los dos casos
+
+**Parametrizar las plantillas**: el nombre del municipio y el link tienen que ser variables, no texto fijo. Con eso **un solo juego de plantillas sirve para 5 municipios o para 50**; la alternativa es esperar una aprobación de Meta cada vez que se firma un cliente.
+
+Detalle que ahorra trabajo: **las plantillas viven en la WABA, no en el número**, así que un juego parametrizado sirve para todos los números que cuelguen de esa cuenta, en las dos opciones.
+
+Del lado del código el cambio es chico: el nombre y los links salen del documento del tenant (`municipalidades/{id}.nombre`, que ya existe) en vez de estar escritos fijos. La arquitectura ya está bien; lo que no es multi-municipio son los textos.
+
+**Momento correcto para hacerlo**: cuando se firme el segundo cliente, no antes — y nunca mientras haya plantillas en revisión, porque tocarlas reinicia la aprobación (§39.5).

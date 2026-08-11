@@ -1,19 +1,36 @@
-# Dónde quedamos — 10 de agosto de 2026
+# Dónde quedamos — 11 de agosto de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (41 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (44 secciones).
 
 La app funciona y está en producción: https://app-incidencias-urbanas.web.app/licanten
 
 ---
 
-## Lo único que sigue pendiente en producción
+## El sistema está operativo de punta a punta
 
-**Los avisos automáticos por WhatsApp no están saliendo, y no es culpa del código.** Las dos plantillas quedaron **"En revisión"** en Meta después de editarles el texto el 09-ago, y mientras están así Meta rechaza todos los envíos. Hay **4 avisos esperando** (992675, 661854, 941158, 955353).
+**Verificado el 11-ago a primera hora**: Meta aprobó las dos plantillas durante la noche y **los 4 avisos que estaban esperando salieron solos**. Un reporte creado a las 02:04 de hoy también recibió su aviso, o sea que la cadena completa funciona en vivo: el vecino reporta → le llega el WhatsApp → el funcionario ve el reporte con su foto → el vecino puede consultar por WhatsApp.
 
-Cuando el Administrador de WhatsApp diga **"Activa"**: reinicia el servicio en Render —o haz cualquier push, que lo redespliega solo— y los 4 salen automáticamente. Después, verificar que las banderas `notificado_whatsapp_creacion` de esas incidencias pasaron a `true`: que la plantilla diga "Activa" no prueba que el mensaje salió.
+Lo que **no existe** todavía, y no se debe prometer:
 
-Ojo con el error que devuelve Meta mientras tanto, porque manda por el camino equivocado: `132001 Template name does not exist in es_CL`. El nombre y el idioma están **bien**; lo que falta es una versión aprobada. Ver §39.5.
+- **La alerta de emergencia al WhatsApp del Alcalde** (§32/§39.3). Es la función más vendedora de la propuesta comercial y no está implementada. Necesita un listener nuevo **y** una plantilla aprobada.
+- **El aviso de "cuadrilla asignada"** (§42): el código está listo, apagado tras la variable `WHATSAPP_TEMPLATE_ASIGNACION`. Falta crear la plantilla `ticket_asignado` en Meta (el texto está guardado en §42) y poner esa variable en Render.
+
+---
+
+## Antes de firmar el segundo municipio
+
+Los textos de WhatsApp son de **un solo municipio**: las plantillas dicen "Municipalidad de Licantén" adentro y los links van fijos a `/licanten`. Los listeners sí son multi-municipio. Hay que parametrizar el nombre y los links antes del cliente 2 — **ver §44**, que además explica que el límite de 2 números de Meta se levanta con la verificación de negocio.
+
+---
+
+## Para vender
+
+- **`docs/PAUTA-REUNION-ALCALDE.md`** — guion de 20 minutos con tiempos, frases textuales, objeciones y links en orden. La idea que lo ordena: al Alcalde no se le vende una app para vecinos, se le vende su panel de control.
+- **`docs/KIT-DIFUSION.md`** — material de la semana 5 listo para que publique la municipalidad: afiche con QR, publicaciones de Facebook, mensaje para juntas de vecinos, cartel del mesón, guion de radio y video del Alcalde.
+- **`docs/PROPUESTA-COMERCIAL-NOTAS.md`** sección 1 — lo que la propuesta promete y todavía no se puede cumplir. Leerla antes de enviarla.
+
+**Cuentas**: `contacto@alcaldelicanten.com` abre Licantén real (6 reportes). El correo personal (`luis.ogonzalez.30@gmail.com`) abre el tenant **demo**, que quedó preparado para presentaciones (§43): 100 reportes, 3 sectores, calificaciones, y el nombre "Municipalidad de Licantén (demostración)".
 
 ---
 
@@ -24,6 +41,8 @@ Ojo con el error que devuelve Meta mientras tanto, porque manda por el camino eq
 - **Frontend publicado**: buscador de direcciones (§37), panel del Alcalde (§36) y **páginas legales** (§35), que llevaban una semana sin publicarse.
 - **El bot conversacional funciona** (§41): el webhook quedó montado, la app publicada en Meta, y el vecino ya recibe respuesta. Escribirle *"mis reportes"* devuelve su lista, identificándolo por el teléfono desde el que escribe.
 - **Menú de 3 botones tocables** (§41.5) para cualquier mensaje que el bot no entienda — nació de la primera prueba real, donde el corrector del teléfono convirtió "mis reportes" en "mía reportes".
+- **Aviso de "cuadrilla asignada"** programado y apagado hasta que exista su plantilla (§42).
+- **Tenant de demostración presentable** (§43), sin inventar un solo dato sobre Licantén.
 
 ---
 
