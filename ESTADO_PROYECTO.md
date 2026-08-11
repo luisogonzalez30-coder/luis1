@@ -1395,3 +1395,34 @@ El webhook quedó **montado y verificado** el 10-ago-2026 (`GET /webhook` respon
 | "992675" | el detalle de ese reporte |
 
 **Lo que NO se hizo, a propósito**: no se le pusieron botones a las plantillas de aviso. Se puede, pero obliga a mandarlas de nuevo a revisión de Meta — y ya se sabe lo que eso cuesta (13 horas sin notificaciones, ver §39.5). Cuando las dos estén aprobadas y estables, se puede evaluar.
+
+## 42. Aviso de "cuadrilla asignada", listo pero apagado (10-ago-2026)
+
+Repone el segundo de los tres momentos que se perdieron en la migración a la API oficial (§39.3): el aviso al vecino cuando su reporte pasa a "En Proceso", o sea cuando el Alcalde o el Jefe de Departamento le asigna una cuadrilla. Es el mensaje que dice "esto se movió", que es donde un municipio gana o pierde credibilidad.
+
+**`EVENTO 3` en `whatsapp-api-oficial/server.js`**: escucha `estado == 'En Proceso' AND notificado_whatsapp_asignacion == false` y manda la plantilla con `{{1}}` número de ticket y `{{2}}` cuadrilla. Usa la bandera que ya se escribía en cada incidencia sin que nadie la consumiera.
+
+**Está apagado a propósito y no es un bug.** Este aviso lo inicia el municipio, así que cae fuera de la ventana de 24 h y **exige una plantilla aprobada por Meta**. El listener solo se monta si existe la variable `WHATSAPP_TEMPLATE_ASIGNACION`; si falta, el arranque lo dice en el log de forma explícita. La alternativa —dejarlo encendido— sería reintentar para siempre contra una plantilla inexistente y llenar el log de errores `132001`, que es justo el ruido que hizo difícil diagnosticar §39.5.
+
+**Para encenderlo**: crear en Meta la plantilla `ticket_asignado`, idioma Spanish (CHL), categoría Utilidad, con el texto guardado abajo; cuando quede "Activa", agregar `WHATSAPP_TEMPLATE_ASIGNACION=ticket_asignado` en Render. Se enciende sola al reiniciar.
+
+```
+[ticket_asignado]
+Estimado/a vecino/a:
+
+Le informamos que su reporte con ticket *{{1}}* ya fue asignado a *{{2}}*, que se
+hará cargo del trabajo.
+
+Le avisaremos por este mismo medio cuando quede resuelto.
+
+Revise el estado de su reporte aquí:
+https://app-incidencias-urbanas.web.app/licanten/estado
+
+*Municipalidad de Licantén*
+```
+
+Muestras para la revisión: `{{1}}` = `482173`, `{{2}}` = `Cuadrilla Municipal`.
+
+**Crearla es independiente de las dos que están en revisión** (§39.5): agregar una plantilla nueva no las afecta. Pero conviene no hacerlo justo antes de una presentación, porque la aprobación tarda horas y no se puede mostrar.
+
+Queda pendiente el tercero de los avisos perdidos: la **alerta de emergencia al Alcalde** (§32), que necesita lo mismo —listener nuevo más plantilla— y es la función más vendedora de la propuesta comercial.

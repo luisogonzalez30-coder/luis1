@@ -31,6 +31,10 @@ const PORT = process.env.PORT || 3000
 // hacernos responder a números arbitrarios.
 const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN
 const WHATSAPP_APP_SECRET = process.env.WHATSAPP_APP_SECRET
+// Nombre de la plantilla del aviso "ya asignamos tu reporte a una cuadrilla".
+// Sin esta variable el aviso NO corre (ver escucharTicketsAsignados): es
+// deliberado, porque la plantilla hay que crearla y aprobarla en Meta primero.
+const WHATSAPP_TEMPLATE_ASIGNACION = process.env.WHATSAPP_TEMPLATE_ASIGNACION
 
 const VARS_REQUERIDAS = ['FIREBASE_SERVICE_ACCOUNT', 'WHATSAPP_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID']
 const faltantes = VARS_REQUERIDAS.filter((clave) => !process.env[clave])
@@ -148,6 +152,63 @@ async function procesarTicketResuelto(id, incidencia) {
   }
 }
 
+// --- EVENTO 3: cuadrilla asignada -> template configurable ---
+// Dispara cuando la incidencia ENTRA a "En Proceso", o sea cuando el Alcalde o
+// el Jefe de Departamento le asigna una cuadrilla. Era uno de los 3 momentos que
+// notificaba el bot viejo y se perdió en la migración a la API oficial (§39.3);
+// es el aviso que le dice al vecino "esto se movió", que es justo el momento en
+// que un municipio gana o pierde credibilidad.
+//
+// **Está apagado hasta que exista la plantilla aprobada en Meta.** Con la API
+// oficial no se puede mandar texto libre fuera de la ventana de 24 h, y este
+// aviso lo inicia el municipio, así que necesita plantilla. Se enciende poniendo
+// WHATSAPP_TEMPLATE_ASIGNACION en Render con el nombre de la plantilla aprobada
+// (ver §42). Si no está, el listener no se monta: mejor no correr que llenar el
+// log de errores 132001 y reintentar para siempre contra algo que no existe.
+//
+// Variables del body, en ESE orden: {{1}} número de ticket, {{2}} cuadrilla.
+async function procesarTicketAsignado(id, incidencia) {
+  const ref = db.collection('incidencias').doc(id)
+  const para = formatearParaGraphApi(incidencia.contacto_ciudadano)
+
+  if (!para) {
+    console.log(`[server] ${incidencia.numero_ticket || id} (asignación): sin WhatsApp válido, no se notifica.`)
+    await ref.update({ notificado_whatsapp_asignacion: true })
+    return
+  }
+
+  try {
+    await enviarTemplate({
+      para,
+      template: WHATSAPP_TEMPLATE_ASIGNACION,
+      parametrosBody: [incidencia.numero_ticket || id, incidencia.cuadrilla_asignada || 'un equipo municipal'],
+    })
+    await ref.update({ notificado_whatsapp_asignacion: true })
+    console.log(`[server] ${incidencia.numero_ticket || id} (asignación): WhatsApp enviado a ${para}.`)
+  } catch (error) {
+    console.error(
+      `[server] ${incidencia.numero_ticket || id} (asignación): falló el envío.\n    ${explicarError(error)}`
+    )
+  }
+}
+
+function escucharTicketsAsignados() {
+  db.collection('incidencias')
+    .where('estado', '==', 'En Proceso')
+    .where('notificado_whatsapp_asignacion', '==', false)
+    .onSnapshot(
+      (snapshot) => {
+        snapshot.docChanges().forEach((cambio) => {
+          if (cambio.type === 'added') procesarTicketAsignado(cambio.doc.id, cambio.doc.data())
+        })
+      },
+      (error) => console.error('[server] Error escuchando tickets asignados:', error.message)
+    )
+  console.log(
+    `[server] Escuchando asignaciones de cuadrilla (plantilla "${WHATSAPP_TEMPLATE_ASIGNACION}")...`
+  )
+}
+
 function escucharTicketsResueltos() {
   db.collection('incidencias')
     .where('estado', '==', 'Resuelto')
@@ -219,3 +280,15 @@ if (RENDER_EXTERNAL_URL) {
 
 escucharNuevosTickets()
 escucharTicketsResueltos()
+
+// El aviso de asignación solo corre si la plantilla ya existe en Meta. Se avisa
+// en el log cuando NO está, para que se entienda que está apagado a propósito y
+// no se busque un bug donde no hay ninguno.
+if (WHATSAPP_TEMPLATE_ASIGNACION) {
+  escucharTicketsAsignados()
+} else {
+  console.log(
+    '[server] Aviso de "cuadrilla asignada" APAGADO (falta WHATSAPP_TEMPLATE_ASIGNACION).\n' +
+      '         El código está listo: crea la plantilla en Meta y pon su nombre en esa variable (ver §42).'
+  )
+}
