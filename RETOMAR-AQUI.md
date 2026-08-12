@@ -7,6 +7,16 @@ La app funciona y está en producción: https://app-incidencias-urbanas.web.app/
 
 ---
 
+## 🎉 El Alcalde de Licantén aceptó el proyecto (11-ago-2026)
+
+**Licantén es cliente.** Esto cambia el orden de todo lo que sigue: lo que era "pendiente para vender" ahora es **pendiente para operar**, y tiene un municipio real esperando del otro lado.
+
+Se aceptó viendo **solo lo que funciona de verdad**. En la reunión no se prometió la alerta de emergencia al Alcalde ni el aviso de "cuadrilla asignada" — quedaron dichas como "en desarrollo" y "próxima etapa". **No hay deuda contraída**: lo que se entregue de acá en adelante suma, no rescata. Conviene no romper eso.
+
+Lo primero que hay que resolver, en este orden, está en **"Pendiente para operar"** más abajo. El resumen: la tarjeta (el bot corre en plan Free sin SLA y ahora hay un municipio dependiendo de él), las 16 coordenadas de sectores que faltan, y la alerta de emergencia, que ahora tiene fecha de vencimiento porque se dijo "próximas semanas".
+
+---
+
 ## El sistema está operativo de punta a punta
 
 **Verificado el 11-ago a primera hora**: Meta aprobó las dos plantillas durante la noche y **los 4 avisos que estaban esperando salieron solos**. Un reporte creado a las 02:04 de hoy también recibió su aviso, o sea que la cadena completa funciona en vivo: el vecino reporta → le llega el WhatsApp → el funcionario ve el reporte con su foto → el vecino puede consultar por WhatsApp.
@@ -24,15 +34,22 @@ Los textos de WhatsApp son de **un solo municipio**: las plantillas dicen "Munic
 
 ---
 
-## Para vender
+## Para vender (al siguiente municipio — con Licantén ya funcionó)
 
-- **`docs/PAUTA-REUNION-ALCALDE.md`** — guion de 20 minutos con tiempos, frases textuales, objeciones y links en orden. La idea que lo ordena: al Alcalde no se le vende una app para vecinos, se le vende su panel de control.
+- **`docs/PAUTA-REUNION-ALCALDE.md`** — guion de 20 minutos con tiempos, frases textuales, objeciones y links en orden. **Probado y ganado el 11-ago con el Alcalde de Licantén.** La idea que lo ordena: al Alcalde no se le vende una app para vecinos, se le vende su panel de control.
 - **`docs/KIT-DIFUSION.md`** — material de la semana 5 listo para que publique la municipalidad: afiche con QR, publicaciones de Facebook, mensaje para juntas de vecinos, cartel del mesón, guion de radio y video del Alcalde.
 - **`docs/PROPUESTA-COMERCIAL-NOTAS.md`** sección 1 — lo que la propuesta promete y todavía no se puede cumplir. Leerla antes de enviarla.
 
-**Cuentas**: `contacto@alcaldelicanten.com` abre Licantén real (6 reportes). El correo personal (`luis.ogonzalez.30@gmail.com`) abre el tenant **demo**, que quedó preparado para presentaciones (§43): 100 reportes, 3 sectores, calificaciones, y el nombre "Municipalidad de Licantén (demostración)".
+**Cuentas**: `contacto@alcaldelicanten.com` abre Licantén real (6 reportes). El correo personal (`luis.ogonzalez.30@gmail.com`) abre el tenant **demo**, que quedó preparado para presentaciones (§43): 101 reportes, 3 sectores, calificaciones, y el nombre "Municipalidad de Licantén (demostración)". Desde el 11-ago el demo además tiene el mapa bien centrado sobre el pueblo y **sin RUT ni teléfonos de personas reales** (§43.1, §43.2).
 
 ---
+
+## Lo que se cerró el 11 de agosto, antes de la reunión con el Alcalde
+
+- **El mapa apuntaba al lugar equivocado** (§43.1). La coordenada de "Licantén (centro)" estaba 6,5 km al oeste del pueblo, en el campo, y marcada como confirmada. Antes de arreglarla, **5 de los 6 reportes de Licantén caían "fuera de sectores"**. Eran **cuatro** cosas separadas: la coordenada del sector, una **copia** de esa coordenada en `preparar-demo.mjs`, el `centro_mapa` de cada tenant (que decide dónde abre el mapa y no se arregla solo), y los 48 reportes del demo ya sembrados sobre los potreros. Todas corregidas.
+  El primer intento de mover los 48 **falló en silencio** y el chequeo lo dio por bueno — escribió en las claves equivocadas. Lo pilló el usuario mirando el mapa. Está contado en §43.1 y el aprendizaje quedó abajo, en "Cómo empezar la próxima conversación": vale para cualquier script que escriba en Firestore.
+- **Fuera los datos personales del demo** (§43.2): 13 RUT y 25 celulares de personas reales, borrados con `FieldValue.delete()`. Respaldo en `backups/incidencias-antes-de-corregir-2026-08-11.json`.
+- **Pauta de la reunión actualizada**: los avisos por WhatsApp salieron de la tabla "NO prometer" —Meta aprobó anoche y están saliendo— y pasaron a ser demo en vivo del Minuto 3-5. Es el mejor momento del guion: reportas desde el celular y el aviso llega delante del Alcalde.
 
 ## Lo que se cerró el 10 de agosto (todo desplegado y verificado)
 
@@ -48,8 +65,7 @@ Los textos de WhatsApp son de **un solo municipio**: las plantillas dicen "Munic
 
 ## Si vas a hablar de WhatsApp, lee §39 antes que §23 o §32
 
-> ⏳ **Al 10-ago-2026 los avisos por WhatsApp NO están saliendo.** Las dos plantillas quedaron **"En revisión"** en Meta tras editarles el texto el 09-ago, y mientras están así Meta rechaza todos los envíos (con un error engañoso, `132001`, que habla de nombre e idioma cuando esos estaban bien — ver §39.5). **No hay nada que arreglar en el código.** Cuando Meta las apruebe (estado "Activa"), hay que **reiniciar el servicio en Render** para que los reportes pendientes reciban su aviso: al reconectarse el bot los vuelve a ver y reintenta solo.
-
+> ✅ **Resuelto el 11-ago-2026.** Meta aprobó las dos plantillas durante la noche y los avisos están saliendo: los 6 reportes de Licantén tienen el suyo enviado. Lo que decía este recuadro hasta ayer —que las plantillas estaban "En revisión" y Meta rechazaba todo con el error engañoso `132001`— quedó atrás, pero el diagnóstico sigue en §39.5 por si se repite al crear la próxima plantilla. Lo que hay que recordar de ahí: **el error habla de nombre e idioma cuando el problema es el estado de la plantilla**, no hay nada que arreglar en el código, y tras la aprobación conviene **reiniciar el servicio en Render** para que los pendientes reintenten solos.
 
 El bot **ya no es** el no oficial (Baileys) que describen esas dos secciones: está migrado a la **Cloud API oficial de Meta** y corre en Render, no en tu PC. El riesgo de que Meta bloqueara el número **está cerrado**. Eso nunca se había documentado, y §21/§23/§27 más la propuesta comercial seguían describiendo el bot viejo — por eso se escribió §39, que es lo único verificado contra el código y contra producción.
 
@@ -65,7 +81,7 @@ Los textos aprobados de las dos plantillas quedaron guardados en §39.2 (el text
 
 1. ~~Desplegar las reglas~~ — ✅ hecho el 10-ago.
 2. ~~Desplegar el frontend~~ — ✅ hecho el 10-ago: §35 a §37 y §40 están en línea.
-3. **Confirmar las 16 coordenadas de sectores**: `node scripts/configurar-sectores.mjs licanten --revisar` da un link de Google Maps por sector, menos de un minuto cada uno. Hoy el documento de Licantén tiene **0 sectores cargados** — ni los 3 confirmados. Eso apaga la vista por sectores del panel del Alcalde (§33) y le quita al buscador de direcciones su fuente local, la que funciona sin internet (§37.3). Puedes cargar los 3 ya verificados con `--solo-confirmados`.
+3. **Confirmar las 16 coordenadas de sectores que faltan**: `node scripts/configurar-sectores.mjs licanten --revisar` da un link de Google Maps por sector, menos de un minuto cada uno. Los 3 confirmados ya quedaron cargados el 11-ago (y con la coordenada del centro **corregida**, ver §43.1). Mientras las otras 16 no estén, sus incidencias se agrupan en "Fuera de los sectores definidos" y el buscador de direcciones sigue sin su fuente local, la que funciona sin internet (§37.3).
 4. **Correo de datos personales del municipio**: `node scripts/configurar-contacto-datos.mjs licanten <correo@municipalidad>`. Está vacío, así que las páginas legales mandan al vecino a la Oficina de Partes.
 5. **Revocar la cuenta `TERRENO` del bot viejo** si sigue en `usuarios_municipales`: nadie la usa y tiene permiso de escritura en producción. El bot actual usa cuenta de servicio.
 6. **Confirmar visualmente** que el PDF de la Cuenta Pública sale bien paginado — requiere login al panel del Alcalde, no tengo acceso.
@@ -74,19 +90,22 @@ Los textos aprobados de las dos plantillas quedaron guardados en §39.2 (el text
 
 ---
 
-## Pendiente para poder vender (§27 tiene la lista completa)
+## Pendiente para operar, ahora que hay cliente (§27 tiene la lista completa)
 
-Por orden de importancia. El punto 3 es programar, pero no es una función nueva: es una que la propuesta **ya promete** y que se perdió en la migración de WhatsApp.
+Reordenado el 11-ago tras la aceptación. Antes esta lista era "lo que falta para vender"; ahora hay un municipio real usando el sistema, así que los tres primeros puntos son riesgo operativo, no comercial.
 
-1. **La tarjeta.** Sin ella no hay plan Blaze ni dominio propio. El bot ya está en Render pero en el **plan Free**, sin SLA — y la propuesta compromete un descuento por indisponibilidad (§7.2). La cuota de Firebase sigue siendo la gratis compartida.
-2. ~~Reponer "mis reportes"~~ — ✅ hecho el 10-ago (§41), con menú de botones incluido.
-3. **Reponer la alerta de emergencias al Alcalde.** Es la función más vendedora de la propuesta (§3.3) y hoy **no existe**: 7 emergencias en producción, 0 alertas. Necesita un listener nuevo **y** una plantilla aprobada en Meta (con la API oficial no se puede mandar texto libre fuera de la ventana de 24 h). Hasta que esté: sácala del documento o márcala como próxima etapa.
-4. **El costo por mensaje de Meta.** Cada reporte genera al menos dos mensajes de plantilla. Verifica la tarifa vigente de mensajes de utilidad en Chile y métela en tus números: la propuesta dice "no hay cobro por cantidad de reportes", cierto para lo que le cobras al municipio, falso para lo que te cuesta a ti.
-5. ~~**Política de privacidad y términos**~~ — ✅ escritas y publicadas (§35.2). Falta que **las revise un abogado** y el acuerdo de tratamiento de datos que la propuesta menciona.
-6. **Cómo facturas.** Ya tienes SpA. Falta inscribirte como proveedor en Mercado Público (gratis y online) — la propuesta afirma que ya lo estás.
-7. **Datos de prueba en producción**: ~89 incidencias sembradas en `municipalidades/demo` y algunas en `licanten`. Limpiar antes de mostrarle la plataforma a un Alcalde.
+1. **La tarjeta. Ahora bloquea de verdad.** El bot corre en Render **plan Free, sin SLA**, y la propuesta compromete descuento por indisponibilidad (§7.2). Firebase sigue en la cuota gratis compartida. Mientras era una demo daba lo mismo; con un municipio dependiendo del servicio a diario es el riesgo más concreto que hay. Sin tarjeta tampoco hay plan Blaze ni dominio propio.
+2. **Las 16 coordenadas de sectores que faltan.** Solo 3 de las 19 localidades existen en el panel. Los vecinos de Duao, La Pesca, Idahue y el resto van a reportar y sus incidencias caerán todas en "Fuera de los sectores definidos" — un hueco que en demo no se notaba y con operación real sí. Menos de un minuto por sector: ver el punto 3 de "Te toca a ti".
+3. **Reponer la alerta de emergencias al Alcalde, que ahora tiene plazo.** En la reunión se dijo "en desarrollo, se activa en las próximas semanas", así que la frase ya corre. Es la función más vendedora de la propuesta (§3.3) y hoy **no existe**. Necesita un listener nuevo **y** una plantilla aprobada en Meta (con la API oficial no se puede mandar texto libre fuera de la ventana de 24 h).
+4. **Limpiar los 6 reportes de prueba de Licantén.** Ya no es cosmética: en cuanto entren los reportes reales del municipio, las estadísticas del primer mes y la primera Cuenta Pública nacen contaminadas. Varios son pruebas tuyas y se notan (uno dice *"Reja rota"* pero está categorizado **Árbol caído**; otro es de **Linares**, otra ciudad). Decidir cuáles borrar **antes** de que el municipio empiece a usarlo.
+5. **El aviso de "cuadrilla asignada"** (§42). Se dijo "próxima etapa". El código está listo y apagado; falta la plantilla `ticket_asignado` en Meta y la variable en Render.
+6. **El costo por mensaje de Meta.** Cada reporte genera al menos dos mensajes de plantilla, y ahora el volumen deja de ser hipotético. Verifica la tarifa vigente de mensajes de utilidad en Chile y métela en tus números: la propuesta dice "no hay cobro por cantidad de reportes", cierto para lo que le cobras al municipio, falso para lo que te cuesta a ti.
+7. **Cómo facturas.** Ya tienes SpA. Falta inscribirte como proveedor en Mercado Público (gratis y online) — la propuesta afirma que ya lo estás, y ahora hay que emitir de verdad.
+8. **El acuerdo de tratamiento de datos.** Las páginas legales están escritas y publicadas (§35.2), pero falta que **las revise un abogado** y el acuerdo que la propuesta menciona. Con un municipio firmado, esto pasa de "conviene" a "corresponde".
 
-**Antes de enviar la propuesta**, lee `docs/PROPUESTA-COMERCIAL-NOTAS.md` sección 1: es la tabla de lo que el documento promete y hoy no puedes cumplir. Se actualizó el 09-ago: la fila de la alerta al Alcalde ahora dice "no existe", que es la verdad.
+~~Reponer "mis reportes"~~ — ✅ hecho el 10-ago (§41). ~~Política de privacidad y términos~~ — ✅ publicadas (§35.2). ~~Datos de prueba del demo~~ — ✅ 11-ago (§43.1, §43.2).
+
+**Si vuelves a enviar la propuesta a otro municipio**, lee antes `docs/PROPUESTA-COMERCIAL-NOTAS.md` sección 1: es la tabla de lo que el documento promete y todavía no puedes cumplir.
 
 ---
 
@@ -94,7 +113,7 @@ Por orden de importancia. El punto 3 es programar, pero no es una función nueva
 
 Los datos que hay que pedirle están en la conversación del 09-ago pero **no quedaron escritos como documento**. Resumen: nombre institucional, coordenadas del centro, dos colores hex, logo PNG, nombres de las cuadrillas (sin esto no se puede asignar nada), listado de sectores con un punto de referencia cada uno, y por cada funcionario nombre + correo + rol + departamento. Más el correo del encargado de datos personales y el WhatsApp del Alcalde. **No** hay que pedir categorías ni departamentos (vienen fijos) ni precios de materiales (se construyen solos con el historial).
 
-Si conviene, pedir en la próxima conversación que lo deje como `docs/ALTA-MUNICIPALIDAD.md`, en formato de formulario para enviar por correo, con el comando que corresponde a cada dato.
+**Ahora hace falta de verdad**: con Licantén aceptado hay que pedirle formalmente estos datos (cuadrillas, funcionarios con su rol, correo del encargado de datos personales, WhatsApp del Alcalde). Pedir en la próxima conversación que quede como `docs/ALTA-MUNICIPALIDAD.md`, en formato de formulario para enviar por correo, con el comando que corresponde a cada dato.
 
 ---
 
@@ -102,13 +121,15 @@ Si conviene, pedir en la próxima conversación que lo deje como `docs/ALTA-MUNI
 
 Para que salga barata, apunta a secciones en vez de pedir que lea todo:
 
-> "Lee RETOMAR-AQUI.md y la sección §39 de ESTADO_PROYECTO.md. Quiero reponer 'mis reportes' en el WhatsApp."
+> "Lee RETOMAR-AQUI.md y la sección §32 y §39 de ESTADO_PROYECTO.md. Quiero reponer la alerta de emergencia al WhatsApp del Alcalde."
 
 Evita "lee ESTADO_PROYECTO.md completo": son ~40 mil tokens, el equivalente a veinte mensajes.
 
 **Dos gotchas de esta máquina que van a aparecer** (§20 y §38.4): el **emulador de Firestore no arranca** acá (falla Netty al abrir un selector, con y sin sandbox), así que las reglas no se pueden probar localmente — lo que sí funciona es `npx firebase deploy --only firestore:rules --dry-run`, que las compila contra el proyecto real sin publicarlas. Y la API `firebaserules:test` de Google devuelve **403** con la cuenta de servicio del repo, que no tiene el permiso `firebaserules.rulesets.test`.
 
 **Un método que valió la pena y conviene repetir**: cuando algo "no funciona en producción", comparar el ruleset **realmente desplegado** (se baja con la Rules API usando `serviceAccountKey.json`) contra `firestore.rules`, y leer las banderas reales de `incidencias` con el Admin SDK. Así se encontró el bug de las fotos y así se comprobó que las notificaciones sí salen. Está escrito en §38.2.
+
+**Y una trampa que ya costó una vez** (§43.1): al escribir en Firestore desde un script, usar **exactamente las claves que lee el frontend**. El campo `coordenadas` es `{ lat, lng }`; un script escribió `{ latitude, longitude }` "conservando el formato", los documentos quedaron con los dos pares, y el mapa siguió dibujando el viejo. Peor: el chequeo leía `latitude ?? lat`, o sea prefería la clave recién escrita, y dio todo en verde. **Un verificador que acepta más formatos que la aplicación no verifica nada.** Lo detectó el usuario mirando la pantalla. `scripts/verificar-presentacion.mjs` ahora exige `lat`/`lng` y falla si no están.
 
 ---
 

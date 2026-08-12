@@ -35,8 +35,14 @@ const TENANT_REAL = 'licanten'
 // Las 3 localidades de Licantén cuyas coordenadas están verificadas (las mismas
 // de scripts/configurar-sectores.mjs). Las otras 16 del Plan Regulador siguen
 // sin confirmar, así que no se usan ni acá.
+//
+// OJO: esta lista es una COPIA de la de configurar-sectores.mjs. Estuvo
+// desincronizada y costó caro: el centro tenía -34.9743,-72.0604, 6,5 km al
+// oeste del pueblo, así que este script sembró 48 reportes sobre potreros y el
+// mapa del demo salía con el pueblo vacío al costado (corregido el 11-ago-2026,
+// ver §43.1). Si tocas una lista, toca la otra.
 const SECTORES = [
-  { nombre: 'Licantén (centro)', lat: -34.9743, lng: -72.0604, radio_metros: 1500, peso: 0.55 },
+  { nombre: 'Licantén (centro)', lat: -34.9802, lng: -71.9873, radio_metros: 1800, peso: 0.55 },
   { nombre: 'Iloca', lat: -34.9167, lng: -72.1833, radio_metros: 2000, peso: 0.25 },
   { nombre: 'Lora', lat: -35.017, lng: -72.067, radio_metros: 2000, peso: 0.2 },
 ]

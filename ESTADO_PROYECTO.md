@@ -1445,6 +1445,46 @@ Qué corrige el script, todo dentro de `demo`:
 
 **Licantén no se tocó** (verificado por separado tras aplicar).
 
+### 43.1 La coordenada del centro estaba mala, y se notó en el mapa (11-ago-2026)
+
+Detectado horas antes de la presentación al Alcalde, mirando el panel: el círculo de "Licantén (centro)" caía sobre potreros, **6,5 km al oeste del pueblo**, con todos sus pines adentro; el pueblo real aparecía al costado, casi vacío.
+
+**La coordenada de `configurar-sectores.mjs` era `-34.9743,-72.0604` y estaba marcada `confirmado: true`.** No coincidía ni con los `34°59′S 72°00′W` que ella misma citaba como fuente (`-34.983,-72.000`): fue un error de transcripción que pasó la revisión porque nadie contrastó el número contra un mapa. Es exactamente el error silencioso que advierte el encabezado del script — el sector no falla, simplemente nunca le llegan incidencias.
+
+Cómo se comprobó, sin depender del ojo: **los tres reportes reales del casco urbano se agrupan en `-34.980,-71.987`** (941158, 992675, 021048), geocodificados por separado desde direcciones distintas. El centroide de esos tres es el valor que quedó. Antes de corregir, **5 de los 6 reportes de Licantén caían "fuera de los sectores definidos"**.
+
+Lo que se arregló, y dónde vive cada cosa:
+
+| Qué | Dónde estaba | Ahora |
+|---|---|---|
+| Coordenada del sector | `configurar-sectores.mjs` | `-34.9802,-71.9873`, radio 1800 m |
+| **Copia** de la coordenada | `preparar-demo.mjs` (lista propia) | sincronizada |
+| Reportes ya sembrados | 48 del demo, sobre potreros | trasladados en bloque |
+| `centro_mapa` del demo | `-34.9743,-72.0604` | corregido |
+| `centro_mapa` de Licantén | `-34.9928,-72.0044` (2,1 km al SO) | corregido |
+
+**Las tres cosas eran independientes**: corregir el sector no mueve los reportes ya sembrados, y no toca `centro_mapa`, que es el campo que decide dónde abre el mapa. Iloca y Lora estaban bien y no se tocaron.
+
+El traslado de los 48 fue **en bloque, el mismo delta para todos**, no un reparto al azar nuevo: así el grupo conserva su forma —dónde se apelmaza, qué tan disperso está— que es lo que hace que un mapa sembrado no parezca sembrado.
+
+**`preparar-demo.mjs` tenía su propia copia de las coordenadas.** Por eso sembró sobre potreros aunque el otro script fuera la fuente declarada. Quedó una advertencia en las dos listas; si alguna vez se unifican, mejor.
+
+Verificado después: Licantén 3 en el centro / 1 en Lora / 2 fuera (uno es de **Linares**, otra ciudad, y el otro está a 18 km en la Ruta J-60 — los dos legítimamente fuera). Demo: 51 / 23 / 27 y **0 fuera**.
+
+**El primer traslado no funcionó, y el chequeo dijo que sí.** Vale la pena dejarlo escrito porque el modo de fallar se repite. El campo `coordenadas` de esta base es `{ lat, lng }` — es lo que lee `MapaIncidencias.jsx`. El script escribió `{ latitude, longitude }` creyendo "conservar el formato original", y como no borraba nada, los 48 documentos quedaron con **los dos pares**: el viejo (sobre los potreros, que es el que dibuja el mapa) y uno nuevo que nadie lee. En pantalla no se movió nada.
+
+Lo detectó el usuario mirando el mapa, no el chequeo. El chequeo leía `latitude ?? lat`, o sea prefería justamente la clave recién escrita, así que confirmó en verde un cambio que no existía. **Un verificador que acepta más formatos que la aplicación no verifica nada**: hay que leer por donde lee el programa, aunque sea más frágil. `verificar-presentacion.mjs` ahora exige `lat`/`lng` y falla si no están.
+
+Reparado con `scripts/reparar-coordenadas.mjs` (copia el par bueno a `lat`/`lng` y borra el sobrante; no recalcula el desplazamiento). Los 101 reportes del demo quedaron en un solo formato, comprobado.
+
+### 43.2 Datos personales reales en el tenant demo (11-ago-2026)
+
+Los reportes del demo no son inventados: se arrastraron de reportes verdaderos, y traían **13 RUT y 25 celulares de personas reales**. Al hacer clic en cualquiera, ese dato quedaba en pantalla — y el guion de la reunión (`docs/PAUTA-REUNION-ALCALDE.md`) plantea a propósito la objeción *"¿esto me expone?"*, así que el momento era el peor posible.
+
+Se borraron los 38 campos con `FieldValue.delete()`. **No se reemplazaron por datos falsos**: un RUT inventado se ve igual de real en pantalla y el problema vuelve con el siguiente que mire. El nombre de pila se dejó — sin RUT ni teléfono no identifica a nadie y el panel necesita mostrar algo en esa columna.
+
+Ambas correcciones están en **`scripts/corregir-demo.mjs`**, que informa por defecto y solo escribe con `--aplicar`. Respaldo previo de los 106 documentos en `backups/incidencias-antes-de-corregir-2026-08-11.json`.
+
 ## 44. WhatsApp multi-municipio: lo que se rompe con el segundo cliente (11-ago-2026)
 
 Detectado al preguntar el usuario qué pasa cuando tenga 5 municipalidades, porque Meta solo le dejaba agregar 2 números. **El límite de números no es el problema real.**

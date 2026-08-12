@@ -16,7 +16,13 @@ Las frases en **negrita** son para decirlas casi textuales.
 - [ ] Sesión ya abierta en el notebook con **el correo personal** (panel con volumen)
 - [ ] En el celular, sesión con **contacto@alcaldelicanten.com** (Licantén real)
 - [ ] Pestañas abiertas y listas, en este orden: portada de la comuna · formulario · login · panel
+- [ ] WhatsApp abierto en el celular, listo para mostrar el aviso que llega en el Minuto 3-5
 - [ ] No anotar contraseñas en esta hoja
+
+**Qué reporte abrir en el Minuto 5-8** (Licantén tiene 6, y varios son pruebas
+tuyas que se notan). Usa el **464368** — luminaria parpadeando en Ruta J-60, con
+foto del vecino. **No abras el 955353**: dice "Presbítero Ernesto Cavichioli,
+Linares", es de otra ciudad.
 
 ---
 
@@ -43,6 +49,16 @@ formulario: el punto es la velocidad.
 
 > **"Treinta segundos, sin instalar nada y sin crear una cuenta. Entra por un
 > QR o un link."**
+
+**Y quédate con el celular en la mano.** Al enviarlo te llega el WhatsApp con el
+número de ticket, en segundos. Muéstraselo en la pantalla del teléfono.
+
+> **"Y eso le llegó al vecino solo, sin que nadie en la municipalidad hiciera
+> nada. Es lo que hoy no pasa: la persona reclama y no vuelve a saber."**
+
+*(Aprobado por Meta el 11-ago-2026 y verificado en producción: los 6 reportes
+reales de Licantén tienen su aviso enviado. Antes de entrar, confirma que el
+último reporte tenga `wsp:sí`.)*
 
 ---
 
@@ -130,9 +146,12 @@ siguiente el panel tiene datos que no va a querer perder.
 |---|---|
 | Alerta de emergencia a su WhatsApp | "está en desarrollo, se activa en las próximas semanas" |
 | Aviso automático de "asignamos su reporte" | próxima etapa |
-| Los avisos automáticos por WhatsApp | "estamos terminando la aprobación de los textos con Meta" |
 
 Un alcalde que se siente engañado no vuelve. Lo que ya funciona alcanza.
+
+> **Sí puedes prometer** los avisos por WhatsApp al vecino: cuando entra su
+> reporte y cuando se resuelve. Meta aprobó las dos plantillas el 11-ago-2026 y
+> están saliendo en producción. Es demo del Minuto 3-5, no una promesa.
 
 ---
 

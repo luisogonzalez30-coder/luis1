@@ -50,11 +50,18 @@ const SECTORES = [
   // --- Verificados contra una fuente ---------------------------------------
   {
     nombre: 'Licantén (centro)',
-    lat: -34.9743,
-    lng: -72.0604,
-    radio_metros: 1500,
+    lat: -34.9802,
+    lng: -71.9873,
+    radio_metros: 1800,
     confirmado: true,
-    fuente: 'Coordenadas de la ciudad de Licantén (34°59′S 72°00′W).',
+    fuente:
+      'Corregida el 11-ago-2026. Estaba en -34.9743,-72.0604: 6,5 km al oeste ' +
+      'del pueblo, en pleno campo, y ni siquiera coincidía con los 34°59′S ' +
+      '72°00′W que citaba. Ningún reporte real le caía dentro. El valor de ' +
+      'ahora es el centroide de los tres reportes del casco urbano ' +
+      '(941158, 992675, 021048) y quedó confirmado a ojo sobre el mapa del ' +
+      'panel. Es el caso exacto que advierte el encabezado: el sector no ' +
+      'falla, simplemente nunca le llegan incidencias.',
   },
   {
     nombre: 'Iloca',
