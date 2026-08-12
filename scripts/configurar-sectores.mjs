@@ -52,7 +52,7 @@ const SECTORES = [
     nombre: 'Licantén (centro)',
     lat: -34.9802,
     lng: -71.9873,
-    radio_metros: 1800,
+    radio_metros: 950,
     confirmado: true,
     fuente:
       'Corregida el 11-ago-2026. Estaba en -34.9743,-72.0604: 6,5 km al oeste ' +
@@ -67,7 +67,7 @@ const SECTORES = [
     nombre: 'Iloca',
     lat: -34.9167,
     lng: -72.1833,
-    radio_metros: 2000,
+    radio_metros: 1050,
     confirmado: true,
     fuente: 'Coordenadas de Iloca (34°55′S 72°11′W).',
   },
@@ -75,45 +75,84 @@ const SECTORES = [
     nombre: 'Lora',
     lat: -35.017,
     lng: -72.067,
-    radio_metros: 2000,
+    radio_metros: 800,
     confirmado: true,
     fuente: 'Coordenadas de Lora (35°01′S 72°04′W). Iglesia de adobe, Monumento Nacional 2004.',
   },
 
-  // --- Costa: posición aproximada, hay que confirmarla ----------------------
-  {
-    nombre: 'Duao',
-    lat: null,
-    lng: null,
-    radio_metros: 2000,
-    confirmado: false,
-    nota: 'Caleta a ~7 km al norte de Iloca por la costa. Las fuentes le repiten las coordenadas de Iloca, así que no sirven.',
-  },
   {
     nombre: 'La Pesca',
-    lat: null,
-    lng: null,
-    radio_metros: 2000,
-    confirmado: false,
-    nota: 'En la desembocadura del río Mataquito, al sur de Iloca, a 22 km de Licantén.',
+    lat: -34.977,
+    lng: -72.1811,
+    radio_metros: 1150,
+    confirmado: true,
+    fuente:
+      'Confirmada el 12-ago-2026 por doble fuente: la lista del municipio y el ' +
+      'nodo de OpenStreetMap coinciden en 178 m. Desembocadura del Mataquito.',
+  },
+  {
+    nombre: 'Duao',
+    lat: -34.8954,
+    lng: -72.1789,
+    radio_metros: 600,
+    confirmado: true,
+    fuente:
+      'Confirmada el 12-ago-2026 por doble fuente: la lista del municipio y el ' +
+      'nodo de OpenStreetMap coinciden en 18 m. Caleta de pescadores.',
   },
 
-  // --- Resto de las localidades del Plan Regulador Comunal ------------------
-  // De este a oeste, tal como las ordena el PRC.
-  { nombre: 'La Higuera', lat: null, lng: null, radio_metros: 2000, confirmado: false },
-  { nombre: 'Idahue', lat: null, lng: null, radio_metros: 2000, confirmado: false },
-  { nombre: 'Idahue Chico', lat: null, lng: null, radio_metros: 1500, confirmado: false },
-  { nombre: 'Placilla', lat: null, lng: null, radio_metros: 2000, confirmado: false },
-  { nombre: 'La Leonera', lat: null, lng: null, radio_metros: 2000, confirmado: false },
-  { nombre: 'La Empalizada', lat: null, lng: null, radio_metros: 2000, confirmado: false },
-  { nombre: 'Los Cristales', lat: null, lng: null, radio_metros: 2000, confirmado: false },
-  { nombre: 'Villa Angosta', lat: null, lng: null, radio_metros: 1500, confirmado: false },
-  { nombre: 'Quelmén', lat: null, lng: null, radio_metros: 2000, confirmado: false },
-  { nombre: 'El Huapi', lat: null, lng: null, radio_metros: 2000, confirmado: false },
-  { nombre: 'Naicura', lat: null, lng: null, radio_metros: 2000, confirmado: false },
-  { nombre: 'Los Cuervos', lat: null, lng: null, radio_metros: 2000, confirmado: false },
-  { nombre: 'Las Puertas', lat: null, lng: null, radio_metros: 2000, confirmado: false },
-  { nombre: 'El Médano', lat: null, lng: null, radio_metros: 2000, confirmado: false },
+  // --- APROXIMADOS: cargados el 12-ago-2026 por decisión del usuario ---------
+  //
+  // Vienen de una lista de las 23 localidades que entregó el usuario. Se
+  // cargaron a pedido expreso suyo, y se dejan marcados `confirmado: false`
+  // porque NO están verificados: para escribirlos hay que pasar
+  // `--incluir-aproximados`, así nunca llegan a producción por descuido.
+  //
+  // Qué se verificó antes de cargarlos, y por qué siguen sin confirmar:
+  //  - Los 23 puntos caen dentro de la comuna (ninguno a más de 25 km del
+  //    centro) y 21 de 23 devuelven "Licantén · Provincia de Curicó" al
+  //    consultar OpenStreetMap por esa coordenada. Hasta ahí, plausibles.
+  //  - PERO al buscar cada localidad por su NOMBRE en OpenStreetMap, las
+  //    coordenadas no coinciden: La Higuera queda a 22 km, Quelmén a 15 km,
+  //    Los Junquillos a 11,8 km, Idahue a 6,1 km. Y los nombres aparecen
+  //    corridos entre sí: el punto de "Naicura" cae en Huapi, el de "Coquimbo"
+  //    en Naicura, el de "El Huapi" en Lora Sur. Es un desplazamiento
+  //    sistemático, no errores sueltos: la lista parece interpolada a lo largo
+  //    del valle más que consultada en un mapa.
+  //  - `Villa Angosta` cae en **Curepto, Provincia de Talca** según OSM, o sea
+  //    en otra comuna. Se carga igual porque su círculo alcanza territorio de
+  //    Licantén, pero es el candidato número uno a estar mal.
+  //
+  // El riesgo concreto de esto es el de §43.1: un sector con la coordenada
+  // corrida no falla, simplemente agrupa los reportes del vecino equivocado, y
+  // el Alcalde saca conclusiones de un sector con datos de otro. **Pendiente:
+  // que el Director de Obras las valide contra el Plan Regulador** (para él son
+  // 15 minutos con `--revisar`, que imprime un link de Google Maps por sector).
+  //
+  // Los radios NO son los 2000 m de antes: con 23 sectores en una comuna de
+  // este tamaño los vecinos más cercanos quedan a 1,3-2,5 km, así que se usó
+  // 45% de la distancia al vecino más próximo. Con 2000 m los círculos se
+  // solapaban y la agrupación quedaba a merced de cuál centro estaba más cerca.
+  { nombre: 'Quelmén', lat: -34.95139, lng: -71.88611, radio_metros: 800, confirmado: false },
+  { nombre: 'La Higuera', lat: -34.95833, lng: -71.90417, radio_metros: 750, confirmado: false },
+  { nombre: 'Los Cristales', lat: -34.9625, lng: -71.92222, radio_metros: 600, confirmado: false },
+  // El PRC lista Idahue e Idahue Chico por separado; la lista del municipio los
+  // trae como uno solo. Queda uno hasta que alguien defina si se separan.
+  { nombre: 'Idahue', lat: -34.96944, lng: -71.93333, radio_metros: 600, confirmado: false },
+  { nombre: 'Placilla', lat: -34.97361, lng: -71.96111, radio_metros: 700, confirmado: false },
+  { nombre: 'La Leonera', lat: -34.96389, lng: -71.975, radio_metros: 700, confirmado: false },
+  { nombre: 'Villa Angosta', lat: -34.99167, lng: -72.02083, radio_metros: 900, confirmado: false },
+  { nombre: 'La Empalizada', lat: -35.00278, lng: -72.03889, radio_metros: 900, confirmado: false },
+  { nombre: 'El Huapi', lat: -35.02083, lng: -72.08611, radio_metros: 800, confirmado: false },
+  { nombre: 'Naicura', lat: -35.025, lng: -72.10833, radio_metros: 900, confirmado: false },
+  { nombre: 'Los Cuervos', lat: -35.0125, lng: -72.12917, radio_metros: 850, confirmado: false },
+  { nombre: 'Los Junquillos', lat: -34.96944, lng: -72.09167, radio_metros: 1100, confirmado: false },
+  { nombre: 'Las Puertas', lat: -34.95556, lng: -72.11389, radio_metros: 1100, confirmado: false },
+  { nombre: 'Coquimbo', lat: -35.02778, lng: -72.13889, radio_metros: 850, confirmado: false },
+  { nombre: 'El Médano', lat: -34.99722, lng: -72.15417, radio_metros: 1250, confirmado: false },
+  { nombre: 'Rancura', lat: -34.95417, lng: -72.18472, radio_metros: 750, confirmado: false },
+  { nombre: 'La Capilla', lat: -34.93889, lng: -72.18333, radio_metros: 750, confirmado: false },
+  { nombre: 'Pichibudi', lat: -34.88611, lng: -72.17083, radio_metros: 600, confirmado: false },
 
   // OJO: Lipimávida NO va acá. Estaba en la versión anterior de este archivo,
   // pero pertenece a la comuna de Vichuquén, no a Licantén. Si le cayeran
@@ -125,6 +164,14 @@ const args = process.argv.slice(2)
 const municipioId = args.find((a) => !a.startsWith('--'))
 const soloConfirmados = args.includes('--solo-confirmados')
 const soloRevisar = args.includes('--revisar')
+// Carga también los sectores con coordenada aproximada sin confirmar. Existe
+// porque el usuario pidió expresamente cargar las 23 localidades el 12-ago-2026
+// sabiendo que 18 no están verificadas: es mejor tener el territorio completo
+// aunque algunos centros estén corridos, que tener 5 sectores y el resto de la
+// comuna cayendo en "Fuera de los sectores definidos". Es una decisión suya, y
+// por eso hay que pedirla en cada corrida en vez de que sea el comportamiento
+// por omisión.
+const incluirAproximados = args.includes('--incluir-aproximados')
 
 if (!municipioId) {
   console.error('Uso: node scripts/configurar-sectores.mjs <municipio> [--solo-confirmados] [--revisar]')
@@ -157,7 +204,19 @@ if (soloRevisar) {
 // la validación de forma, porque un sector pendiente tiene lat/lng en null y si
 // no, el error que se ve es "lat/lng deben ser números" — cierto pero inútil,
 // esconde lo que realmente hay que hacer.
-if (!soloConfirmados && pendientes.length > 0) {
+// Un pendiente CON coordenadas (aproximada, sin confirmar) es distinto de uno
+// sin coordenadas: el primero se puede cargar bajo protesta, el segundo no se
+// puede cargar de ninguna forma.
+const sinCoordenadas = pendientes.filter((s) => typeof s.lat !== 'number' || typeof s.lng !== 'number')
+
+if (incluirAproximados && sinCoordenadas.length > 0) {
+  console.error(`\nHay ${sinCoordenadas.length} sectores sin coordenada, y --incluir-aproximados no los inventa:\n`)
+  for (const s of sinCoordenadas) console.error(`  · ${s.nombre}`)
+  console.error('\nCompleta lat/lng o quítalos de la lista.\n')
+  process.exit(1)
+}
+
+if (!soloConfirmados && !incluirAproximados && pendientes.length > 0) {
   console.error(`Hay ${pendientes.length} sectores sin coordenadas confirmadas:\n`)
   for (const s of pendientes) {
     console.error(`  · ${s.nombre}${s.nota ? ` — ${s.nota}` : ''}`)

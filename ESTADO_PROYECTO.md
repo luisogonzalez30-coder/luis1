@@ -1521,3 +1521,39 @@ Detalle que ahorra trabajo: **las plantillas viven en la WABA, no en el número*
 Del lado del código el cambio es chico: el nombre y los links salen del documento del tenant (`municipalidades/{id}.nombre`, que ya existe) en vez de estar escritos fijos. La arquitectura ya está bien; lo que no es multi-municipio son los textos.
 
 **Momento correcto para hacerlo**: cuando se firme el segundo cliente, no antes — y nunca mientras haya plantillas en revisión, porque tocarlas reinicia la aprobación (§39.5).
+
+## 45. Las 23 localidades cargadas como sectores (12-ago-2026)
+
+El usuario entregó una lista de las 23 localidades de Licantén con coordenadas y pidió cargarlas todas, con autorización explícita para hacer los cambios necesarios. Se cargaron. **Pero 18 de las 23 no están verificadas**, y eso hay que tenerlo escrito porque no se ve en pantalla.
+
+### 45.1 Qué se verificó antes de cargarlas
+
+Dos comprobaciones independientes contra OpenStreetMap:
+
+- **Geocodificación inversa** (¿qué hay en esta coordenada?): los 23 puntos caen dentro de la comuna, ninguno a más de 25 km del centro, y 21 de 23 devuelven "Licantén · Provincia de Curicó". Hasta ahí, plausibles.
+- **Geocodificación directa** (¿dónde está esta localidad?): **acá se cayó la lista**. La Higuera queda a 22 km de donde dice la lista, Quelmén a 15 km, Los Junquillos a 11,8 km, Idahue a 6,1 km. Y los nombres aparecen **corridos entre sí**: el punto de "Naicura" cae en Huapi, el de "Coquimbo" en Naicura, el de "El Huapi" en Lora Sur. Un desplazamiento sistemático, no errores sueltos.
+
+Las coordenadas de la lista además están espaciadas de forma regular (34°57'05", 34°57'30", 34°57'45"…), lo que sugiere que se interpolaron a lo largo del valle en vez de consultarse en un mapa. Y `Villa Angosta` cae en **Curepto, Provincia de Talca** — otra comuna.
+
+### 45.2 Qué se cargó y con qué marca
+
+| | Sectores |
+|---|---|
+| **Confirmados** (5) | Licantén (centro), Iloca, Lora, **La Pesca** y **Duao** |
+| **Aproximados sin confirmar** (18) | el resto |
+
+La Pesca y Duao subieron a confirmados porque la lista del usuario y el nodo de OpenStreetMap coinciden en **178 m y 18 m** respectivamente: dos fuentes independientes que concuerdan.
+
+Los 18 quedan con `confirmado: false` en `configurar-sectores.mjs` y solo se escriben pasando la opción nueva **`--incluir-aproximados`**. Así el candado del script sigue funcionando —nada sin confirmar llega a producción por descuido— y al mismo tiempo se pudo cumplir lo que el usuario pidió. El comentario del archivo explica cada hallazgo.
+
+### 45.3 Dos cambios que se hicieron con la autorización dada
+
+**No se sobrescribió el centro de Licantén.** La lista traía 72°00'00" (el valor redondeado), que cae en Curepto según OSM. Se mantuvo el `-34.9802,-71.9873` corregido el 11-ago: reemplazarlo habría revivido el bug de §43.1, el que puso 48 reportes sobre potreros.
+
+**Todos los radios bajaron.** Estaban en 1800-2000 m, dimensionados para 3 sectores. Con 23 en una comuna de este tamaño el vecino más cercano queda a 1,3-2,8 km, así que se usó el **45% de la distancia al vecino más próximo**: entre 600 y 1250 m. Con 2000 m los círculos se solapaban y `sectorDeCoordenada` (que resuelve el empate por cercanía al centro) repartía los reportes de forma arbitraria.
+
+### 45.4 Verificado después de cargar
+
+Los 4 reportes reales de Licantén: tres caen en "Licantén (centro)" a 120, 276 y 763 m del centro, y el de la Ruta J-60 cae **fuera de todo sector**, que es correcto — está en la ruta, entre localidades.
+
+**Pendiente y anotado**: que el **Director de Obras** valide los 18 aproximados contra el Plan Regulador. `node scripts/configurar-sectores.mjs licanten --revisar` imprime un link de Google Maps por sector; para él son 15 minutos y deja la fuente real. Mientras no pase, los reportes de esas 18 localidades pueden agruparse en el sector vecino, y **eso es invisible en pantalla**: el sector no falla, simplemente le caen las incidencias del otro.
