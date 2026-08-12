@@ -226,7 +226,7 @@ export default function DashboardGeneralPage() {
 
         {vista === 'estadisticas' ? (
           <>
-            <PanelEvolucion incidencias={incidencias} />
+            <PanelEvolucion incidencias={incidencias} onSeleccionarIncidencia={seleccionarEnMapa} />
             <div className="pb-5">
               <ResumenGastoMensual incidencias={incidencias} />
             </div>

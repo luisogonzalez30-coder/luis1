@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, User } from 'lucide-react'
+import { X, User, Check, MessageCircle } from 'lucide-react'
 import BadgeEstado from '../common/BadgeEstado'
 import BadgeGravedad from '../common/BadgeGravedad'
 import EnlaceGoogleMaps from '../common/EnlaceGoogleMaps'
@@ -13,9 +13,33 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
   const [cuadrilla, setCuadrilla] = useState(incidencia.cuadrilla_asignada || '')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState(null)
+  const [listo, setListo] = useState(false)
+
+  // Si la cuadrilla elegida es la que ya estaba, no hay nada que guardar. Antes
+  // el botón se podía apretar igual y "no hacía nada" a la vista —el usuario lo
+  // reportó así el 12-ago-2026— pero por dentro sí escribía, y lo que escribía
+  // hacía daño: reseteaba fecha_asignacion. Ese campo es el que mide el tiempo
+  // de reacción y alimenta la tarjeta de "atrasados" del panel, así que apretar
+  // el botón en un caso viejo lo dejaba pareciendo recién asignado. Un botón que
+  // no cambia nada tiene que estar apagado, no silencioso.
+  const yaAsignadaAEsta = incidencia.cuadrilla_asignada === cuadrilla
+  const sinCambios = yaAsignadaAEsta && incidencia.estado !== 'Pendiente'
+
+  // Solo dígitos con código de país, que es lo que espera wa.me. El contacto se
+  // guarda normalizado como "+56912345678" desde §29, pero los reportes
+  // anteriores traen lo que el vecino escribió, así que se limpia igual.
+  const telefonoVecino = (incidencia.contacto_ciudadano || '').replace(/\D/g, '')
+  const enlaceWhatsapp =
+    `https://wa.me/${telefonoVecino}?text=` +
+    encodeURIComponent(
+      `Hola${incidencia.nombre_ciudadano ? ` ${incidencia.nombre_ciudadano.split(' ')[0]}` : ''}, ` +
+        `le escribimos de la municipalidad por su reporte ${incidencia.numero_ticket} ` +
+        `(${incidencia.direccion_texto || 'el que nos envió'}). `
+    )
 
   async function manejarAsignar() {
     setError(null)
+    setListo(false)
     setGuardando(true)
     try {
       await conTimeout(
@@ -23,6 +47,10 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
         15000,
         'Esto está tardando demasiado. Revisa tu conexión a internet e intenta nuevamente.'
       )
+      // Confirmación explícita: el panel no se cierra solo (el funcionario suele
+      // seguir mirando la foto), así que sin esto no había forma de saber si la
+      // acción se guardó.
+      setListo(true)
     } catch (err) {
       console.error('[PanelAsignacion] Error al asignar cuadrilla:', err)
       setError(err.message || 'No se pudo asignar la cuadrilla.')
@@ -91,15 +119,43 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
       </div>
 
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {listo && (
+        <p className="mt-2 flex items-center gap-1.5 text-sm text-estado-bueno">
+          <Check size={16} className="shrink-0" />
+          Asignada a {cuadrilla}. El vecino queda informado.
+        </p>
+      )}
 
       <Boton
         className="mt-4 w-full"
         cargando={guardando}
-        disabled={!cuadrilla || incidencia.estado === 'Resuelto'}
+        disabled={!cuadrilla || incidencia.estado === 'Resuelto' || sinCambios}
         onClick={manejarAsignar}
       >
-        {incidencia.estado === 'Pendiente' ? 'Asignar cuadrilla' : 'Actualizar asignación'}
+        {incidencia.estado === 'Pendiente'
+          ? 'Asignar cuadrilla'
+          : sinCambios
+            ? `Ya está con ${incidencia.cuadrilla_asignada}`
+            : `Reasignar a ${cuadrilla}`}
       </Boton>
+
+      {/* Lo que de verdad le falta al panel cuando el caso ya está asignado: una
+          forma de hablar con quien reportó. El teléfono estaba ahí arriba pero
+          como texto, para copiarlo a mano. Con el mensaje precargado —número de
+          ticket y de qué se trata— el funcionario no tiene que explicar quién es
+          ni buscar el caso. Es un link wa.me, sin backend ni costo de plantilla:
+          lo abre la app de WhatsApp del propio funcionario. */}
+      {telefonoVecino && incidencia.estado !== 'Resuelto' && (
+        <a
+          href={enlaceWhatsapp}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-tinta-fuerte/[0.06] px-4 py-3 font-medium text-tinta transition-colors hover:bg-tinta-fuerte/[0.1]"
+        >
+          <MessageCircle size={18} />
+          Escribirle a {incidencia.nombre_ciudadano?.split(' ')[0] || 'quien reportó'}
+        </a>
+      )}
     </div>
   )
 }

@@ -1557,3 +1557,64 @@ Los 18 quedan con `confirmado: false` en `configurar-sectores.mjs` y solo se esc
 Los 4 reportes reales de Licantén: tres caen en "Licantén (centro)" a 120, 276 y 763 m del centro, y el de la Ruta J-60 cae **fuera de todo sector**, que es correcto — está en la ruta, entre localidades.
 
 **Pendiente y anotado**: que el **Director de Obras** valide los 18 aproximados contra el Plan Regulador. `node scripts/configurar-sectores.mjs licanten --revisar` imprime un link de Google Maps por sector; para él son 15 minutos y deja la fuente real. Mientras no pase, los reportes de esas 18 localidades pueden agruparse en el sector vecino, y **eso es invisible en pantalla**: el sector no falla, simplemente le caen las incidencias del otro.
+
+### 45.5 La ruta J-60 corrigió seis de esos 18 (12-ago-2026)
+
+El usuario vio el mapa del panel y avisó: *"este mapa las ubicaciones están erróneas, tiene que ir por la ruta J-60"*. Tenía razón, y el error era grande: los seis sectores del valle (Quelmén, La Higuera, Los Cristales, Idahue, Placilla, La Leonera) estaban entre **2,8 y 3,7 km al norte** de la ruta, sobre los cerros — esas localidades son caseríos a la orilla del camino.
+
+Se bajó la geometría real de la Ruta J-60 desde OpenStreetMap (49 tramos, 2.059 vértices, `way["ref"="J-60"]` vía Overpass) y se movió cada punto **hasta la ruta manteniendo su longitud** (no al vértice más cercano: donde el camino se curva eso encimaba Placilla y La Leonera a 400 m del centro de Licantén, perdiendo el orden este-oeste de la lista original, que sí venía bien). Verificado después: los seis quedan a 0-1 m de la ruta, y ningún círculo se solapa con otro.
+
+`Los Junquillos` y `Las Puertas` se dejaron **fuera de esta corrección a propósito**: están a 5,9 y 6,4 km de la J-60, pero la propia descripción del usuario los ubica en los cerros de la cordillera costera ("sector aislado en los cerros", "zona alta y boscosa de difícil acceso") — pegarlos a la ruta habría metido un error nuevo. Siguen entre los 18 aproximados sin confirmar.
+
+## 46. El panel del Alcalde, todo clicable (12-ago-2026)
+
+Pedido del usuario sobre capturas del panel, con una frase que sirve como criterio de diseño: *"esos botones tienen que ser todos interactivos… si yo pincho ahí, me tiene que dar la información de valor de ese recuadro… no puede tener información estática"*. Y uno específico: poder pinchar los **reportes cerrados** y ver qué se resolvió, cuándo, cuánto demoró.
+
+Antes solo 3 de las 14 tarjetas abrían algo (emergencias, atrasados, por asignar, de §36.1). Las otras 11 eran números muertos: para saber qué había detrás había que ir a buscarlo a mano al listado, que es justo lo que el panel debía evitar.
+
+### 46.1 Qué abre cada tarjeta
+
+| Tarjeta | Detalle |
+|---|---|
+| Reportes sin resolver (la cifra protagonista) | pendientes + en ejecución, con estado y cuadrilla |
+| En ejecución | agrupado por cuadrilla, con **cuánto lleva cada trabajo en obra** |
+| **Resueltos este mes** | cuadrilla, fecha de cierre, **costo real**, calificación, y la demora a la derecha |
+| Trabajadores presentes | asistencia del día, **primero los que faltan por marcar** (la acción pendiente del jefe) |
+| Cuadrillas en terreno | qué está haciendo cada cuadrilla ahora |
+| Tiempo promedio | reportes **de mayor a menor demora** — lo que explica el promedio |
+| Satisfacción vecinal | calificaciones **de peor a mejor** |
+| Trabajos terminados / Tiempo en asignar / Tiempo en resolver / Reportes recibidos (comparación mensual) | los reportes del mes en curso que producen cada cifra, con su dato propio |
+
+En todos, tocar un reporte lo abre en el mapa.
+
+### 46.2 Las tres decisiones que hacen que esto sirva
+
+**Cada indicador ordena distinto, y es deliberado.** `ModalDetalleIndicador` recibió cuatro órdenes (`urgencia`, `cierre`, `demora`, `peorCalificacion`): en "atrasados" arriba va lo más urgente, en "resueltos" lo último cerrado, en "tiempo promedio" lo que más demoró, en "satisfacción" lo peor calificado. Con un orden único, en la mitad de los casos el primer elemento de la lista no significaría nada.
+
+**Cada indicador decide qué dato va a la derecha** (`datoDerecha`) y qué dice la línea de apoyo (`lineaApoyo`). Antes el modal mostraba siempre la antigüedad; en "resueltos este mes" ese número no dice nada — ahí lo que importa es cuánto demoró y cuánto costó. También se agregó `agruparPor`, para repartir por cuadrilla en vez de por departamento cuando el indicador es de cuadrillas.
+
+**Si una tarjeta no tiene nada detrás, no es clicable** (`hayDetalle`): ni cambia de color al pasar el mouse ni responde. Prometer un detalle que abre vacío se siente roto — el mismo problema del botón de asignación de §47.
+
+`ModalAsistencia` es nuevo y vive en `PanelIndicadores.jsx`: ahí no hay incidencias que listar sino personas, y lo que importa de cada una es si está, no está, o nadie pasó lista.
+
+## 47. El botón de asignación mentía, y la vista satelital que faltaba (12-ago-2026)
+
+### 47.1 "Ese botón no tiene ninguna función" — sí la tenía, y hacía daño
+
+El usuario reportó que *"Actualizar asignación"* no hacía nada. Estaba en lo cierto en el síntoma: con la incidencia ya **En Proceso** y una sola cuadrilla en la comuna, apretarlo no cambiaba nada visible y no daba ninguna confirmación.
+
+Pero por dentro sí escribía, y lo que escribía era un problema: **reseteaba `fecha_asignacion`**. Ese campo mide el tiempo de reacción del municipio y alimenta la tarjeta de **"Trabajos atrasados"**, así que apretar el botón en un caso de hace dos semanas lo dejaba pareciendo recién tomado y lo sacaba de los atrasados. **El indicador mejoraba solo por hacer clic**, sin que nadie lo notara. Eso es peor que un botón inerte.
+
+- `asignarCuadrilla` ahora escribe `fecha_asignacion` **solo la primera vez**; una reasignación posterior queda en `fecha_reasignacion` y no toca el reloj.
+- El botón se **apaga** cuando no hay nada que cambiar y lo dice: *"Ya está con Cuadrilla Municipal"*. Si se elige otra cuadrilla, se activa como *"Reasignar a X"*.
+- Al guardar aparece una **confirmación visible**. El panel no se cierra solo (el funcionario suele seguir mirando la foto), así que antes no había forma de saber si la acción se había guardado.
+
+### 47.2 El uso práctico que le faltaba al panel
+
+Con el caso ya asignado, lo único útil que quedaba por hacer ahí era **hablar con quien reportó** — cerrar el caso es tarea del Jefe o de Terreno por diseño (§5). El teléfono estaba a la vista pero como texto, para copiar a mano.
+
+Ahora hay un botón **"Escribirle a {nombre}"** que abre WhatsApp con el mensaje ya redactado: número de ticket y de qué se trata, así el funcionario no tiene que explicar quién es ni buscar el caso. Es un link `wa.me`, **sin backend y sin costo de plantilla**: lo abre la app del propio funcionario.
+
+### 47.3 Vista satelital en el mapa del panel
+
+Pedido del usuario, con un motivo concreto: en zona rural la vista de calles no muestra nada —caminos sin nombre, potreros, sin veredas— y el funcionario necesita reconocer el lugar antes de mandar una cuadrilla. Se agregó el toggle **"Ver satelital / Ver calles"** abajo a la derecha, en la **misma posición** que en el mapa del vecino para que quien use las dos vistas no tenga que buscarlo. Es la misma capa Esri World Imagery ya usada en `MapaSeleccionUbicacion.jsx`, gratis y sin API key. Las dos definiciones de capas quedaron con una advertencia cruzada: si se cambia una, cambiar la otra.

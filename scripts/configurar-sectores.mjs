@@ -52,7 +52,7 @@ const SECTORES = [
     nombre: 'Licantén (centro)',
     lat: -34.9802,
     lng: -71.9873,
-    radio_metros: 950,
+    radio_metros: 850,
     confirmado: true,
     fuente:
       'Corregida el 11-ago-2026. Estaba en -34.9743,-72.0604: 6,5 km al oeste ' +
@@ -133,14 +133,27 @@ const SECTORES = [
   // este tamaño los vecinos más cercanos quedan a 1,3-2,5 km, así que se usó
   // 45% de la distancia al vecino más próximo. Con 2000 m los círculos se
   // solapaban y la agrupación quedaba a merced de cuál centro estaba más cerca.
-  { nombre: 'Quelmén', lat: -34.95139, lng: -71.88611, radio_metros: 800, confirmado: false },
-  { nombre: 'La Higuera', lat: -34.95833, lng: -71.90417, radio_metros: 750, confirmado: false },
-  { nombre: 'Los Cristales', lat: -34.9625, lng: -71.92222, radio_metros: 600, confirmado: false },
+  // --- Valle: corregidos el 12-ago-2026 pegándolos a la Ruta J-60 ------------
+  // El usuario los vio en el mapa del panel y avisó: "las ubicaciones están
+  // erróneas, tienen que ir por la ruta J-60". Tenía razón — estaban entre 2,8 y
+  // 3,7 km al NORTE de la ruta, sobre los cerros, cuando esas localidades son
+  // caseríos a la orilla del camino.
+  //
+  // Cómo se corrigieron: se bajó la geometría real de la J-60 desde
+  // OpenStreetMap (49 tramos, 2.059 vértices) y se movió cada punto **hacia el
+  // sur hasta la ruta, manteniendo su longitud**. Se probó primero con "el punto
+  // más cercano de la ruta" y NO sirve: donde el camino se curva, Placilla y La
+  // Leonera terminaban a 400 m del centro de Licantén, encimadas al pueblo. Al
+  // proyectar por longitud se conserva el orden este-oeste de la lista original,
+  // que es el dato que sí venía bien.
+  { nombre: 'Quelmén', lat: -34.98483, lng: -71.88552, radio_metros: 750, confirmado: false },
+  { nombre: 'La Higuera', lat: -34.98959, lng: -71.90411, radio_metros: 750, confirmado: false },
+  { nombre: 'Los Cristales', lat: -34.99292, lng: -71.92227, radio_metros: 450, confirmado: false },
   // El PRC lista Idahue e Idahue Chico por separado; la lista del municipio los
   // trae como uno solo. Queda uno hasta que alguien defina si se separan.
-  { nombre: 'Idahue', lat: -34.96944, lng: -71.93333, radio_metros: 600, confirmado: false },
-  { nombre: 'Placilla', lat: -34.97361, lng: -71.96111, radio_metros: 700, confirmado: false },
-  { nombre: 'La Leonera', lat: -34.96389, lng: -71.975, radio_metros: 700, confirmado: false },
+  { nombre: 'Idahue', lat: -34.99465, lng: -71.93349, radio_metros: 450, confirmado: false },
+  { nombre: 'Placilla', lat: -34.99847, lng: -71.96108, radio_metros: 600, confirmado: false },
+  { nombre: 'La Leonera', lat: -34.99414, lng: -71.9749, radio_metros: 600, confirmado: false },
   { nombre: 'Villa Angosta', lat: -34.99167, lng: -72.02083, radio_metros: 900, confirmado: false },
   { nombre: 'La Empalizada', lat: -35.00278, lng: -72.03889, radio_metros: 900, confirmado: false },
   { nombre: 'El Huapi', lat: -35.02083, lng: -72.08611, radio_metros: 800, confirmado: false },

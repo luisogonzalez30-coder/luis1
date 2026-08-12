@@ -304,8 +304,9 @@ export async function obtenerIncidenciasPorPeriodo(municipioId, desde, hasta) {
 // ModalPresupuesto (ver PanelGestionDepartamento.jsx) — cuando asigna el Alcalde
 // desde el Dashboard General (PanelAsignacion.jsx) se omite, y presupuesto_estimado
 // queda en null (ver Órdenes de Trabajo y Costeo en ESTADO_PROYECTO.md).
-// fecha_asignacion se guarda siempre (la asigne quien la asigne) — es lo que
-// permite calcular el "tiempo de reacción" (fecha_asignacion - fecha_creacion).
+// fecha_asignacion se guarda la PRIMERA vez, la asigne quien la asigne — es lo
+// que permite calcular el "tiempo de reacción" (fecha_asignacion -
+// fecha_creacion). Una reasignación posterior NO la reescribe (ver abajo).
 export async function asignarCuadrilla(incidencia, cuadrilla, presupuestoEstimado = null) {
   if (!cuadrilla) {
     throw new Error('Debes indicar el nombre de la cuadrilla.')
@@ -314,8 +315,20 @@ export async function asignarCuadrilla(incidencia, cuadrilla, presupuestoEstimad
   const cambios = {
     estado: 'En Proceso',
     cuadrilla_asignada: cuadrilla,
-    fecha_asignacion: serverTimestamp(),
   }
+
+  // La fecha de asignación se escribe SOLO la primera vez. Es lo que mide el
+  // tiempo de reacción del municipio (fecha_asignacion - fecha_creacion) y lo
+  // que alimenta la tarjeta de "atrasados" del panel del Alcalde, así que
+  // reescribirla al reasignar dejaba un caso de hace dos semanas pareciendo
+  // recién tomado — el indicador mejoraba solo por apretar un botón. Cambiar de
+  // cuadrilla es un hecho posterior y se guarda aparte, sin tocar el reloj.
+  if (!incidencia.fecha_asignacion) {
+    cambios.fecha_asignacion = serverTimestamp()
+  } else {
+    cambios.fecha_reasignacion = serverTimestamp()
+  }
+
   if (presupuestoEstimado) {
     cambios.presupuesto_estimado = presupuestoEstimado
   }

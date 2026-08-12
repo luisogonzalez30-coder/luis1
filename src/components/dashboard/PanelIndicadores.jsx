@@ -3,8 +3,18 @@ import {
   Siren, Clock, Inbox, Wrench, CheckCircle2, Users, Truck, Star, ChevronRight,
 } from 'lucide-react'
 import { suscribirTrabajadoresMunicipio } from '../../services/trabajadoresService'
-import { esDelMesActual, horasDesde, promedioHoras } from '../../utils/tiempo'
+import { esDelMesActual, formatearDuracion, formatearFecha, horasDesde, promedioHoras } from '../../utils/tiempo'
+import Modal from '../common/Modal'
 import ModalDetalleIndicador from './ModalDetalleIndicador'
+
+// Mismo formato que ResumenGastoMensual y ModalDetalleGasto: el Alcalde ve la
+// misma cifra escrita igual en los tres lugares.
+const formatoCLP = new Intl.NumberFormat('es-CL', {
+  style: 'currency',
+  currency: 'CLP',
+  maximumFractionDigits: 0,
+})
+const formatearPesos = (n) => formatoCLP.format(n)
 
 // Umbral de atraso para un ticket sin asignar cuadrilla. El mismo criterio que
 // MetricasPorDepartamento usa para las alertas rojas por departamento.
@@ -67,10 +77,24 @@ function TarjetaAccion({ icono: Icono, etiqueta, valor, apoyo, tono = 'neutro', 
 // Dato secundario: informa, no exige acción. Deliberadamente más callado que
 // las tarjetas de arriba — que todo pese lo mismo es justo lo que hacía que no
 // se leyera nada.
-function DatoSecundario({ icono: Icono, etiqueta, valor, apoyo }) {
+// Todos los datos secundarios son clicables si hay algo que mostrar detrás. El
+// usuario lo pidió el 12-ago-2026 con una frase que vale como criterio de
+// diseño: "no puede tener información estática, si pincho ahí me tiene que dar
+// la información de valor de ese recuadro". Un número sin el detalle detrás
+// obliga a ir a buscarlo a mano al listado, que es justo lo que el panel debía
+// evitar.
+function DatoSecundario({ icono: Icono, etiqueta, valor, apoyo, onAbrir, hayDetalle = true }) {
+  const clickeable = Boolean(onAbrir) && hayDetalle
+  const Elemento = clickeable ? 'button' : 'div'
+
   return (
-    <div className="flex items-start gap-2.5 px-1 py-2">
-      <Icono size={15} className="mt-0.5 shrink-0 text-tinta-tenue" />
+    <Elemento
+      type={clickeable ? 'button' : undefined}
+      onClick={clickeable ? onAbrir : undefined}
+      className={`flex w-full items-start gap-2.5 rounded-xl px-1 py-2 text-left transition-colors
+        ${clickeable ? 'cursor-pointer hover:bg-primary/[0.05]' : ''}`}
+    >
+      <Icono size={15} className={`mt-0.5 shrink-0 ${clickeable ? 'text-primary' : 'text-tinta-tenue'}`} />
       <div className="min-w-0">
         <p className="text-sm font-semibold leading-none text-tinta-fuerte">{valor}</p>
         <p className="mt-1 text-xs leading-snug text-tinta-suave">
@@ -78,7 +102,49 @@ function DatoSecundario({ icono: Icono, etiqueta, valor, apoyo }) {
           {apoyo && <span className="block text-tinta-tenue">{apoyo}</span>}
         </p>
       </div>
-    </div>
+    </Elemento>
+  )
+}
+
+// Lista de trabajadores del día. Va aparte de ModalDetalleIndicador porque acá
+// no hay incidencias que listar: son personas, y lo que importa de cada una es
+// si está o no, más el departamento para saber a quién preguntarle.
+function ModalAsistencia({ trabajadores, hoy, onCerrar }) {
+  const estadoDe = (t) => {
+    if (t.fecha_asistencia !== hoy) return { texto: 'sin pasar lista', color: 'text-tinta-tenue' }
+    return t.presente_hoy
+      ? { texto: 'presente', color: 'text-estado-bueno' }
+      : { texto: 'ausente', color: 'text-estado-critico' }
+  }
+
+  // Los que faltan por marcar primero: son la acción pendiente del jefe.
+  const orden = { 'sin pasar lista': 0, ausente: 1, presente: 2 }
+  const ordenados = [...trabajadores].sort(
+    (a, b) => orden[estadoDe(a).texto] - orden[estadoDe(b).texto] || a.nombre.localeCompare(b.nombre)
+  )
+
+  return (
+    <Modal titulo="Asistencia de hoy" subtitulo={`${trabajadores.length} trabajadores en el roster`} ancho="md" onCerrar={onCerrar}>
+      <ul className="space-y-1.5">
+        {ordenados.map((t) => {
+          const estado = estadoDe(t)
+          return (
+            <li key={t.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 ring-1 ring-borde">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-tinta-fuerte">{t.nombre}</span>
+                <span className="block truncate text-xs text-tinta-suave">
+                  {t.cargo || 'Sin cargo'} · {t.departamento}
+                </span>
+              </span>
+              <span className={`shrink-0 text-xs font-medium ${estado.color}`}>{estado.texto}</span>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="mt-3 text-center text-xs text-tinta-tenue">
+        La lista la pasa cada Jefe de Departamento desde su panel.
+      </p>
+    </Modal>
   )
 }
 
@@ -152,7 +218,12 @@ export default function PanelIndicadores({ incidencias, municipioId, onSeleccion
             (emergencias, por asignar) — cuando el mismo dato aparece dos veces,
             deja de leerse. Lo que aporta acá es la proporción resuelta, que no
             está en ninguna otra parte del panel. */}
-        <div className="rounded-2xl bg-white p-5 ring-1 ring-borde">
+        <button
+          type="button"
+          onClick={() => datos.sinResolver > 0 && setDetalle('sinResolver')}
+          className={`rounded-2xl bg-white p-5 text-left ring-1 ring-borde transition-colors
+            ${datos.sinResolver > 0 ? 'cursor-pointer hover:ring-primary/30' : 'cursor-default'}`}
+        >
           <p className="text-xs font-medium text-tinta-suave">Reportes sin resolver</p>
           <p className="mt-2 text-6xl font-semibold leading-none tracking-tight text-tinta-fuerte">
             {datos.sinResolver}
@@ -173,7 +244,7 @@ export default function PanelIndicadores({ incidencias, municipioId, onSeleccion
               de {totalHistorico} {totalHistorico === 1 ? 'reporte recibido' : 'reportes recibidos'}
             </p>
           </div>
-        </div>
+        </button>
 
         {/* Las tres cosas que pueden exigir acción hoy. En móvil van en tres
             columnas con el texto de apoyo oculto: apiladas a ancho completo
@@ -216,36 +287,48 @@ export default function PanelIndicadores({ incidencias, municipioId, onSeleccion
           valor={datos.enProceso.length}
           etiqueta="En ejecución"
           apoyo="Ya tienen cuadrilla"
+          hayDetalle={datos.enProceso.length > 0}
+          onAbrir={() => setDetalle('enProceso')}
         />
         <DatoSecundario
           icono={CheckCircle2}
           valor={datos.resueltasMes.length}
           etiqueta="Resueltos este mes"
           apoyo={`${datos.resueltas.length} históricos`}
+          hayDetalle={datos.resueltas.length > 0}
+          onAbrir={() => setDetalle('resueltos')}
         />
         <DatoSecundario
           icono={Users}
           valor={trabajadores.length ? `${presentes}/${trabajadores.length}` : '—'}
           etiqueta="Trabajadores presentes"
           apoyo={trabajadores.length ? `${sinMarcar} sin pasar lista` : 'Sin personal cargado'}
+          hayDetalle={trabajadores.length > 0}
+          onAbrir={() => setDetalle('asistencia')}
         />
         <DatoSecundario
           icono={Truck}
           valor={datos.cuadrillasEnTerreno}
           etiqueta="Cuadrillas en terreno"
           apoyo="Con trabajo en ejecución"
+          hayDetalle={datos.cuadrillasEnTerreno > 0}
+          onAbrir={() => setDetalle('cuadrillas')}
         />
         <DatoSecundario
           icono={Clock}
           valor={formatearHoras(datos.promedioResolucion)}
           etiqueta="Tiempo promedio"
           apoyo="Ingreso hasta cierre, este mes"
+          hayDetalle={datos.resueltasMes.length > 0}
+          onAbrir={() => setDetalle('demoras')}
         />
         <DatoSecundario
           icono={Star}
           valor={datos.promedioCalificacion ? `${datos.promedioCalificacion.toFixed(1)}/5` : '—'}
           etiqueta="Satisfacción vecinal"
           apoyo={datos.calificadas.length ? `${datos.calificadas.length} calificaciones` : 'Sin calificaciones'}
+          hayDetalle={datos.calificadas.length > 0}
+          onAbrir={() => setDetalle('calificaciones')}
         />
       </div>
 
@@ -275,6 +358,115 @@ export default function PanelIndicadores({ incidencias, municipioId, onSeleccion
           onSeleccionar={onSeleccionarIncidencia}
           onCerrar={() => setDetalle(null)}
         />
+      )}
+
+      {detalle === 'sinResolver' && (
+        <ModalDetalleIndicador
+          titulo="Reportes sin resolver"
+          descripcion="pendientes y en ejecución"
+          incidencias={[...datos.pendientes, ...datos.enProceso]}
+          lineaApoyo={(i) =>
+            `${i.estado} · ${i.cuadrilla_asignada || 'sin cuadrilla'} · ${i.direccion_texto || 'sin dirección'}`
+          }
+          onSeleccionar={onSeleccionarIncidencia}
+          onCerrar={() => setDetalle(null)}
+        />
+      )}
+
+      {detalle === 'enProceso' && (
+        <ModalDetalleIndicador
+          titulo="En ejecución"
+          descripcion="con cuadrilla asignada"
+          incidencias={datos.enProceso}
+          agruparPor={(i) => i.cuadrilla_asignada}
+          // Acá lo que importa no es la gravedad sino cuánto lleva la cuadrilla
+          // con el trabajo encima: es la pregunta de "¿por qué no está listo?".
+          lineaApoyo={(i) => `${i.cuadrilla_asignada || 'sin cuadrilla'} · ${i.direccion_texto || 'sin dirección'}`}
+          datoDerecha={(i) => `${formatearHoras(horasDesde(i.fecha_asignacion)) || '—'} en obra`}
+          onSeleccionar={onSeleccionarIncidencia}
+          onCerrar={() => setDetalle(null)}
+        />
+      )}
+
+      {/* Lo que el usuario pidió explícitamente: poder pinchar en los reportes
+          cerrados y ver la información completa de lo que se resolvió. Cada línea
+          trae quién lo hizo, cuándo se cerró, cuánto demoró y cuánto costó. */}
+      {detalle === 'resueltos' && (
+        <ModalDetalleIndicador
+          titulo="Reportes resueltos"
+          descripcion={`${datos.resueltasMes.length} este mes · ${datos.resueltas.length} en total`}
+          incidencias={datos.resueltas}
+          orden="cierre"
+          agruparPor={(i) => i.cuadrilla_asignada}
+          lineaApoyo={(i) =>
+            [
+              i.cuadrilla_asignada || 'sin cuadrilla',
+              formatearFecha(i.fecha_cierre),
+              i.gasto_real?.costo_final ? formatearPesos(i.gasto_real.costo_final) : null,
+              typeof i.calificacion_ciudadano === 'number' ? `${i.calificacion_ciudadano}★` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          }
+          datoDerecha={(i) => `${formatearDuracion(i.fecha_creacion, i.fecha_cierre) || '—'}`}
+          mensajeVacio="Todavía no hay reportes resueltos."
+          onSeleccionar={onSeleccionarIncidencia}
+          onCerrar={() => setDetalle(null)}
+        />
+      )}
+
+      {detalle === 'cuadrillas' && (
+        <ModalDetalleIndicador
+          titulo="Cuadrillas en terreno"
+          descripcion={`${datos.cuadrillasEnTerreno} con trabajo en ejecución`}
+          incidencias={datos.enProceso}
+          agruparPor={(i) => i.cuadrilla_asignada}
+          lineaApoyo={(i) => `${i.cuadrilla_asignada || 'sin cuadrilla'} · ${i.direccion_texto || 'sin dirección'}`}
+          datoDerecha={(i) => `${formatearHoras(horasDesde(i.fecha_asignacion)) || '—'} en obra`}
+          onSeleccionar={onSeleccionarIncidencia}
+          onCerrar={() => setDetalle(null)}
+        />
+      )}
+
+      {/* El promedio solo sirve si se puede ver qué lo empuja: los que más
+          demoraron van arriba. */}
+      {detalle === 'demoras' && (
+        <ModalDetalleIndicador
+          titulo="Tiempo de resolución"
+          descripcion={`promedio ${formatearHoras(datos.promedioResolucion)}, del ingreso al cierre`}
+          incidencias={datos.resueltasMes}
+          orden="demora"
+          lineaApoyo={(i) =>
+            `${i.cuadrilla_asignada || 'sin cuadrilla'} · cerrado ${formatearFecha(i.fecha_cierre)}`
+          }
+          datoDerecha={(i) => formatearDuracion(i.fecha_creacion, i.fecha_cierre) || '—'}
+          mensajeVacio="Este mes todavía no se cierra ningún reporte."
+          onSeleccionar={onSeleccionarIncidencia}
+          onCerrar={() => setDetalle(null)}
+        />
+      )}
+
+      {/* Peor calificado arriba: es donde hay algo que corregir, no donde hay
+          algo que celebrar. */}
+      {detalle === 'calificaciones' && (
+        <ModalDetalleIndicador
+          titulo="Satisfacción vecinal"
+          descripcion={`${datos.calificadas.length} calificaciones, promedio ${datos.promedioCalificacion?.toFixed(1)}/5`}
+          incidencias={datos.calificadas}
+          orden="peorCalificacion"
+          agruparPor={(i) => i.cuadrilla_asignada}
+          lineaApoyo={(i) =>
+            `${i.cuadrilla_asignada || 'sin cuadrilla'} · cerrado ${formatearFecha(i.fecha_cierre)}`
+          }
+          datoDerecha={(i) => '★'.repeat(i.calificacion_ciudadano) + '☆'.repeat(5 - i.calificacion_ciudadano)}
+          mensajeVacio="Ningún vecino ha calificado todavía."
+          onSeleccionar={onSeleccionarIncidencia}
+          onCerrar={() => setDetalle(null)}
+        />
+      )}
+
+      {detalle === 'asistencia' && (
+        <ModalAsistencia trabajadores={trabajadores} hoy={hoy} onCerrar={() => setDetalle(null)} />
       )}
     </section>
   )

@@ -1,5 +1,13 @@
+import { useState } from 'react'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { promedioHoras } from '../../utils/tiempo'
+import { formatearDuracion, formatearFecha, promedioHoras } from '../../utils/tiempo'
+import ModalDetalleIndicador from './ModalDetalleIndicador'
+
+const formatoCLP = new Intl.NumberFormat('es-CL', {
+  style: 'currency',
+  currency: 'CLP',
+  maximumFractionDigits: 0,
+})
 
 // "Bajamos el tiempo de respuesta de 5 días a 2" es una frase de campaña. El
 // resto del panel muestra el ahora; esto muestra si vamos mejor o peor que el
@@ -29,7 +37,7 @@ function variacion(actual, anterior) {
 // mejorEsMenos: para tiempos de respuesta, bajar es mejorar. Para reportes
 // resueltos, subir es mejorar. El color y el ícono siguen esa dirección, no el
 // signo del número.
-function Comparacion({ etiqueta, valorActual, valorAnterior, formato, mejorEsMenos = false, nota }) {
+function Comparacion({ etiqueta, valorActual, valorAnterior, formato, mejorEsMenos = false, nota, onAbrir, hayDetalle }) {
   const cambio = variacion(valorActual, valorAnterior)
 
   let tono = 'text-tinta-suave'
@@ -41,8 +49,19 @@ function Comparacion({ etiqueta, valorActual, valorAnterior, formato, mejorEsMen
     Icono = subio ? TrendingUp : TrendingDown
   }
 
+  // Igual que en PanelIndicadores: un porcentaje de variación sin poder ver qué
+  // reportes lo produjeron no se puede accionar. Acá el detalle son SIEMPRE los
+  // reportes del mes en curso, que son los que el Alcalde todavía puede afectar.
+  const clickeable = Boolean(onAbrir) && hayDetalle
+  const Elemento = clickeable ? 'button' : 'div'
+
   return (
-    <div className="rounded-2xl bg-white p-5 ring-1 ring-borde">
+    <Elemento
+      type={clickeable ? 'button' : undefined}
+      onClick={clickeable ? onAbrir : undefined}
+      className={`rounded-2xl bg-white p-5 text-left ring-1 ring-borde transition-colors
+        ${clickeable ? 'w-full cursor-pointer hover:ring-primary/30' : ''}`}
+    >
       <p className="text-xs font-medium text-tinta-suave">{etiqueta}</p>
       <p className="mt-2.5 text-3xl font-semibold leading-none tracking-tight text-tinta-fuerte">
         {formato(valorActual)}
@@ -63,11 +82,12 @@ function Comparacion({ etiqueta, valorActual, valorAnterior, formato, mejorEsMen
       </div>
 
       {nota && <p className="mt-2 text-[11px] leading-snug text-tinta-tenue">{nota}</p>}
-    </div>
+    </Elemento>
   )
 }
 
-export default function PanelEvolucion({ incidencias }) {
+export default function PanelEvolucion({ incidencias, onSeleccionarIncidencia }) {
+  const [detalle, setDetalle] = useState(null)
   const mesActual = limitesDeMes(0)
   const mesAnterior = limitesDeMes(1)
 
@@ -75,6 +95,10 @@ export default function PanelEvolucion({ incidencias }) {
     const recibidas = incidencias.filter((i) => dentroDe(i.fecha_creacion, rango))
     const cerradas = incidencias.filter((i) => i.estado === 'Resuelto' && dentroDe(i.fecha_cierre, rango))
     return {
+      // Se guardan las listas, no solo los conteos: son las que abre el modal al
+      // pinchar la tarjeta.
+      listaRecibidas: recibidas,
+      listaCerradas: cerradas,
       recibidas: recibidas.length,
       cerradas: cerradas.length,
       // Tiempo de reacción: cuánto tarda el municipio en asignar cuadrilla.
@@ -104,6 +128,8 @@ export default function PanelEvolucion({ incidencias }) {
           valorAnterior={anterior.cerradas}
           formato={formatoEntero}
           nota="Reportes cerrados dentro del mes"
+          hayDetalle={actual.cerradas > 0}
+          onAbrir={() => setDetalle('cerradas')}
         />
         <Comparacion
           etiqueta="Tiempo en asignar"
@@ -112,6 +138,8 @@ export default function PanelEvolucion({ incidencias }) {
           formato={formatoHoras}
           mejorEsMenos
           nota="Desde que entra el reporte hasta darle cuadrilla"
+          hayDetalle={actual.recibidas > 0}
+          onAbrir={() => setDetalle('reaccion')}
         />
         <Comparacion
           etiqueta="Tiempo en resolver"
@@ -120,6 +148,8 @@ export default function PanelEvolucion({ incidencias }) {
           formato={formatoHoras}
           mejorEsMenos
           nota="Desde que entra el reporte hasta cerrarlo"
+          hayDetalle={actual.cerradas > 0}
+          onAbrir={() => setDetalle('resolucion')}
         />
         <Comparacion
           etiqueta="Reportes recibidos"
@@ -127,8 +157,74 @@ export default function PanelEvolucion({ incidencias }) {
           valorAnterior={anterior.recibidas}
           formato={formatoEntero}
           nota="Más reportes no es malo: significa que los vecinos usan el canal"
+          hayDetalle={actual.recibidas > 0}
+          onAbrir={() => setDetalle('recibidas')}
         />
       </div>
+
+      {/* Cada tarjeta abre los reportes del MES EN CURSO que producen esa cifra,
+          con el dato que corresponde a la derecha: cuánto demoró en asignarse,
+          cuánto en resolverse, cuánto costó. */}
+      {detalle === 'cerradas' && (
+        <ModalDetalleIndicador
+          titulo={`Trabajos terminados en ${nombreMes}`}
+          descripcion="cerrados dentro del mes"
+          incidencias={actual.listaCerradas}
+          orden="cierre"
+          agruparPor={(i) => i.cuadrilla_asignada}
+          lineaApoyo={(i) =>
+            [
+              i.cuadrilla_asignada || 'sin cuadrilla',
+              `cerrado ${formatearFecha(i.fecha_cierre)}`,
+              i.gasto_real?.costo_final ? formatoCLP.format(i.gasto_real.costo_final) : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          }
+          datoDerecha={(i) => formatearDuracion(i.fecha_creacion, i.fecha_cierre) || '—'}
+          onSeleccionar={onSeleccionarIncidencia}
+          onCerrar={() => setDetalle(null)}
+        />
+      )}
+      {detalle === 'reaccion' && (
+        <ModalDetalleIndicador
+          titulo={`Tiempo en asignar — ${nombreMes}`}
+          descripcion={`promedio ${formatoHoras(actual.reaccion)} desde el ingreso`}
+          incidencias={actual.listaRecibidas}
+          lineaApoyo={(i) =>
+            i.fecha_asignacion
+              ? `${i.cuadrilla_asignada || 'sin cuadrilla'} · asignado ${formatearFecha(i.fecha_asignacion)}`
+              : 'Todavía sin cuadrilla asignada'
+          }
+          datoDerecha={(i) =>
+            i.fecha_asignacion ? formatearDuracion(i.fecha_creacion, i.fecha_asignacion) || '—' : 'sin asignar'
+          }
+          onSeleccionar={onSeleccionarIncidencia}
+          onCerrar={() => setDetalle(null)}
+        />
+      )}
+      {detalle === 'resolucion' && (
+        <ModalDetalleIndicador
+          titulo={`Tiempo en resolver — ${nombreMes}`}
+          descripcion={`promedio ${formatoHoras(actual.resolucion)} del ingreso al cierre`}
+          incidencias={actual.listaCerradas}
+          orden="demora"
+          lineaApoyo={(i) => `${i.cuadrilla_asignada || 'sin cuadrilla'} · cerrado ${formatearFecha(i.fecha_cierre)}`}
+          datoDerecha={(i) => formatearDuracion(i.fecha_creacion, i.fecha_cierre) || '—'}
+          onSeleccionar={onSeleccionarIncidencia}
+          onCerrar={() => setDetalle(null)}
+        />
+      )}
+      {detalle === 'recibidas' && (
+        <ModalDetalleIndicador
+          titulo={`Reportes recibidos en ${nombreMes}`}
+          descripcion="todo lo que entró en el mes"
+          incidencias={actual.listaRecibidas}
+          lineaApoyo={(i) => `${i.estado} · ${i.direccion_texto || 'sin dirección'}`}
+          onSeleccionar={onSeleccionarIncidencia}
+          onCerrar={() => setDetalle(null)}
+        />
+      )}
     </section>
   )
 }

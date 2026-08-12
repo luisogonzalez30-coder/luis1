@@ -2,7 +2,7 @@ import { ArrowRight, Clock } from 'lucide-react'
 import Modal from '../common/Modal'
 import { CATEGORIAS } from '../../utils/categorias'
 import { COLOR_POR_GRAVEDAD } from '../../utils/gravedad'
-import { horasDesde } from '../../utils/tiempo'
+import { horasDesde, horasEntre } from '../../utils/tiempo'
 
 const ETIQUETA_CATEGORIA = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
 
@@ -21,15 +21,33 @@ function antiguedad(incidencia) {
 
 // Reparto por departamento: convierte "39 trabajos atrasados" en "de quién son
 // esos 39", que es la pregunta inmediata del Alcalde y hoy obligaba a cruzar a
-// mano con las tarjetas de más abajo.
-function repartoPorDepartamento(incidencias) {
+// mano con las tarjetas de más abajo. `agruparPor` permite repartir por otra
+// cosa cuando el indicador lo pide — por cuadrilla, por ejemplo.
+function reparto(incidencias, agruparPor) {
   const conteo = incidencias.reduce((acc, i) => {
-    const dep = i.departamento || 'Sin departamento'
-    acc[dep] = (acc[dep] || 0) + 1
+    const clave = agruparPor(i) || 'Sin asignar'
+    acc[clave] = (acc[clave] || 0) + 1
     return acc
   }, {})
 
   return Object.entries(conteo).sort((a, b) => b[1] - a[1])
+}
+
+// Los tres órdenes que pide el panel. Cada indicador necesita el suyo: en
+// "atrasados" arriba va lo más urgente, pero en "resueltos este mes" arriba va lo
+// último cerrado, y en "tiempo promedio" lo que más demoró — que es lo que
+// explica por qué el promedio es el que es.
+const ORDEN_GRAVEDAD = { Alta: 0, Media: 1, Baja: 2 }
+
+const ORDENADORES = {
+  urgencia: (a, b) => {
+    const porGravedad = (ORDEN_GRAVEDAD[a.nivel_gravedad] ?? 1) - (ORDEN_GRAVEDAD[b.nivel_gravedad] ?? 1)
+    if (porGravedad !== 0) return porGravedad
+    return (horasDesde(b.fecha_creacion) || 0) - (horasDesde(a.fecha_creacion) || 0)
+  },
+  cierre: (a, b) => (horasDesde(a.fecha_cierre) || 0) - (horasDesde(b.fecha_cierre) || 0),
+  demora: (a, b) => (horasEntre(b.fecha_creacion, b.fecha_cierre) || 0) - (horasEntre(a.fecha_creacion, a.fecha_cierre) || 0),
+  peorCalificacion: (a, b) => (a.calificacion_ciudadano || 0) - (b.calificacion_ciudadano || 0),
 }
 
 // Detalle de un indicador del panel del Alcalde: qué reportes hay exactamente
@@ -45,18 +63,20 @@ export default function ModalDetalleIndicador({
   incidencias = [],
   onSeleccionar,
   onCerrar,
+  // Cada indicador define su propio orden, su propia línea de apoyo y su propio
+  // dato a la derecha. Sin esto, "resueltos este mes" y "trabajos atrasados"
+  // mostrarían lo mismo —la antigüedad— y en uno de los dos ese número no
+  // significa nada.
+  orden = 'urgencia',
+  lineaApoyo,
+  datoDerecha,
+  agruparPor = (i) => i.departamento,
+  mensajeVacio = 'No hay ningún reporte en esta condición. Buena noticia.',
 }) {
-  // Más urgente primero: gravedad Alta arriba y, dentro de cada nivel, lo más
-  // antiguo primero — que es lo que lleva más tiempo esperando.
-  const orden = { Alta: 0, Media: 1, Baja: 2 }
-  const ordenadas = [...incidencias].sort((a, b) => {
-    const porGravedad = (orden[a.nivel_gravedad] ?? 1) - (orden[b.nivel_gravedad] ?? 1)
-    if (porGravedad !== 0) return porGravedad
-    return (horasDesde(b.fecha_creacion) || 0) - (horasDesde(a.fecha_creacion) || 0)
-  })
+  const ordenadas = [...incidencias].sort(ORDENADORES[orden] || ORDENADORES.urgencia)
 
   const listadas = ordenadas.slice(0, MAX_LISTADOS)
-  const reparto = repartoPorDepartamento(incidencias)
+  const grupos = reparto(incidencias, agruparPor)
 
   return (
     <Modal
@@ -66,19 +86,17 @@ export default function ModalDetalleIndicador({
       onCerrar={onCerrar}
     >
       {incidencias.length === 0 ? (
-        <p className="py-6 text-center text-sm text-tinta-suave">
-          No hay ningún reporte en esta condición. Buena noticia.
-        </p>
+        <p className="py-6 text-center text-sm text-tinta-suave">{mensajeVacio}</p>
       ) : (
         <>
-          {reparto.length > 1 && (
+          {grupos.length > 1 && (
             <div className="mb-4 flex flex-wrap gap-1.5">
-              {reparto.map(([departamento, cantidad]) => (
+              {grupos.map(([grupo, cantidad]) => (
                 <span
-                  key={departamento}
+                  key={grupo}
                   className="rounded-full bg-tinta-fuerte/[0.04] px-2.5 py-1 text-xs text-tinta"
                 >
-                  {departamento} <span className="font-semibold text-tinta-fuerte">{cantidad}</span>
+                  {grupo} <span className="font-semibold text-tinta-fuerte">{cantidad}</span>
                 </span>
               ))}
             </div>
@@ -108,13 +126,21 @@ export default function ModalDetalleIndicador({
                       {ETIQUETA_CATEGORIA[inc.categoria] || inc.categoria}
                     </span>
                     <span className="block truncate text-xs text-tinta-suave">
-                      {inc.nivel_gravedad} · {inc.direccion_texto || 'Sin dirección de referencia'}
+                      {lineaApoyo
+                        ? lineaApoyo(inc)
+                        : `${inc.nivel_gravedad} · ${inc.direccion_texto || 'Sin dirección de referencia'}`}
                     </span>
                   </span>
 
-                  <span className="flex shrink-0 items-center gap-1 text-xs text-tinta-tenue">
-                    <Clock size={12} />
-                    {antiguedad(inc)}
+                  <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs text-tinta-tenue">
+                    {datoDerecha ? (
+                      datoDerecha(inc)
+                    ) : (
+                      <>
+                        <Clock size={12} />
+                        {antiguedad(inc)}
+                      </>
+                    )}
                   </span>
 
                   <ArrowRight
@@ -128,8 +154,8 @@ export default function ModalDetalleIndicador({
 
           {ordenadas.length > MAX_LISTADOS && (
             <p className="mt-3 text-center text-xs text-tinta-tenue">
-              Se muestran los {MAX_LISTADOS} más urgentes de {ordenadas.length}. Usa los filtros del
-              mapa para ver el resto.
+              Se muestran {MAX_LISTADOS} de {ordenadas.length}. Usa los filtros del mapa para ver el
+              resto.
             </p>
           )}
 
