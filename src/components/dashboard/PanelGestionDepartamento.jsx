@@ -14,6 +14,7 @@ import { suscribirUbicacionesCuadrilla, actualizarUbicacionCuadrilla } from '../
 import { conTimeout } from '../../utils/timeout'
 import { formatearFecha, formatearDuracion } from '../../utils/tiempo'
 import { calcularCostoManoObra as costoManoObra } from '../../utils/costeo'
+import { etiquetaCategoria } from '../../utils/categorias'
 
 const formatoCLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
 
@@ -101,7 +102,7 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
     <div className="fixed inset-y-0 right-0 z-[1000] w-full max-w-sm overflow-y-auto border-l border-gray-200 bg-white p-4 shadow-2xl">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{incidencia.categoria}</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{etiquetaCategoria(incidencia.categoria)}</h3>
           <div className="mt-1 flex gap-1.5">
             <BadgeEstado estado={incidencia.estado} />
             <BadgeGravedad nivel={incidencia.nivel_gravedad} />

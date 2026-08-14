@@ -1,10 +1,8 @@
 import { ArrowRight, Clock } from 'lucide-react'
 import Modal from '../common/Modal'
-import { CATEGORIAS } from '../../utils/categorias'
+import { etiquetaCategoria } from '../../utils/categorias'
 import { COLOR_POR_GRAVEDAD } from '../../utils/gravedad'
 import { horasDesde, horasEntre } from '../../utils/tiempo'
-
-const ETIQUETA_CATEGORIA = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
 
 // Cuántos reportes se listan. Un indicador puede tener cientos detrás; el
 // Alcalde no va a leerlos todos y renderizarlos cuesta. Se muestran los más
@@ -123,7 +121,7 @@ export default function ModalDetalleIndicador({
 
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-tinta-fuerte">
-                      {ETIQUETA_CATEGORIA[inc.categoria] || inc.categoria}
+                      {etiquetaCategoria(inc.categoria)}
                     </span>
                     <span className="block truncate text-xs text-tinta-suave">
                       {lineaApoyo

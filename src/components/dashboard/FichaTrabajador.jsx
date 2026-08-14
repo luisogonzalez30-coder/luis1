@@ -1,8 +1,6 @@
 import { MapPin, Phone, Mail, Clock, Building2, UserCog, ExternalLink } from 'lucide-react'
 import { horasDeTrabajador, jefaturaDe, enlaceWhatsapp } from '../../utils/equipo'
-import { CATEGORIAS } from '../../utils/categorias'
-
-const ETIQUETA_CATEGORIA = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
+import { etiquetaCategoria } from '../../utils/categorias'
 
 function formatearHoras(horas) {
   if (!horas) return '0 h'
@@ -126,7 +124,7 @@ export default function FichaTrabajador({
             {trabajosEnCurso.map((inc) => (
               <li key={inc.id} className="text-xs">
                 <p className="font-medium text-gray-900">
-                  {ETIQUETA_CATEGORIA[inc.categoria] || inc.categoria}
+                  {etiquetaCategoria(inc.categoria)}
                   <span className="ml-1.5 font-normal text-gray-400">{inc.numero_ticket}</span>
                 </p>
                 <p className="text-gray-600">

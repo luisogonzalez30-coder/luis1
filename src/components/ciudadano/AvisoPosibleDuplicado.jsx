@@ -2,6 +2,7 @@ import { AlertTriangle, ThumbsUp, Plus } from 'lucide-react'
 import Boton from '../common/Boton'
 import BadgeEstado from '../common/BadgeEstado'
 import BadgeGravedad from '../common/BadgeGravedad'
+import { etiquetaCategoria } from '../../utils/categorias'
 
 // Se muestra al avanzar del paso de categoría si hay un reporte activo de la
 // MISMA categoría a menos de 50m (ver distanciaMetros en utils/distancia.js,
@@ -22,7 +23,7 @@ export default function AvisoPosibleDuplicado({ ticket, votando, onSumarme, onCr
       </div>
 
       <div className="rounded-xl border border-gray-200 p-3">
-        <strong className="text-sm text-gray-900">{ticket.categoria}</strong>
+        <strong className="text-sm text-gray-900">{etiquetaCategoria(ticket.categoria)}</strong>
         <div className="mt-1 flex gap-1.5">
           <BadgeEstado estado={ticket.estado} />
           <BadgeGravedad nivel={ticket.nivel_gravedad} />

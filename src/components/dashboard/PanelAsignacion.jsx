@@ -8,6 +8,7 @@ import ListaSeguimientos from '../common/ListaSeguimientos'
 import Boton from '../common/Boton'
 import { asignarCuadrilla } from '../../services/incidenciasService'
 import { conTimeout } from '../../utils/timeout'
+import { etiquetaCategoria } from '../../utils/categorias'
 
 export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar }) {
   const [cuadrilla, setCuadrilla] = useState(incidencia.cuadrilla_asignada || '')
@@ -67,7 +68,7 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
     <div className="fixed inset-y-0 right-0 z-[1000] flex w-full max-w-sm flex-col overflow-y-auto border-l border-gray-200 bg-white p-4 shadow-2xl">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{incidencia.categoria}</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{etiquetaCategoria(incidencia.categoria)}</h3>
           <div className="mt-1 flex gap-1.5">
             <BadgeEstado estado={incidencia.estado} />
             <BadgeGravedad nivel={incidencia.nivel_gravedad} />

@@ -5,6 +5,7 @@ import BadgeGravedad from '../common/BadgeGravedad'
 import Boton from '../common/Boton'
 import { votarIncidencia } from '../../services/incidenciasService'
 import { obtenerIdDispositivo, yaVotoPorIncidencia, registrarVotoLocal } from '../../utils/dispositivo'
+import { etiquetaCategoria } from '../../utils/categorias'
 
 // Contenido del popup al tocar el pin de OTRO reporte ya existente en el mapa
 // ciudadano (ver MapaSeleccionUbicacion.jsx): info pública del ticket + botón
@@ -38,7 +39,7 @@ export default function PopupVotoIncidencia({ ticket }) {
 
   return (
     <div className="w-52">
-      <strong className="text-sm text-gray-900">{ticket.categoria}</strong>
+      <strong className="text-sm text-gray-900">{etiquetaCategoria(ticket.categoria)}</strong>
 
       <div className="mt-1 flex gap-1">
         <BadgeEstado estado={ticket.estado} />

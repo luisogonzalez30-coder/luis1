@@ -3,6 +3,7 @@ import { AlertTriangle, Receipt } from 'lucide-react'
 import Modal from '../common/Modal'
 import { esDelMesActual, formatearFecha } from '../../utils/tiempo'
 import { calcularCostoManoObra } from '../../utils/costeo'
+import { etiquetaCategoria } from '../../utils/categorias'
 
 const formatoCLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
 
@@ -108,7 +109,7 @@ export default function ModalDetalleGasto({ incidencias, departamento, onCerrar 
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-gray-900">{inc.categoria}</p>
+                    <p className="font-medium text-gray-900">{etiquetaCategoria(inc.categoria)}</p>
                     <p className="text-xs text-gray-400">{formatearFecha(inc.fecha_cierre)}</p>
                   </div>
                   {departamento === 'Todos' && (

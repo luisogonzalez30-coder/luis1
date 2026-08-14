@@ -1,6 +1,4 @@
-import { CATEGORIAS } from './categorias'
-
-const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
+import { etiquetaCategoria } from './categorias'
 
 // Quita tildes, espacios de sobra y pasa a minúscula: el vecino escribe "licanten"
 // o "iloca" sin acentos y desde el teclado del celular, y igual tiene que
@@ -28,7 +26,7 @@ export function coincideTexto(incidencia, textoBusqueda) {
     incidencia.direccion_texto,
     incidencia.detalles_adicionales,
     incidencia.cuadrilla_asignada,
-    ETIQUETA_POR_VALOR[incidencia.categoria] || incidencia.categoria,
+    etiquetaCategoria(incidencia.categoria),
   ]
 
   return campos.some((campo) => campo?.toLowerCase().includes(texto))

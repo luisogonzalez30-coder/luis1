@@ -4,6 +4,7 @@ import { Satellite, Map as MapIcon } from 'lucide-react'
 import { aplicarFixIconosLeaflet } from '../../utils/leafletIconFix'
 import { crearIconoPin } from '../../utils/iconoPin'
 import CapaMapaCalor, { LeyendaMapaCalor } from './CapaMapaCalor'
+import { etiquetaCategoria } from '../../utils/categorias'
 
 aplicarFixIconosLeaflet()
 
@@ -164,7 +165,7 @@ export default function MapaIncidencias({ incidencias, incidenciaSeleccionadaId,
               opacity={opacidad}
             >
               <Popup>
-                <strong>{inc.categoria}</strong>
+                <strong>{etiquetaCategoria(inc.categoria)}</strong>
                 {inc.nivel_gravedad && <> · Gravedad {inc.nivel_gravedad}</>}
                 <br />
                 {inc.direccion_texto || 'Sin dirección de referencia'}

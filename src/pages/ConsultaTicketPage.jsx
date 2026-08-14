@@ -5,7 +5,7 @@ import { buscarTicketPublico } from '../services/ticketsPublicosService'
 import { calificarIncidencia } from '../services/incidenciasService'
 import { agregarSeguimiento } from '../services/seguimientosService'
 import { subirImagen } from '../services/storageService'
-import { CATEGORIAS } from '../utils/categorias'
+import { etiquetaCategoria } from '../utils/categorias'
 import { formatearNumeroTicket } from '../utils/ticket'
 import BadgeEstado from '../components/common/BadgeEstado'
 import BadgeGravedad from '../components/common/BadgeGravedad'
@@ -13,8 +13,6 @@ import GaleriaFotos from '../components/common/GaleriaFotos'
 import Boton from '../components/common/Boton'
 import EstrellasCalificacion from '../components/common/EstrellasCalificacion'
 import BarraNavegacion from '../components/ciudadano/BarraNavegacion'
-
-const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
 
 function formatearFecha(timestamp) {
   if (!timestamp?.toDate) return '—'
@@ -124,7 +122,7 @@ function TarjetaResultado({ resultado, onCalificado }) {
     <div className="mt-5 rounded-xl border border-gray-200 p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="font-semibold text-gray-900">{ETIQUETA_POR_VALOR[resultado.categoria] || resultado.categoria}</h2>
+          <h2 className="font-semibold text-gray-900">{etiquetaCategoria(resultado.categoria)}</h2>
           <p className="text-xs text-gray-400">N° {formatearNumeroTicket(resultado.id)}</p>
         </div>
         <BadgeEstado estado={resultado.estado} />

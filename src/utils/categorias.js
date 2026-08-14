@@ -82,6 +82,18 @@ export const CATEGORIAS = [
   { valor: 'Otro', etiqueta: 'Otro', grupo: 'Otros' },
 ]
 
+// Mapa valor -> objeto completo {valor, etiqueta, grupo}. Antes cada archivo que
+// necesitaba mostrar la categoría legible (en vez del valor interno crudo, tipo
+// "Luminaria_parpadea") se armaba su propio Object.fromEntries — se repitió en 6
+// lugares y en otros 9 se olvidó directamente, mostrando el valor crudo al
+// funcionario en los paneles principales de los 3 dashboards (hallazgo del
+// 12-ago-2026, QA previo a la reunión con el Alcalde). Centralizado acá.
+export const CATEGORIA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c]))
+
+export function etiquetaCategoria(valor) {
+  return CATEGORIA_POR_VALOR[valor]?.etiqueta || valor
+}
+
 // Agrupa el catálogo plano por "grupo" (Vialidad, Alumbrado, etc.) preservando el
 // orden en que aparecen — lo usan tanto el formulario ciudadano como los filtros
 // del Dashboard para renderizar <optgroup> en un <select>.

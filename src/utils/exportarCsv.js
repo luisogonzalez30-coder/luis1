@@ -1,7 +1,5 @@
-import { CATEGORIAS } from './categorias'
+import { etiquetaCategoria } from './categorias'
 import { formatearFecha } from './tiempo'
-
-const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
 
 function celda(valor) {
   const texto = String(valor ?? '')
@@ -12,7 +10,7 @@ function celda(valor) {
 
 const COLUMNAS = [
   { titulo: 'Ticket', obtener: (inc) => inc.numero_ticket },
-  { titulo: 'Categoría', obtener: (inc) => ETIQUETA_POR_VALOR[inc.categoria] || inc.categoria },
+  { titulo: 'Categoría', obtener: (inc) => etiquetaCategoria(inc.categoria) },
   { titulo: 'Departamento', obtener: (inc) => inc.departamento },
   { titulo: 'Gravedad', obtener: (inc) => inc.nivel_gravedad },
   { titulo: 'Estado', obtener: (inc) => inc.estado },

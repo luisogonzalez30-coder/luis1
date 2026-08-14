@@ -8,6 +8,7 @@ import FormularioCierreGasto from '../common/FormularioCierreGasto'
 import { marcarResuelto } from '../../services/incidenciasService'
 import { conTimeout } from '../../utils/timeout'
 import { formatearFecha } from '../../utils/tiempo'
+import { etiquetaCategoria } from '../../utils/categorias'
 
 export default function DetalleTarea({ incidencia, onVolver }) {
   const [enviando, setEnviando] = useState(false)
@@ -41,7 +42,7 @@ export default function DetalleTarea({ incidencia, onVolver }) {
       </button>
 
       <div className="flex items-start justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">{incidencia.categoria}</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{etiquetaCategoria(incidencia.categoria)}</h2>
         <BadgeEstado estado={resuelto ? 'Resuelto' : incidencia.estado} />
       </div>
 

@@ -5,13 +5,11 @@ import BadgeGravedad from '../common/BadgeGravedad'
 import EnlaceGoogleMaps from '../common/EnlaceGoogleMaps'
 import GaleriaFotos from '../common/GaleriaFotos'
 import Boton from '../common/Boton'
-import { CATEGORIAS } from '../../utils/categorias'
+import { CATEGORIA_POR_VALOR } from '../../utils/categorias'
 import { colorDeGrupo } from '../../utils/coloresGrupo'
 import { formatearNumeroTicket } from '../../utils/ticket'
 import { votarIncidencia } from '../../services/incidenciasService'
 import { obtenerIdDispositivo, yaVotoPorIncidencia, registrarVotoLocal } from '../../utils/dispositivo'
-
-const POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c]))
 
 function fechaLarga(timestamp) {
   if (!timestamp?.toDate) return null
@@ -33,7 +31,7 @@ export default function DetalleReporte({ ticket, onCerrar }) {
   const [votando, setVotando] = useState(false)
   const [error, setError] = useState(null)
 
-  const info = POR_VALOR[ticket.categoria]
+  const info = CATEGORIA_POR_VALOR[ticket.categoria]
   const color = colorDeGrupo(info?.grupo)
   const apoyos = ticket.upvotes || 1
   const creado = fechaLarga(ticket.fecha_creacion)

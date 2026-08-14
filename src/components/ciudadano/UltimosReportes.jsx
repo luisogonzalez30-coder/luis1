@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { ChevronRight } from 'lucide-react'
-import { CATEGORIAS } from '../../utils/categorias'
+import { CATEGORIA_POR_VALOR } from '../../utils/categorias'
 import { colorDeGrupo } from '../../utils/coloresGrupo'
 import { tiempoRelativo } from '../../utils/tiempo'
 import BadgeEstado from '../common/BadgeEstado'
 import DetalleReporte from './DetalleReporte'
-
-const POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c]))
 
 // Lista de los últimos reportes de la municipalidad, debajo del mapa del Paso 1
 // — le muestra al ciudadano que el municipio está activo recibiendo y
@@ -27,7 +25,7 @@ export default function UltimosReportes({ reportes }) {
       <h3 className="mb-2 text-sm font-semibold text-gray-700">Últimos reportes de la comuna</h3>
       <ul className="divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         {reportes.map((r) => {
-          const info = POR_VALOR[r.categoria]
+          const info = CATEGORIA_POR_VALOR[r.categoria]
           return (
             <li key={r.id}>
               <button

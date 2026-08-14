@@ -1,7 +1,5 @@
 import { esDelMesActual, horasDesde, promedioHoras } from './tiempo'
-import { CATEGORIAS } from './categorias'
-
-const ETIQUETA_CATEGORIA = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
+import { etiquetaCategoria } from './categorias'
 
 // Cuántos reportes lista la tabla. Un PDF de 40 páginas no lo lee nadie; el
 // histórico completo ya se exporta a CSV desde el mismo panel.
@@ -186,7 +184,7 @@ export async function generarReporteGerencial({ incidencias, municipio, generado
     head: [['Fecha', 'Categoría', 'Dirección de referencia', 'Dirección municipal', 'Gravedad', 'Estado']],
     body: ultimos.map((inc) => [
       formatearFecha(inc.fecha_creacion),
-      ETIQUETA_CATEGORIA[inc.categoria] || inc.categoria || '—',
+      etiquetaCategoria(inc.categoria) || '—',
       inc.direccion_texto || 'Sin referencia',
       inc.departamento || '—',
       inc.nivel_gravedad || '—',

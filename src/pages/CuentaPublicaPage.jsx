@@ -5,12 +5,11 @@ import { useAuth } from '../context/AuthContext'
 import { useMunicipio } from '../hooks/useMunicipio'
 import { obtenerIncidenciasPorPeriodo } from '../services/incidenciasService'
 import { DEPARTAMENTOS } from '../utils/departamento'
-import { CATEGORIAS } from '../utils/categorias'
+import { etiquetaCategoria } from '../utils/categorias'
 import { COLOR_POR_GRAVEDAD } from '../utils/gravedad'
 import { promedioHoras } from '../utils/tiempo'
 import Spinner from '../components/common/Spinner'
 
-const ETIQUETA_CATEGORIA = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
 const formatoCLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
@@ -185,7 +184,7 @@ export default function CuentaPublicaPage() {
       return acc
     }, {})
     return Object.entries(conteo)
-      .map(([valor, cantidad]) => ({ etiqueta: ETIQUETA_CATEGORIA[valor] || valor, cantidad }))
+      .map(([valor, cantidad]) => ({ etiqueta: etiquetaCategoria(valor), cantidad }))
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 10)
   }, [incidencias])

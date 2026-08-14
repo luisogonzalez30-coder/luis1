@@ -1,5 +1,6 @@
 import { MapPin } from 'lucide-react'
 import BadgeEstado from '../common/BadgeEstado'
+import { etiquetaCategoria } from '../../utils/categorias'
 
 export default function TarjetaTarea({ incidencia, onClick }) {
   return (
@@ -8,7 +9,7 @@ export default function TarjetaTarea({ incidencia, onClick }) {
       className="w-full rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm active:bg-gray-50"
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="font-semibold text-gray-900">{incidencia.categoria}</span>
+        <span className="font-semibold text-gray-900">{etiquetaCategoria(incidencia.categoria)}</span>
         <BadgeEstado estado={incidencia.estado} />
       </div>
       <div className="mt-2 flex items-center gap-1.5 text-sm text-gray-500">

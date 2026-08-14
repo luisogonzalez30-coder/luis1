@@ -3,14 +3,12 @@ import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useMunicipio } from '../hooks/useMunicipio'
 import { suscribirUltimosTickets } from '../services/ticketsPublicosService'
-import { CATEGORIAS } from '../utils/categorias'
+import { etiquetaCategoria } from '../utils/categorias'
 import { COLOR_POR_GRAVEDAD } from '../utils/gravedad'
 import { promedioHoras } from '../utils/tiempo'
 import EncabezadoMunicipio from '../components/common/EncabezadoMunicipio'
 import Spinner from '../components/common/Spinner'
 import BarraNavegacion from '../components/ciudadano/BarraNavegacion'
-
-const ETIQUETA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta]))
 
 // Cuántos reportes recientes alimentan estas estadísticas. Tope duro: el
 // servicio nunca devuelve más de MAX_TICKETS_RECIENTES.
@@ -107,7 +105,7 @@ export default function TransparenciaPage() {
       return acc
     }, {})
   )
-    .map(([categoria, cantidad]) => ({ etiqueta: ETIQUETA_POR_VALOR[categoria] || categoria, cantidad }))
+    .map(([categoria, cantidad]) => ({ etiqueta: etiquetaCategoria(categoria), cantidad }))
     .sort((a, b) => b.cantidad - a.cantidad)
     .slice(0, 8)
 
