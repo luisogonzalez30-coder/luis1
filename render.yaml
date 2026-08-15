@@ -1,0 +1,84 @@
+# Blueprint de Render para Centinela TA (carpeta centinela-ta/ de este repo).
+# En render.com: New + -> Blueprint -> conectar este repo -> Render lee este
+# archivo y propone crear todo lo de abajo. Ver centinela-ta/DEPLOY.md para
+# el paso a paso completo, incluidas las variables que hay que pegar a mano.
+
+databases:
+  - name: centinela-ta-db
+    databaseName: centinela_ta
+    user: centinela
+    plan: free
+
+services:
+  - type: redis
+    name: centinela-ta-redis
+    plan: free
+    ipAllowList: []
+
+  - type: web
+    name: centinela-ta-api
+    runtime: node
+    plan: free
+    rootDir: centinela-ta
+    buildCommand: npm install --include=dev && npm run build --workspace=@centinela-ta/database && npm run build --workspace=@centinela-ta/api
+    # El seed usa upsert en todas partes (ver packages/database/prisma/seed.ts)
+    # así que correrlo en cada deploy es seguro: no duplica nada, solo crea
+    # lo que falte la primera vez. Evita depender de que el plan tenga Shell.
+    preDeployCommand: npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma && npx tsx packages/database/prisma/seed.ts
+    startCommand: node apps/api/dist/main.js
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: centinela-ta-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: centinela-ta-redis
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: FIELD_ENCRYPTION_KEY
+        sync: false
+      - key: WEB_ORIGIN
+        value: https://centinela-ta-web.onrender.com
+      - key: NODE_VERSION
+        value: 20.17.0
+
+  - type: worker
+    name: centinela-ta-worker
+    runtime: node
+    plan: free
+    rootDir: centinela-ta
+    buildCommand: npm install --include=dev && npm run build --workspace=@centinela-ta/database && npm run build --workspace=@centinela-ta/worker
+    startCommand: node apps/worker/dist/main.js
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: centinela-ta-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: centinela-ta-redis
+          property: connectionString
+      - key: VERIFICACION_ENLACES_INTERVALO_MIN
+        value: "60"
+      - key: NODE_VERSION
+        value: 20.17.0
+
+  - type: web
+    name: centinela-ta-web
+    runtime: node
+    plan: free
+    rootDir: centinela-ta
+    buildCommand: npm install --include=dev && npm run build --workspace=@centinela-ta/web
+    startCommand: npm run start --workspace=@centinela-ta/web -- -p $PORT
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://centinela-ta-api.onrender.com
+      - key: NODE_VERSION
+        value: 20.17.0

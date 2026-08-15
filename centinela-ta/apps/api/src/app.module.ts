@@ -9,6 +9,7 @@ import { RevisionesModule } from "./revisiones/revisiones.module";
 import { EnlacesModule } from "./enlaces/enlaces.module";
 import { SolicitudesModule } from "./solicitudes/solicitudes.module";
 import { UsuariosModule } from "./usuarios/usuarios.module";
+import { HealthModule } from "./health/health.module";
 
 @Module({
   imports: [
@@ -21,13 +22,14 @@ import { UsuariosModule } from "./usuarios/usuarios.module";
     EnlacesModule,
     SolicitudesModule,
     UsuariosModule,
+    HealthModule,
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(TenantContextMiddleware)
-      .exclude({ path: "auth/login", method: RequestMethod.POST })
+      .exclude({ path: "auth/login", method: RequestMethod.POST }, { path: "health", method: RequestMethod.GET })
       .forRoutes("*");
   }
 }
