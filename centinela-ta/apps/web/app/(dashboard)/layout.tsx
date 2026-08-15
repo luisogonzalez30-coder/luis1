@@ -10,6 +10,7 @@ const NAV = [
   { href: "/revisiones", label: "Revisiones" },
   { href: "/enlaces", label: "Enlaces" },
   { href: "/solicitudes", label: "Solicitudes de acceso" },
+  { href: "/usuarios", label: "Usuarios", soloRol: "admin_municipal" },
 ];
 
 const ETIQUETA_ROL: Record<string, string> = {
@@ -60,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
         <nav className="mx-auto flex max-w-6xl gap-1 px-4">
-          {NAV.map((item) => {
+          {NAV.filter((item) => !item.soloRol || item.soloRol === usuario.rol).map((item) => {
             const activo = pathname === item.href;
             return (
               <Link

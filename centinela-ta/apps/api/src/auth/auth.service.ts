@@ -47,6 +47,13 @@ export class AuthService {
       throw new UnauthorizedException("Credenciales inválidas");
     }
 
+    // Se valida DESPUÉS de la contraseña, no antes: si fuera antes, alguien
+    // sin la contraseña podría usar el mensaje de error para averiguar qué
+    // cuentas están desactivadas.
+    if (!usuario.activo) {
+      throw new UnauthorizedException("Esta cuenta fue desactivada. Contacta a tu Administrador Municipal.");
+    }
+
     await withTenantContext(municipioId, (tx) =>
       tx.usuario.update({ where: { id: usuario.id }, data: { ultimoLogin: new Date() } }),
     );

@@ -61,6 +61,7 @@ model Usuario {
   rol           Rol
   hashPassword  String    @map("hash_password")
   mfaHabilitado Boolean   @default(false) @map("mfa_habilitado")
+  activo        Boolean   @default(true)
   ultimoLogin   DateTime? @map("ultimo_login")
   creadoEn      DateTime  @default(now()) @map("creado_en")
 

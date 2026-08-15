@@ -8,6 +8,7 @@ import { CumplimientoModule } from "./cumplimiento/cumplimiento.module";
 import { RevisionesModule } from "./revisiones/revisiones.module";
 import { EnlacesModule } from "./enlaces/enlaces.module";
 import { SolicitudesModule } from "./solicitudes/solicitudes.module";
+import { UsuariosModule } from "./usuarios/usuarios.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SolicitudesModule } from "./solicitudes/solicitudes.module";
     RevisionesModule,
     EnlacesModule,
     SolicitudesModule,
+    UsuariosModule,
   ],
 })
 export class AppModule implements NestModule {
