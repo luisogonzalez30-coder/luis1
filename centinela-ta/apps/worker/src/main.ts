@@ -3,6 +3,7 @@ import { Job } from "bullmq";
 import { prisma } from "@centinela-ta/database";
 import { colaVerificaciones, crearWorker } from "./queue";
 import { verificarEnlacesDeMunicipio } from "./verificar-enlaces";
+import { verificarSeccionesDeMunicipio } from "./verificar-secciones";
 
 const INTERVALO_MIN = Number(process.env.VERIFICACION_ENLACES_INTERVALO_MIN ?? 60);
 
@@ -13,6 +14,7 @@ async function procesar(job: Job): Promise<void> {
   }
   if (job.name === "verificar-municipio") {
     await verificarEnlacesDeMunicipio(job.data.municipioId);
+    await verificarSeccionesDeMunicipio(job.data.municipioId);
     return;
   }
   throw new Error(`Job desconocido: ${job.name}`);

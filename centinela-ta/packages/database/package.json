@@ -9,7 +9,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "build": "prisma generate && tsc -p tsconfig.json && cp -r src/generated dist/generated",
+    "build": "prisma generate && tsc -p tsconfig.json && rm -rf dist/generated && cp -r src/generated dist/generated",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

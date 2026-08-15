@@ -112,6 +112,12 @@ model Enlace {
   ultimoStatusHttp   Int?      @map("ultimo_status_http")
   ultimaVerificacion DateTime? @map("ultima_verificacion")
   caidoDesde         DateTime? @map("caido_desde")
+  // Selector CSS para ubicar el indicador de "última actualización" en la
+  // página del portal municipal — cada municipio publica con una plantilla
+  // distinta, así que esto se configura por enlace, no es un scraper único
+  // para todos (ver riesgo técnico documentado en el diseño). Null =
+  // todavía sin configurar para ese enlace; el chequeo de sección lo salta.
+  selectorFecha      String?   @map("selector_fecha")
 
   municipio Municipio            @relation(fields: [municipioId], references: [id])
   seccion   SeccionTransparencia @relation(fields: [seccionId], references: [id])

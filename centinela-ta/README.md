@@ -8,7 +8,9 @@ Construida a partir del documento de arquitectura para la Compra Ágil N° 3013-
 - **`apps/api`** — NestJS. Auth (JWT), RBAC por rol, aislamiento multi-tenant vía
   Row-Level Security de PostgreSQL.
 - **`apps/worker`** — BullMQ. Verifica los enlaces del portal de transparencia de
-  cada municipio y alerta cuando alguno cae.
+  cada municipio (alerta cuando alguno cae) y detecta infracciones por
+  sección leyendo la fecha de última actualización que cada municipio
+  publica en su portal.
 - **`apps/web`** — Next.js (App Router). Dashboard de cumplimiento, revisiones,
   enlaces y solicitudes de acceso.
 - **`packages/database`** — Schema de Prisma, migraciones (incluida la de RLS) y
@@ -21,7 +23,16 @@ cifrado de campo verificado leyendo la columna directo en la base, RBAC
 verificado con un 403 real, y el worker corriendo un ciclo de verificación de
 enlaces completo (detectó los 4 enlaces caídos del seed y disparó las
 alertas). El dashboard se probó en un navegador real (Chromium) con el flujo
-login → resumen → enlaces.
+login → resumen → enlaces, incluyendo resolver infracciones y registrar/
+responder solicitudes de acceso desde la UI, con el % de cumplimiento
+recalculándose en vivo.
+
+La detección automática de infracciones por sección (`apps/worker/src/verificar-secciones.ts`)
+se probó contra un servidor HTTP real que simula tres variantes de portal
+municipal (sección actualizada, sección vencida, sección sin el indicador de
+fecha) y produjo los tres estados correctos (`cumple`, `desactualizada`,
+`no_cumple`) a partir de un fetch + parseo de HTML de verdad, no de datos
+simulados a mano.
 
 ## Requisitos
 
@@ -77,10 +88,20 @@ rol de desarrollo no tiene los permisos necesarios, aplica esa migración una
 vez como superusuador (`psql -U postgres -f prisma/migrations/.../migration.sql`)
 y márcala como aplicada con `npx prisma migrate resolve --applied <nombre>`.
 
+## Configurar la detección de infracciones para un municipio real
+
+Cada fila de `enlace` necesita `selectorFecha` (un selector CSS) apuntando
+al elemento donde ese municipio publica la fecha de última actualización de
+esa sección. No hay un valor por defecto razonable — cada portal municipal
+chileno usa una plantilla distinta, así que esto se releva y configura por
+enlace (ver "Supuestos de Diseño" del documento de arquitectura). El seed
+deja los enlaces de Retiro sin `selectorFecha` porque apuntan a URLs de
+ejemplo, no al portal real todavía.
+
 ## Qué falta para producción
 
-Ver la sección "Próximos Pasos" del documento de arquitectura (el mapeo de
-selectores real del portal de Retiro, el calendario de feriados chilenos para
-el cálculo de plazos, el módulo de gestión de usuarios/municipios para el rol
-Administrador Municipal, y el despliegue a GCP `southamerica-west1` descrito
-ahí). Este repo es el punto de partida técnico, no el producto terminado.
+Ver la sección "Próximos Pasos" del documento de arquitectura: el calendario
+de feriados chilenos para el cálculo de plazos, el módulo de gestión de
+usuarios/municipios para el rol Administrador Municipal, y el despliegue a
+GCP `southamerica-west1` descrito ahí. Este repo es el punto de partida
+técnico, no el producto terminado.
