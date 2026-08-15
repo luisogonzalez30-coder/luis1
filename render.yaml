@@ -20,11 +20,11 @@ services:
     runtime: node
     plan: free
     rootDir: centinela-ta
-    buildCommand: npm install --include=dev && npm run build --workspace=@centinela-ta/database && npm run build --workspace=@centinela-ta/api
-    # El seed usa upsert en todas partes (ver packages/database/prisma/seed.ts)
-    # así que correrlo en cada deploy es seguro: no duplica nada, solo crea
-    # lo que falte la primera vez. Evita depender de que el plan tenga Shell.
-    preDeployCommand: npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma && npx tsx packages/database/prisma/seed.ts
+    # preDeployCommand no existe en el plan free de Render, así que
+    # migraciones y seed van encadenados acá. El seed usa upsert en todas
+    # partes (ver packages/database/prisma/seed.ts), así que correrlo en
+    # cada deploy es seguro: no duplica nada, solo crea lo que falte.
+    buildCommand: npm install --include=dev && npm run build --workspace=@centinela-ta/database && npm run build --workspace=@centinela-ta/api && npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma && npx tsx packages/database/prisma/seed.ts
     startCommand: node apps/api/dist/main.js
     healthCheckPath: /api/v1/health
     envVars:

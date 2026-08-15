@@ -81,8 +81,8 @@ Abrí la URL de **centinela-ta-web** en el navegador del celular. Login demo:
   "Key Value" — abrí `render.yaml`, cambiá `type: redis` por
   `type: keyvalue` en el servicio `centinela-ta-redis`, commiteá, y volvé a
   intentar el Blueprint.
-- **La migración `auth_tenant_resolver` falla en el Pre-Deploy**: no debería
-  — a diferencia de la versión original, esta no necesita privilegios de
+- **La migración `auth_tenant_resolver` falla al correr**: no debería — a
+  diferencia de la versión original, esta no necesita privilegios de
   superusuario. Si igual falla, pegame el log y lo reviso.
 - **Login da error de CORS en la consola del navegador**: `WEB_ORIGIN` en la
   API no coincide con la URL real del sitio — ver paso 4.
