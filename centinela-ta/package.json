@@ -1,0 +1,25 @@
+{
+  "name": "centinela-ta",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Plataforma de Monitoreo de Transparencia Activa — LOG-In Soluciones Integrales SpA",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace=@centinela-ta/api",
+    "dev:worker": "npm run start:dev --workspace=@centinela-ta/worker",
+    "dev:web": "npm run dev --workspace=@centinela-ta/web",
+    "build": "npm run build --workspace=@centinela-ta/database && npm run build --workspace=@centinela-ta/api && npm run build --workspace=@centinela-ta/worker && npm run build --workspace=@centinela-ta/web",
+    "db:migrate": "npm run db:migrate --workspace=@centinela-ta/database",
+    "db:seed": "npm run db:seed --workspace=@centinela-ta/database",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
