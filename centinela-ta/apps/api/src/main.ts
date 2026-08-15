@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
+import { iniciarWorker } from "@centinela-ta/worker";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
@@ -26,6 +27,18 @@ async function bootstrap() {
   await app.listen(port);
   // eslint-disable-next-line no-console
   console.log(`Centinela TA API escuchando en http://localhost:${port}/api/v1`);
+
+  // Plataformas sin un tipo de servicio "background worker" en el plan
+  // gratis (ej. Render) no dejan correr apps/worker como proceso aparte.
+  // EMBED_WORKER=true lo arranca en este mismo proceso en su lugar — mismo
+  // código, misma cola de Redis, la única diferencia es quién lo hostea.
+  // En desarrollo local y en cualquier hosting que sí soporte un worker
+  // real, esta variable queda en false y apps/worker corre solo.
+  if (process.env.EMBED_WORKER === "true") {
+    await iniciarWorker();
+    // eslint-disable-next-line no-console
+    console.log("Worker embebido en el proceso de la API (EMBED_WORKER=true).");
+  }
 }
 
 bootstrap();

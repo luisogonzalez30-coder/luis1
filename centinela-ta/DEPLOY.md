@@ -16,9 +16,13 @@ tarjeta para el plan free.
 2. Elegí el repo `luisogonzalez30-coder/luis1`.
 3. Seleccioná la rama `claude/nueva-skill-instalada-rlmxjb` (o `main` si ya
    se mergeó el PR).
-4. Render encuentra `render.yaml` en la raíz del repo y te muestra 4 recursos
-   para crear: una base de datos Postgres, un Redis, y tres servicios
-   (`centinela-ta-api`, `centinela-ta-worker`, `centinela-ta-web`).
+4. Render encuentra `render.yaml` en la raíz del repo y te muestra los
+   recursos a crear: una base de datos Postgres, un Redis (Render lo llama
+   "Key Value"), y dos servicios web (`centinela-ta-api` y
+   `centinela-ta-web`). El worker de verificación no es un servicio aparte
+   — corre embebido dentro de `centinela-ta-api`, porque el plan free de
+   Render no ofrece el tipo "Background Worker" (ver "Si algo falla" más
+   abajo si ya lo intentaste antes y te lo rechazó por eso).
 5. Te va a pedir 2 valores porque los dejé marcados como "hay que
    completarlos a mano" (son secretos, nunca van commiteados al repo).
    Pegá exactamente estos dos:
@@ -81,6 +85,12 @@ Abrí la URL de **centinela-ta-web** en el navegador del celular. Login demo:
   "Key Value" — abrí `render.yaml`, cambiá `type: redis` por
   `type: keyvalue` en el servicio `centinela-ta-redis`, commiteá, y volvé a
   intentar el Blueprint.
+- **"service type is not available for this plan" en un background
+  worker**: ya no debería pasar — el worker quedó embebido en
+  `centinela-ta-api` (variable `EMBED_WORKER=true`) desde que Render avisó
+  que el plan free no ofrece ese tipo de servicio. Si estás viendo esto es
+  porque el Blueprint quedó con una versión vieja de `render.yaml`: borrá el
+  Blueprint desde cero y volvé a crearlo apuntando a la rama actual.
 - **La migración `auth_tenant_resolver` falla al correr**: no debería — a
   diferencia de la versión original, esta no necesita privilegios de
   superusuario. Si igual falla, pegame el log y lo reviso.

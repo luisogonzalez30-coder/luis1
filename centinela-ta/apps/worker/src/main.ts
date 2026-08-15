@@ -43,7 +43,15 @@ async function planificarVerificaciones(): Promise<void> {
   console.log(`[planificar] ${municipios.length} municipio(s) encolados para verificación de enlaces`);
 }
 
-async function main() {
+/**
+ * Arranca el consumidor de la cola. Exportada (en vez de auto-ejecutarse
+ * siempre) para poder embeberse en el proceso de la API cuando la
+ * plataforma de hosting no ofrece un tipo de servicio "background worker"
+ * separado (ej. el plan free de Render — ver apps/api/src/main.ts). Corrida
+ * como proceso independiente (local, Docker, o un worker real en
+ * producción), el comportamiento es idéntico.
+ */
+export async function iniciarWorker(): Promise<void> {
   const worker = crearWorker(procesar);
 
   worker.on("completed", (job: Job) => {
@@ -66,7 +74,12 @@ async function main() {
   console.log(`Worker de Centinela TA activo. Verificación de enlaces cada ${INTERVALO_MIN} min.`);
 }
 
-main().catch((err) => {
-  console.error("Error fatal en el worker:", err);
-  process.exit(1);
-});
+// Solo se auto-ejecuta si este archivo es el punto de entrada del proceso
+// (`node dist/main.js`) — si otro proceso lo importa (ver embedded-worker
+// de la API), es ese proceso quien decide cuándo llamar a iniciarWorker().
+if (require.main === module) {
+  iniciarWorker().catch((err) => {
+    console.error("Error fatal en el worker:", err);
+    process.exit(1);
+  });
+}
