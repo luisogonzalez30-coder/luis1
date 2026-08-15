@@ -4,34 +4,56 @@
 -- no sabemos el tenant del usuario, solo su email. Es un problema de
 -- huevo y gallina inherente a RLS por fila en un login multi-tenant.
 --
--- Solución: un rol muy angosto con BYPASSRLS, dueño de una función
--- SECURITY DEFINER que solo puede leer (email, municipio_id) — nunca
--- hash_password ni ninguna otra columna — y que el backend usa
--- exclusivamente para resolver el tenant antes de re-consultar el usuario
--- completo ya con el contexto de tenant correcto (ver AuthService).
+-- Solución: una tabla espejo `usuario_tenant_lookup(email, municipio_id)`
+-- SIN RLS — no tiene nada sensible (nunca el hash de contraseña, ni el
+-- nombre, solo a qué municipio pertenece un email), mantenida al día por
+-- trigger sobre `usuario`. El backend la usa exclusivamente para resolver
+-- el tenant antes de re-consultar el usuario completo ya con el contexto
+-- de tenant correcto (ver AuthService).
+--
+-- A propósito NO usa un rol con BYPASSRLS (como una primera versión de
+-- esta migración): eso exige que el rol de conexión tenga privilegio
+-- CREATEROLE, algo que ningún Postgres administrado (Render, RDS, Cloud
+-- SQL, etc.) le da al usuario de la aplicación. Esta versión solo necesita
+-- privilegios de dueño de tabla — funciona en cualquier Postgres.
 
-DO $$
+CREATE TABLE "usuario_tenant_lookup" (
+  "email" TEXT PRIMARY KEY,
+  "municipio_id" TEXT NOT NULL
+);
+
+CREATE OR REPLACE FUNCTION sync_usuario_tenant_lookup() RETURNS TRIGGER AS $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'app_auth_resolver') THEN
-    CREATE ROLE app_auth_resolver NOLOGIN BYPASSRLS;
+  IF TG_OP = 'DELETE' THEN
+    DELETE FROM usuario_tenant_lookup WHERE email = OLD.email;
+    RETURN OLD;
   END IF;
-END
-$$;
 
-GRANT SELECT (id, email, municipio_id) ON "usuario" TO app_auth_resolver;
+  IF TG_OP = 'UPDATE' AND NEW.email <> OLD.email THEN
+    DELETE FROM usuario_tenant_lookup WHERE email = OLD.email;
+  END IF;
 
-CREATE OR REPLACE FUNCTION resolver_municipio_por_email(p_email text)
-RETURNS text
-LANGUAGE sql
-SECURITY DEFINER
-STABLE
-AS $$
-  SELECT municipio_id FROM "usuario" WHERE email = p_email LIMIT 1;
-$$;
+  INSERT INTO usuario_tenant_lookup (email, municipio_id)
+  VALUES (NEW.email, NEW.municipio_id)
+  ON CONFLICT (email) DO UPDATE SET municipio_id = EXCLUDED.municipio_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-ALTER FUNCTION resolver_municipio_por_email(text) OWNER TO app_auth_resolver;
+CREATE TRIGGER trg_sync_usuario_tenant_lookup
+AFTER INSERT OR UPDATE OF email, municipio_id OR DELETE ON "usuario"
+FOR EACH ROW EXECUTE FUNCTION sync_usuario_tenant_lookup();
 
--- En producción, reemplazar PUBLIC por el rol específico de la API
--- (por ejemplo app_runtime) — PUBLIC es aceptable acá porque la función
--- en sí ya está acotada a dos columnas no sensibles.
-GRANT EXECUTE ON FUNCTION resolver_municipio_por_email(text) TO PUBLIC;
+-- Backfill de los usuarios que ya existían antes de esta migración.
+-- ALTER TABLE (DDL) no está sujeto a RLS, así que esto es válido incluso
+-- sin app.tenant_id fijado: quita FORCE momentáneamente para que el propio
+-- dueño de la tabla (sujeto a FORCE en runtime normal) pueda leer todas
+-- las filas de todos los tenants solo para esta copia única, y lo
+-- restaura enseguida.
+ALTER TABLE "usuario" NO FORCE ROW LEVEL SECURITY;
+
+INSERT INTO usuario_tenant_lookup (email, municipio_id)
+SELECT email, municipio_id FROM "usuario"
+ON CONFLICT (email) DO NOTHING;
+
+ALTER TABLE "usuario" FORCE ROW LEVEL SECURITY;

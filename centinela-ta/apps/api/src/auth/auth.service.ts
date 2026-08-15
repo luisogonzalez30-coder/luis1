@@ -20,14 +20,16 @@ export class AuthService {
 
   async login(email: string, password: string): Promise<LoginResult> {
     // Paso 1: resolver a qué municipio pertenece este email SIN pasar por
-    // RLS todavía — usa la función SECURITY DEFINER de la migración
-    // auth_tenant_resolver, que solo expone (email, municipio_id), nunca
-    // el hash de contraseña. Es el único punto del sistema donde se
-    // consulta `usuario` fuera de un contexto de tenant ya fijado.
-    const filas = await prisma.$queryRaw<{ resolver_municipio_por_email: string | null }[]>`
-      SELECT resolver_municipio_por_email(${email})
+    // RLS todavía — lee de `usuario_tenant_lookup` (migración
+    // auth_tenant_resolver), una tabla espejo sin RLS que un trigger
+    // mantiene sincronizada con `usuario` y que solo expone (email,
+    // municipio_id), nunca el hash de contraseña. Es el único punto del
+    // sistema donde se resuelve el tenant de un usuario antes de tener el
+    // contexto de tenant fijado.
+    const filas = await prisma.$queryRaw<{ municipio_id: string }[]>`
+      SELECT municipio_id FROM usuario_tenant_lookup WHERE email = ${email}
     `;
-    const municipioId = filas[0]?.resolver_municipio_por_email;
+    const municipioId = filas[0]?.municipio_id;
 
     if (!municipioId) {
       // Mismo mensaje que una contraseña incorrecta: no revelar si el email existe.
