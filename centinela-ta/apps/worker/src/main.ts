@@ -4,6 +4,7 @@ import { prisma } from "@centinela-ta/database";
 import { colaVerificaciones, crearWorker } from "./queue";
 import { verificarEnlacesDeMunicipio } from "./verificar-enlaces";
 import { verificarSeccionesDeMunicipio } from "./verificar-secciones";
+import { generarInformeDeMunicipio } from "./generar-informe";
 
 const INTERVALO_MIN = Number(process.env.VERIFICACION_ENLACES_INTERVALO_MIN ?? 60);
 
@@ -15,6 +16,10 @@ async function procesar(job: Job): Promise<void> {
   if (job.name === "verificar-municipio") {
     await verificarEnlacesDeMunicipio(job.data.municipioId);
     await verificarSeccionesDeMunicipio(job.data.municipioId);
+    // Refresca el snapshot del mes en curso con los datos que se acaban de
+    // verificar — el informe de "tendencia" queda al día en cada ciclo, no
+    // solo una vez al mes.
+    await generarInformeDeMunicipio(job.data.municipioId);
     return;
   }
   throw new Error(`Job desconocido: ${job.name}`);

@@ -1,14 +1,9 @@
 import { PrismaClient } from "./generated";
+import { prisma } from "./client";
 
 export * from "./generated";
-
-/**
- * Cliente Prisma "crudo" — solo para el runtime de migraciones/seed y para
- * el pool base que withTenantContext toma prestado. El código de negocio
- * nunca debe importar esto directo: siempre pasa por withTenantContext,
- * que es lo que activa las políticas RLS de la base de datos.
- */
-export const prisma = new PrismaClient();
+export { prisma } from "./client";
+export * from "./cumplimiento";
 
 /**
  * Ejecuta `fn` dentro de una transacción con `app.tenant_id` fijado vía

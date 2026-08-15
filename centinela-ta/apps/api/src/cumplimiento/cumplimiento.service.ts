@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { prisma, withTenantContext } from "@centinela-ta/database";
+import { calcularPorcentajeCumplimiento, withTenantContext } from "@centinela-ta/database";
 import { AuthContext } from "../common/types/auth-context";
 import { diasHabilesRestantes, UMBRAL_POR_VENCER_DIAS_HABILES } from "../solicitudes/dias-habiles.util";
 
@@ -15,37 +15,11 @@ export interface ResumenCumplimiento {
   tendencia: { periodo: string; porcentaje: number }[];
 }
 
-const ESTADOS_CUMPLE = new Set(["cumple", "resuelta_pendiente_verificacion"]);
-
 @Injectable()
 export class CumplimientoService {
   async resumen(auth: AuthContext): Promise<ResumenCumplimiento> {
-    // El catálogo de secciones es compartido entre tenants (no tiene RLS),
-    // así que se lee del cliente base, fuera de withTenantContext.
-    const totalSeccionesObligatorias = await prisma.seccionTransparencia.count({ where: { obligatoria: true } });
-
     return withTenantContext(auth.municipioId, async (tx) => {
-      const revisiones = await tx.revision.findMany({
-        orderBy: { revisadoEn: "desc" },
-        select: { seccionId: true, estado: true },
-      });
-
-      const ultimaPorSeccion = new Map<string, string>();
-      for (const r of revisiones) {
-        if (!ultimaPorSeccion.has(r.seccionId)) ultimaPorSeccion.set(r.seccionId, r.estado);
-      }
-
-      const seccionesEvaluadas = ultimaPorSeccion.size;
-      let seccionesConInfraccion = 0;
-      let seccionesQueCumplen = 0;
-      for (const estado of ultimaPorSeccion.values()) {
-        if (ESTADOS_CUMPLE.has(estado)) seccionesQueCumplen += 1;
-        else seccionesConInfraccion += 1;
-      }
-
-      const porcentajeCumplimiento = totalSeccionesObligatorias === 0
-        ? 0
-        : Math.round((seccionesQueCumplen / totalSeccionesObligatorias) * 1000) / 10;
+      const porcentaje = await calcularPorcentajeCumplimiento(tx);
 
       const enlacesCaidos = await tx.enlace.count({ where: { caidoDesde: { not: null } } });
 
@@ -69,10 +43,7 @@ export class CumplimientoService {
 
       return {
         periodo: periodoActual(),
-        porcentajeCumplimiento,
-        seccionesObligatorias: totalSeccionesObligatorias,
-        seccionesEvaluadas,
-        seccionesConInfraccion,
+        ...porcentaje,
         enlacesCaidos,
         solicitudesPorVencer,
         solicitudesVencidas,

@@ -155,6 +155,9 @@ model InformeCumplimiento {
 
   municipio Municipio @relation(fields: [municipioId], references: [id])
 
+  // Un snapshot por municipio y periodo — permite que el job mensual sea
+  // idempotente (upsert) en vez de acumular duplicados si se re-ejecuta.
+  @@unique([municipioId, periodo])
   @@index([municipioId])
   @@map("informe_cumplimiento")
 }

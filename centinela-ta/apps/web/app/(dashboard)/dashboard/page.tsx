@@ -72,7 +72,41 @@ export default function DashboardPage() {
           descripcion="Plazo legal de 20 días hábiles (Ley 20.285)"
         />
       </section>
+
+      {resumen.tendencia.length > 0 && <TendenciaCumplimiento datos={resumen.tendencia} />}
     </div>
+  );
+}
+
+const ALTO_BARRA_PX = 80;
+
+function TendenciaCumplimiento({ datos }: { datos: { periodo: string; porcentaje: number }[] }) {
+  const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-6">
+      <p className="text-sm font-medium text-slate-500">Tendencia de cumplimiento</p>
+      <div className="mt-4 flex items-end gap-3">
+        {datos.map((d) => {
+          const [anio, mes] = d.periodo.split("-");
+          const altoBarra = Math.max(4, Math.round((d.porcentaje / 100) * ALTO_BARRA_PX));
+          return (
+            <div key={d.periodo} className="flex flex-1 flex-col items-center gap-1">
+              <span className="text-xs font-medium tabular-nums text-slate-600">{d.porcentaje}%</span>
+              <div className="flex w-full items-end justify-center" style={{ height: ALTO_BARRA_PX }}>
+                <div
+                  className="w-full rounded-t-sm bg-marca-400"
+                  style={{ height: altoBarra }}
+                  title={`${d.periodo}: ${d.porcentaje}%`}
+                />
+              </div>
+              <span className="text-xs text-slate-400">
+                {MESES[Number(mes) - 1]} {anio.slice(2)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
