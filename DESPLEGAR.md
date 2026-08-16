@@ -165,55 +165,76 @@ ya trae el flujo de trabajo listo en `.github/workflows/desplegar.yml`:
 Falta un paso que **solo puedes hacer tú**, porque requiere tu sesión de Google:
 darle permiso a GitHub para publicar.
 
-## Paso 1 — Crear la credencial
+## Paso 1 — Un comando hace casi todo
 
-Es una cuenta de servicio: un "usuario robot" que solo puede publicar el sitio.
+En la carpeta del proyecto:
 
-1. Entra a <https://console.cloud.google.com/iam-admin/serviceaccounts?project=app-incidencias-urbanas>
-   (con la misma cuenta de Google del proyecto).
-2. **Crear cuenta de servicio**.
-   - Nombre: `github-desplegador`
-   - Continuar.
-3. En **Roles**, agrega estos dos y nada más:
-   - `Firebase Hosting Admin`
-   - `Cloud Run Viewer`
+```powershell
+npx firebase init hosting:github
+```
 
-   > Solo esos dos, a propósito. Esta credencial va a vivir en GitHub, así que
-   > tiene que poder publicar el sitio y nada más. **No uses aquí el
-   > `serviceAccountKey.json` que usas para los respaldos**: ese tiene acceso
-   > total a la base de datos y se salta todas las reglas de seguridad.
-4. Listo → entra a la cuenta recién creada → pestaña **Claves** → **Agregar
-   clave** → **Crear clave nueva** → **JSON** → Crear.
-5. Se descarga un archivo `.json`. Ábrelo con el Bloc de notas y **copia todo el
-   contenido**, desde la primera `{` hasta la última `}`.
+Ese comando, solo:
 
-## Paso 2 — Guardar los secretos en GitHub
+1. Abre el navegador para que autorices GitHub.
+2. Pregunta el repositorio → responde `luisogonzalez30-coder/luis1`.
+3. **Crea la cuenta de servicio con los permisos correctos** (no hay que tocar
+   Google Cloud Console).
+4. **Guarda el secreto en GitHub** por ti, con el nombre
+   `FIREBASE_SERVICE_ACCOUNT_APP_INCIDENCIAS_URBANAS`. El flujo de trabajo de
+   este repositorio ya acepta ese nombre.
 
-Entra a <https://github.com/luisogonzalez30-coder/luis1/settings/secrets/actions>
-y crea cada uno con **New repository secret**:
+Después va a preguntar si quiere crear sus propios archivos de flujo de trabajo.
+**Responde que NO**, o si ya los creó, bórralos:
 
-| Nombre del secreto | Qué pegar |
+```powershell
+del .github\workflows\firebase-hosting-merge.yml
+del .github\workflows\firebase-hosting-pull-request.yml
+```
+
+El de este repositorio (`desplegar.yml`) ya hace las dos cosas —vista previa y
+producción— y además verifica que el build no salga vacío.
+
+> **Ojo con una cosa**: si el comando pregunta por un "workflow que corra un
+> script de build", el suyo no sabe de las variables `VITE_*` de este proyecto.
+> Por eso conviene quedarse con `desplegar.yml`.
+
+## Paso 2 — Los valores de configuración
+
+Faltan las variables que se incrustan al compilar. En
+<https://github.com/luisogonzalez30-coder/luis1/settings/secrets/actions>,
+**New repository secret**, una por una:
+
+| Nombre del secreto | De dónde sale |
 |---|---|
-| `FIREBASE_SERVICE_ACCOUNT` | Todo el contenido del `.json` del paso 1 |
-| `VITE_FIREBASE_API_KEY` | El valor de tu archivo `.env` local |
+| `VITE_FIREBASE_API_KEY` | Tu archivo `.env` |
 | `VITE_FIREBASE_AUTH_DOMAIN` | idem |
-| `VITE_FIREBASE_PROJECT_ID` | idem |
+| `VITE_FIREBASE_PROJECT_ID` | idem (`app-incidencias-urbanas`) |
 | `VITE_FIREBASE_STORAGE_BUCKET` | idem |
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | idem |
 | `VITE_FIREBASE_APP_ID` | idem |
-| `VITE_CLOUDINARY_CLOUD_NAME` | idem (`ugiblcuk`) |
-| `VITE_CLOUDINARY_UPLOAD_PRESET` | idem (`reporte_incidencias`) |
+| `VITE_CLOUDINARY_CLOUD_NAME` | `ugiblcuk` |
+| `VITE_CLOUDINARY_UPLOAD_PRESET` | `reporte_incidencias` |
 
-Los valores están en tu `.env`, en la carpeta del proyecto. Ábrelo con el Bloc
-de notas y copia cada uno **sin comillas y sin espacios al final**.
+Los dos últimos ya los sabemos, así que son **seis** valores que copiar del
+`.env`. Ábrelo con el Bloc de notas: cada línea es `NOMBRE=valor`, y se copia
+**solo lo que va después del `=`**, sin comillas ni espacios al final.
 
-> Sobre los `VITE_*`: esa configuración web de Firebase **no es secreta** —viaja
-> dentro del JavaScript que recibe cualquier visitante del sitio, y lo que
-> protege tus datos son las reglas de Firestore, no ocultar estas claves. Van
-> como secretos igual para no tener que subir el `.env` al repositorio.
->
-> El que **sí es sensible de verdad** es `FIREBASE_SERVICE_ACCOUNT`. GitHub lo
-> guarda cifrado y nunca lo muestra de vuelta, ni siquiera a ti.
+> Esta configuración web de Firebase **no es secreta**: viaja dentro del
+> JavaScript que recibe cualquier visitante del sitio, y lo que protege tus
+> datos son las reglas de Firestore. Van como secretos únicamente para no tener
+> que subir el `.env` al repositorio.
+
+### Si prefieres hacer la cuenta de servicio a mano
+
+Solo si el comando del paso 1 falla. En
+<https://console.cloud.google.com/iam-admin/serviceaccounts?project=app-incidencias-urbanas>
+crea una cuenta `github-desplegador` con **exactamente** dos roles:
+`Firebase Hosting Admin` y `Cloud Run Viewer`. Genera una clave JSON y pega todo
+su contenido en un secreto llamado `FIREBASE_SERVICE_ACCOUNT`.
+
+**No uses aquí el `serviceAccountKey.json` de los respaldos**: ese tiene acceso
+total a la base de datos y se salta todas las reglas de seguridad. Ahora hay un
+municipio real con datos de vecinos adentro.
 
 ## Paso 3 — Probarlo
 

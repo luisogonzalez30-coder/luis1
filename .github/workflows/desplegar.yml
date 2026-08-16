@@ -87,7 +87,11 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          # Acepta los dos nombres posibles del secreto: el que genera solo
+          # `firebase init hosting:github` (project id en mayúsculas) y el corto,
+          # por si se creó a mano. Así el comando de Firebase deja esto andando
+          # sin tener que renombrar nada.
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_APP_INCIDENCIAS_URBANAS || secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: app-incidencias-urbanas
           expires: 7d
 
@@ -97,6 +101,10 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          # Acepta los dos nombres posibles del secreto: el que genera solo
+          # `firebase init hosting:github` (project id en mayúsculas) y el corto,
+          # por si se creó a mano. Así el comando de Firebase deja esto andando
+          # sin tener que renombrar nada.
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_APP_INCIDENCIAS_URBANAS || secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: app-incidencias-urbanas
           channelId: live
