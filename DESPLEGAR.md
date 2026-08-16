@@ -149,3 +149,104 @@ npm run desplegar:reglas
 
 Y siempre **los índices antes que el hosting** (ver §26): si se despliega al
 revés, la app queda rota para los vecinos mientras los índices se construyen.
+
+---
+
+# Despliegue automático (configúralo una vez)
+
+Todo lo de arriba deja de ser necesario cuando esto esté andando. El repositorio
+ya trae el flujo de trabajo listo en `.github/workflows/desplegar.yml`:
+
+- **Al abrir un Pull Request** → publica una **vista previa** en una URL temporal
+  y la deja como comentario en el propio PR. Puedes mirar los cambios antes de
+  que los vea ningún vecino. Se borra sola a los 7 días.
+- **Al aprobar y hacer merge a `main`** → publica en el sitio real.
+
+Falta un paso que **solo puedes hacer tú**, porque requiere tu sesión de Google:
+darle permiso a GitHub para publicar.
+
+## Paso 1 — Crear la credencial
+
+Es una cuenta de servicio: un "usuario robot" que solo puede publicar el sitio.
+
+1. Entra a <https://console.cloud.google.com/iam-admin/serviceaccounts?project=app-incidencias-urbanas>
+   (con la misma cuenta de Google del proyecto).
+2. **Crear cuenta de servicio**.
+   - Nombre: `github-desplegador`
+   - Continuar.
+3. En **Roles**, agrega estos dos y nada más:
+   - `Firebase Hosting Admin`
+   - `Cloud Run Viewer`
+
+   > Solo esos dos, a propósito. Esta credencial va a vivir en GitHub, así que
+   > tiene que poder publicar el sitio y nada más. **No uses aquí el
+   > `serviceAccountKey.json` que usas para los respaldos**: ese tiene acceso
+   > total a la base de datos y se salta todas las reglas de seguridad.
+4. Listo → entra a la cuenta recién creada → pestaña **Claves** → **Agregar
+   clave** → **Crear clave nueva** → **JSON** → Crear.
+5. Se descarga un archivo `.json`. Ábrelo con el Bloc de notas y **copia todo el
+   contenido**, desde la primera `{` hasta la última `}`.
+
+## Paso 2 — Guardar los secretos en GitHub
+
+Entra a <https://github.com/luisogonzalez30-coder/luis1/settings/secrets/actions>
+y crea cada uno con **New repository secret**:
+
+| Nombre del secreto | Qué pegar |
+|---|---|
+| `FIREBASE_SERVICE_ACCOUNT` | Todo el contenido del `.json` del paso 1 |
+| `VITE_FIREBASE_API_KEY` | El valor de tu archivo `.env` local |
+| `VITE_FIREBASE_AUTH_DOMAIN` | idem |
+| `VITE_FIREBASE_PROJECT_ID` | idem |
+| `VITE_FIREBASE_STORAGE_BUCKET` | idem |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | idem |
+| `VITE_FIREBASE_APP_ID` | idem |
+| `VITE_CLOUDINARY_CLOUD_NAME` | idem (`ugiblcuk`) |
+| `VITE_CLOUDINARY_UPLOAD_PRESET` | idem (`reporte_incidencias`) |
+
+Los valores están en tu `.env`, en la carpeta del proyecto. Ábrelo con el Bloc
+de notas y copia cada uno **sin comillas y sin espacios al final**.
+
+> Sobre los `VITE_*`: esa configuración web de Firebase **no es secreta** —viaja
+> dentro del JavaScript que recibe cualquier visitante del sitio, y lo que
+> protege tus datos son las reglas de Firestore, no ocultar estas claves. Van
+> como secretos igual para no tener que subir el `.env` al repositorio.
+>
+> El que **sí es sensible de verdad** es `FIREBASE_SERVICE_ACCOUNT`. GitHub lo
+> guarda cifrado y nunca lo muestra de vuelta, ni siquiera a ti.
+
+## Paso 3 — Probarlo
+
+En el Pull Request que ya está abierto, haz cualquier cambio mínimo (o cierra y
+vuelve a abrir el PR). En un par de minutos:
+
+1. Aparece una marca de verificación en el PR.
+2. Un comentario automático con una URL tipo
+   `https://app-incidencias-urbanas--pr1-xxxx.web.app`.
+3. Abres esa URL y ves los cambios funcionando, sin haber tocado nada del sitio
+   real.
+
+Cuando estés conforme, aprietas **Merge** y el sitio real se actualiza solo.
+
+## Si algo falla
+
+Entra a <https://github.com/luisogonzalez30-coder/luis1/actions>, abre la
+ejecución en rojo y mira en qué paso se cortó:
+
+| Paso donde falla | Causa habitual |
+|---|---|
+| `Instalar dependencias` | `package-lock.json` desactualizado → corre `npm install` en tu PC y sube el cambio |
+| `Compilar` | Falta algún secreto `VITE_*` o quedó con espacios |
+| `Comprobar que el build no salió vacío` | Un secreto `VITE_*` quedó vacío |
+| `Publicar…` con error de permisos | Faltó un rol en la cuenta de servicio, o se pegó mal el JSON |
+
+## Qué NO despliega esto
+
+Solo el sitio (`hosting`). **Las reglas e índices de Firestore siguen siendo
+manuales**, a propósito: una regla mal desplegada puede dejar la app inaccesible
+o abrir datos de los vecinos, y eso no debería pasar sin que alguien lo mire.
+Cuando cambien, desde tu PC:
+
+```powershell
+npm run desplegar:reglas
+```
