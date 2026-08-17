@@ -77,6 +77,65 @@ Los textos aprobados de las dos plantillas quedaron guardados en §39.2 (el text
 
 ---
 
+## ⚠️ Hay cambios sin publicar y el despliegue automático quedó a medio configurar (16-ago-2026)
+
+**Léelo antes que nada si el sitio "se ve igual" que la última vez.**
+
+### Lo que pasó
+
+Se trabajó desde Claude Code **en la nube**, no en el PC. Ahí no existen `.env`
+ni `serviceAccountKey.json` —están en `.gitignore` a propósito—, así que **no se
+pudo desplegar nada**. Los commits se subieron a GitHub, pero subir a GitHub
+**no** actualiza el sitio: nadie corrió `firebase deploy`.
+
+Eso costó bastante ida y vuelta con el usuario, que revisaba el sitio y lo veía
+idéntico. **La regla para no repetirlo: si la sesión no puede correr
+`firebase deploy`, decirlo en el primer mensaje, no al final.**
+
+### Qué falta publicar
+
+Lo último de la rama `claude/retomar-aqui-md-9f2ccr`: mapa de calor territorial
+en el mapa del Alcalde y reporte gerencial en PDF (§36.7), más el propio flujo
+de despliegue automático. **No está verificado qué más quedó sin publicar** — la
+sesión en la nube no podía abrir el sitio (el proxy bloquea el dominio), así que
+conviene comprobarlo antes de suponer.
+
+Desde el PC, con un solo comando:
+
+```powershell
+npm run desplegar
+```
+
+Hace `npm install` + `npm run build` + `firebase deploy --only hosting`.
+**`npm install` no es opcional**: hay dependencias nuevas
+(`browser-image-compression`, `leaflet.heat`, `jspdf`, `jspdf-autotable`).
+
+### El despliegue automático: 1 de 2 pasos hecho
+
+Está escrito y validado en `.github/workflows/desplegar.yml`: al abrir un PR
+publica una **vista previa** en una URL temporal, y al hacer merge a `main`
+publica en producción. La guía completa, clic por clic y sin terminal, está en
+**`DESPLEGAR.md`**.
+
+| Paso | Estado |
+|---|---|
+| Cuenta de servicio `github-desplegador` en Google Cloud | ✅ creada por el usuario |
+| Secreto `FIREBASE_SERVICE_ACCOUNT` en GitHub | ✅ guardado |
+| Los 8 secretos `VITE_*` en GitHub | ❌ **faltan** |
+
+Sin esos 8, el flujo **falla en el paso "Compilar"**. Son valores del `.env`
+(`VITE_FIREBASE_*` y `VITE_CLOUDINARY_*`); tres ya están escritos en la tabla de
+`DESPLEGAR.md`. Se agregan en
+<https://github.com/luisogonzalez30-coder/luis1/settings/secrets/actions>.
+
+**Alternativa que evita los 8 secretos**: esos valores **no son secretos** —
+viajan dentro del JavaScript que descarga cualquier visitante, y lo que protege
+los datos son las reglas de Firestore. Se pueden commitear como
+`.env.production` y sacar del workflow. Se le ofreció al usuario y prefirió no
+decidirlo en ese momento; **queda como opción abierta, no como pendiente**.
+
+---
+
 ## Te toca a ti (bloqueado sin tu acción)
 
 1. ~~Desplegar las reglas~~ — ✅ hecho el 10-ago.
