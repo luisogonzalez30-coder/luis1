@@ -7,3 +7,12 @@ emulator-data
 .firebase
 serviceAccountKey.json
 backups/
+
+# Foto de la entrega del 2026-08-02: copia congelada del codigo, no se versiona
+entrega-2026-08-02/
+
+# Ajustes locales de Claude Code: rutas y permisos propios de cada maquina
+.claude/settings.local.json
+
+# Scripts temporales de QA: llevan contrasenas de prueba en texto plano
+.qa-*.mjs
