@@ -205,12 +205,17 @@ y eso solo puedes hacerlo tú porque requiere tu cuenta de Google.
    **Secret**: pega (`Ctrl+V`) lo que copiaste del `.json`.
 4. **Add secret**.
 
-## Paso 3 — Los seis valores de configuración
+## Paso 3 — Los valores de configuración  ✅ YA ESTÁ HECHO
+
+> **No hace falta que hagas nada aquí.** Estos ocho secretos ya están creados en
+> el repositorio. Se comprueba en los registros de las ejecuciones: el paso
+> **Compilar** pasa en verde en todas, y ese paso no podría compilar si faltara
+> alguno. Lo dejo escrito abajo solo por si algún día hay que rehacerlo.
 
 Estos se incrustan cuando se compila el sitio. Están en tu archivo `.env`.
 
 **Para abrirlo sin terminal**: entra a la carpeta
-`C:\Users\Administrador\Escritorio\kpop\reporte-incidencias`, busca el
+`C:\Users\Administrador\Desktop\kpop\reporte-incidencias`, busca el
 archivo llamado **`.env`** (así, empezando con punto), clic derecho → **Abrir
 con** → **Bloc de notas**.
 
@@ -243,7 +248,7 @@ Dos ya están escritos acá y uno lo sabemos, así que son **cinco** que copiar.
 
 ## Paso 4 — Publicar, sin escribir un comando
 
-Entra al Pull Request: <https://github.com/luisogonzalez30-coder/luis1/pull/1>
+Entra al Pull Request: <https://github.com/luisogonzalez30-coder/luis1/pull/3>
 
 - En un par de minutos aparece un comentario automático con una **URL de vista
   previa**. Ábrela y revisa que todo esté bien.
@@ -279,7 +284,7 @@ también acepta). Cuando pregunte si quiere crear sus propios archivos de flujo,
 responde que **no**. Igual quedan pendientes los secretos del paso 3.
 
 **Cómo abrir PowerShell en la carpeta correcta**: entra a
-`C:\Users\Administrador\Escritorio\kpop\reporte-incidencias` en el
+`C:\Users\Administrador\Desktop\kpop\reporte-incidencias` en el
 Explorador, haz clic en la **barra de direcciones** de arriba (donde dice la
 ruta), borra lo que hay, escribe `powershell` y presiona **Enter**. Se abre ya
 parado en esa carpeta.
