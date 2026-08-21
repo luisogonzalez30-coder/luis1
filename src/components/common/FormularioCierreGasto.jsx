@@ -88,9 +88,22 @@ export default function FormularioCierreGasto({ incidencia, guardando, error, on
       {presupuesto && (
         <div className="mb-3 rounded-lg bg-gray-50 p-2 text-xs text-gray-600">
           <p className="mb-0.5 font-medium uppercase text-gray-400">Presupuestado</p>
-          <p>
-            Horas: {presupuesto.horas_estimadas}h · Costo aprox: {formatoCLP.format(presupuesto.costo_aprox || 0)}
-          </p>
+          {/* Un presupuesto marcado "no aplica" llega con costo_aprox en null
+              (ver ModalPresupuesto.jsx). Con `|| 0` se mostraba "$0", que la
+              cuadrilla lee como "no me autorizaron gastar nada" en vez de "no
+              se alcanzó a estimar" — dos cosas muy distintas para quien está
+              parado en la calle decidiendo si compra un saco de cemento. */}
+          {presupuesto.presupuesto_no_aplica || presupuesto.costo_aprox == null ? (
+            <p>
+              {presupuesto.horas_estimadas > 0 && <>Horas: {presupuesto.horas_estimadas}h · </>}
+              Costo: <strong>N/A</strong> — no se pudo estimar al asignar
+              {presupuesto.motivo_sin_presupuesto && <> ("{presupuesto.motivo_sin_presupuesto}")</>}
+            </p>
+          ) : (
+            <p>
+              Horas: {presupuesto.horas_estimadas}h · Costo aprox: {formatoCLP.format(presupuesto.costo_aprox)}
+            </p>
+          )}
           {presupuesto.materiales_estimados?.length > 0 && (
             <p>
               Materiales previstos: {presupuesto.materiales_estimados.map((m) => m.descripcion).join(', ')}
