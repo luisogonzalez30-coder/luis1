@@ -26,6 +26,13 @@ on:
     - cron: '*/30 * * * *'
   # Para poder probarlo sin esperar al próximo cuarto de hora.
   workflow_dispatch:
+    inputs:
+      url_bot:
+        description: >-
+          Dirección del bot a revisar solo en esta corrida, para probar una URL
+          antes de guardarla en la variable URL_BOT. Vacío = usar URL_BOT.
+        required: false
+        default: ''
 
 # Si una corrida se atrasa, no encolar la siguiente encima: el estado de ahora
 # es lo único que importa, no el de hace media hora.
@@ -49,7 +56,10 @@ jobs:
           # pestaña "Variables" (NO "Secrets": la URL del bot no es secreta y
           # como variable se puede leer en los registros, que es justo lo que
           # se necesita cuando algo falla).
-          URL_BOT: ${{ vars.URL_BOT }}
+          URL_BOT: ${{ inputs.url_bot || vars.URL_BOT }}
+          # Vacío salvo en una prueba manual con dirección a mano. Sirve para no
+          # tocar el aviso real con el resultado de una prueba.
+          URL_BOT_PRUEBA: ${{ inputs.url_bot }}
         shell: bash
         run: |
           fallas=""
@@ -77,6 +87,17 @@ jobs:
 
             if [ "$estado" = "000" ]; then
               fallas="${fallas}- El bot de WhatsApp no responde (sin conexión a $URL_BOT)"$'\n'
+            elif [ "$estado" = "404" ]; then
+              # Un 404 no es el bot diciendo que está enfermo: es que en esa
+              # dirección no hay ningún /salud. O URL_BOT apunta a un servicio que
+              # no existe —Render contesta 404 en cualquier subdominio suyo sin
+              # dueño, así que una URL inventada se ve igual que un servicio caído—
+              # o el servicio existe pero corre una versión anterior a este
+              # endpoint. Los dos se arreglan en la configuración, no en el bot.
+              # Distinguirlo importa: el mensaje genérico mandaba a revisar los
+              # registros de Render y las plantillas de Meta, que es donde
+              # justamente no está el problema.
+              fallas="${fallas}- No existe /salud en $URL_BOT (HTTP 404). Revisa que la variable URL_BOT tenga la dirección real del servicio en Render, y que ese servicio esté desplegado con la versión que incluye /salud."$'\n'
             elif [ "$estado" != "200" ]; then
               detalle=$(echo "$informe" | grep -o '"problemas":\[[^]]*\]' || echo "$informe")
               fallas="${fallas}- El bot reporta problemas (HTTP $estado): $detalle"$'\n'
@@ -92,12 +113,23 @@ jobs:
             } >> "$GITHUB_OUTPUT"
             echo "::warning::Se detectaron problemas."
             echo "$fallas"
+            # En una prueba manual no se toca el aviso real (ver el "if" del paso
+            # siguiente), así que si el resultado no se refleja aquí la corrida
+            # sale verde con la prueba fallida y no sirve de nada.
+            if [ -n "$URL_BOT_PRUEBA" ]; then
+              echo "::error::La prueba manual de $URL_BOT encontró problemas."
+              exit 1
+            fi
           else
             echo "hay=no" >> "$GITHUB_OUTPUT"
             echo "Todo en orden."
           fi
 
+      # Se omite en las pruebas manuales con dirección a mano: el aviso refleja el
+      # estado de lo que está configurado de verdad, y cerrarlo porque una URL de
+      # prueba respondió bien apagaría la alarma sin haber arreglado nada.
       - name: Avisar o dar por superado
+        if: inputs.url_bot == ''
         uses: actions/github-script@v7
         env:
           HAY_FALLAS: ${{ steps.revisar.outputs.hay }}
