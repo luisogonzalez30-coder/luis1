@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Send, AlertTriangle } from 'lucide-react'
 import { useGeolocation } from '../../hooks/useGeolocation'
 import { useDireccionInversa } from '../../hooks/useDireccionInversa'
 import { crearIncidencia, generarIdIncidencia, votarIncidencia } from '../../services/incidenciasService'
-import { suscribirTicketsActivos, suscribirUltimosTickets } from '../../services/ticketsPublicosService'
+import { buscarActivosPorCategoria, suscribirTicketsActivos, suscribirUltimosTickets } from '../../services/ticketsPublicosService'
 import { conTimeout } from '../../utils/timeout'
 import { generarNumeroTicket } from '../../utils/ticket'
 import { guardarReportePendiente } from '../../utils/colaOffline'
@@ -47,6 +47,7 @@ export default function FormularioCiudadano({ municipio }) {
   const [fotoDescartadaOffline, setFotoDescartadaOffline] = useState(false)
 
   const [incidenciasActivas, setIncidenciasActivas] = useState([])
+  const [buscandoDuplicado, setBuscandoDuplicado] = useState(false)
   const [ultimosReportes, setUltimosReportes] = useState([])
   const [duplicadoDetectado, setDuplicadoDetectado] = useState(null)
   const [votandoDuplicado, setVotandoDuplicado] = useState(false)
@@ -287,11 +288,9 @@ export default function FormularioCiudadano({ municipio }) {
     setEsVotoExistente(false)
   }
 
-  // Busca, entre los reportes activos ya cargados para el mapa, el más cercano
-  // de la MISMA categoría dentro del radio de duplicado — reusa los datos que
-  // ya tiene el mapa, no dispara ninguna consulta nueva.
-  function buscarDuplicadoCercano() {
-    const candidatos = incidenciasActivas
+  // Elige, de una lista de tickets, el más cercano dentro del radio de duplicado.
+  function masCercanoDentroDelRadio(tickets) {
+    const candidatos = tickets
       .filter((t) => t.categoria === categoria && t.coordenadas?.lat && t.coordenadas?.lng)
       .map((t) => ({ ticket: t, distancia: distanciaMetros(coordenadas, t.coordenadas) }))
       .filter((c) => c.distancia <= RADIO_DUPLICADO_METROS)
@@ -300,12 +299,36 @@ export default function FormularioCiudadano({ municipio }) {
     return candidatos[0]?.ticket || null
   }
 
-  function manejarSiguiente() {
+  // Busca un reporte activo de la MISMA categoría a menos de 50 m.
+  //
+  // Preferimos preguntarle al servidor acotando por categoría: la ventana que
+  // alimenta el mapa mezcla todas las categorías, así que de los tickets
+  // cargados solo una fracción sirve para comparar, y agrandarla para
+  // compensar le cuesta lecturas a CADA visita (ver MAX_TICKETS_ACTIVOS).
+  //
+  // Si esa consulta no se puede hacer —el índice compuesto todavía se está
+  // construyendo— devuelve null, y ahí sí caemos a la ventana del mapa. Peor
+  // que la consulta acotada, pero es exactamente lo que había antes: se pierde
+  // precisión, no funcionalidad.
+  async function buscarDuplicadoCercano() {
+    const porCategoria = await buscarActivosPorCategoria(municipio?.id, categoria)
+    return masCercanoDentroDelRadio(porCategoria || incidenciasActivas)
+  }
+
+  async function manejarSiguiente() {
     if (paso === 2) {
-      const cercano = buscarDuplicadoCercano()
-      if (cercano) {
-        setDuplicadoDetectado(cercano)
-        return
+      // El bloqueo va acá y no solo en el botón: la consulta tarda, y sin esto
+      // un segundo toque avanzaría de paso saltándose la comprobación entera.
+      if (buscandoDuplicado) return
+      setBuscandoDuplicado(true)
+      try {
+        const cercano = await buscarDuplicadoCercano()
+        if (cercano) {
+          setDuplicadoDetectado(cercano)
+          return
+        }
+      } finally {
+        setBuscandoDuplicado(false)
       }
     }
     setPaso((p) => p + 1)
@@ -455,7 +478,12 @@ export default function FormularioCiudadano({ municipio }) {
           )}
 
           {paso < TOTAL_PASOS ? (
-            <Boton className="flex-1" disabled={!puedeAvanzar} onClick={manejarSiguiente}>
+            <Boton
+              className="flex-1"
+              disabled={!puedeAvanzar}
+              cargando={buscandoDuplicado}
+              onClick={manejarSiguiente}
+            >
               Siguiente
               <ChevronRight size={18} />
             </Boton>
