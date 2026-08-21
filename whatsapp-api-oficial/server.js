@@ -21,6 +21,8 @@ const axios = require('axios')
 const { enviarTemplate, explicarError, formatearParaGraphApi } = require('./whatsapp')
 const { etiquetaCategoria } = require('./categorias')
 const { crearRouter: crearRouterWebhook } = require('./webhook')
+const vigilancia = require('./vigilancia')
+const { diagnostico } = vigilancia
 
 const PORT = process.env.PORT || 3000
 
@@ -75,6 +77,7 @@ async function procesarNuevoTicket(id, incidencia) {
     // notificar. Se marca igual para no reevaluarlo en cada reconexión.
     console.log(`[server] ${incidencia.numero_ticket || id} (creación): sin WhatsApp válido, no se notifica.`)
     await ref.update({ notificado_whatsapp_creacion: true })
+    vigilancia.registrarEnvioOk(id)
     return
   }
 
@@ -85,6 +88,7 @@ async function procesarNuevoTicket(id, incidencia) {
       parametrosBody: [etiquetaCategoria(incidencia.categoria), incidencia.numero_ticket || id],
     })
     await ref.update({ notificado_whatsapp_creacion: true })
+    vigilancia.registrarEnvioOk(id)
     console.log(`[server] ${incidencia.numero_ticket || id} (creación): WhatsApp enviado a ${para}.`)
   } catch (error) {
     // Sin try/catch acá arriba se caería todo el listener. No se marca la
@@ -92,6 +96,7 @@ async function procesarNuevoTicket(id, incidencia) {
     // misma incidencia vuelve a aparecer como "added" la próxima vez que el
     // proceso se reconecte (deploy, reinicio de Render, etc.) — reintento
     // gratis sin lógica extra.
+    vigilancia.registrarEnvioFallido(id, explicarError(error))
     console.error(
       `[server] ${incidencia.numero_ticket || id} (creación): falló el envío.\n    ${explicarError(error)}`
     )
@@ -110,10 +115,16 @@ function escucharNuevosTickets() {
         // evento, se reprocesarían también los ya notificados que siguen en
         // el snapshot local hasta que el server confirma el update.
         snapshot.docChanges().forEach((cambio) => {
-          if (cambio.type === 'added') procesarNuevoTicket(cambio.doc.id, cambio.doc.data())
+          if (cambio.type === 'added') {
+            vigilancia.registrarPendiente(cambio.doc.id)
+            procesarNuevoTicket(cambio.doc.id, cambio.doc.data())
+          }
         })
       },
-      (error) => console.error('[server] Error escuchando nuevos tickets:', error.message)
+      (error) => {
+        vigilancia.registrarErrorListener('nuevos tickets', error.message)
+        console.error('[server] Error escuchando nuevos tickets:', error.message)
+      }
     )
   console.log('[server] Escuchando nuevos tickets (notificado_whatsapp_creacion == false)...')
 }
@@ -134,6 +145,7 @@ async function procesarTicketResuelto(id, incidencia) {
   if (!para) {
     console.log(`[server] ${incidencia.numero_ticket || id} (resuelto): sin WhatsApp válido, no se notifica.`)
     await ref.update({ notificado_whatsapp: true })
+    vigilancia.registrarEnvioOk(id)
     return
   }
 
@@ -144,8 +156,10 @@ async function procesarTicketResuelto(id, incidencia) {
       parametrosBody: [incidencia.numero_ticket || id],
     })
     await ref.update({ notificado_whatsapp: true })
+    vigilancia.registrarEnvioOk(id)
     console.log(`[server] ${incidencia.numero_ticket || id} (resuelto): WhatsApp enviado a ${para}.`)
   } catch (error) {
+    vigilancia.registrarEnvioFallido(id, explicarError(error))
     console.error(
       `[server] ${incidencia.numero_ticket || id} (resuelto): falló el envío.\n    ${explicarError(error)}`
     )
@@ -174,6 +188,7 @@ async function procesarTicketAsignado(id, incidencia) {
   if (!para) {
     console.log(`[server] ${incidencia.numero_ticket || id} (asignación): sin WhatsApp válido, no se notifica.`)
     await ref.update({ notificado_whatsapp_asignacion: true })
+    vigilancia.registrarEnvioOk(id)
     return
   }
 
@@ -184,8 +199,10 @@ async function procesarTicketAsignado(id, incidencia) {
       parametrosBody: [incidencia.numero_ticket || id, incidencia.cuadrilla_asignada || 'un equipo municipal'],
     })
     await ref.update({ notificado_whatsapp_asignacion: true })
+    vigilancia.registrarEnvioOk(id)
     console.log(`[server] ${incidencia.numero_ticket || id} (asignación): WhatsApp enviado a ${para}.`)
   } catch (error) {
+    vigilancia.registrarEnvioFallido(id, explicarError(error))
     console.error(
       `[server] ${incidencia.numero_ticket || id} (asignación): falló el envío.\n    ${explicarError(error)}`
     )
@@ -199,10 +216,16 @@ function escucharTicketsAsignados() {
     .onSnapshot(
       (snapshot) => {
         snapshot.docChanges().forEach((cambio) => {
-          if (cambio.type === 'added') procesarTicketAsignado(cambio.doc.id, cambio.doc.data())
+          if (cambio.type === 'added') {
+            vigilancia.registrarPendiente(cambio.doc.id)
+            procesarTicketAsignado(cambio.doc.id, cambio.doc.data())
+          }
         })
       },
-      (error) => console.error('[server] Error escuchando tickets asignados:', error.message)
+      (error) => {
+        vigilancia.registrarErrorListener('tickets asignados', error.message)
+        console.error('[server] Error escuchando tickets asignados:', error.message)
+      }
     )
   console.log(
     `[server] Escuchando asignaciones de cuadrilla (plantilla "${WHATSAPP_TEMPLATE_ASIGNACION}")...`
@@ -216,10 +239,16 @@ function escucharTicketsResueltos() {
     .onSnapshot(
       (snapshot) => {
         snapshot.docChanges().forEach((cambio) => {
-          if (cambio.type === 'added') procesarTicketResuelto(cambio.doc.id, cambio.doc.data())
+          if (cambio.type === 'added') {
+            vigilancia.registrarPendiente(cambio.doc.id)
+            procesarTicketResuelto(cambio.doc.id, cambio.doc.data())
+          }
         })
       },
-      (error) => console.error('[server] Error escuchando tickets resueltos:', error.message)
+      (error) => {
+        vigilancia.registrarErrorListener('tickets resueltos', error.message)
+        console.error('[server] Error escuchando tickets resueltos:', error.message)
+      }
     )
   console.log('[server] Escuchando tickets resueltos (estado == Resuelto AND notificado_whatsapp == false)...')
 }
@@ -230,6 +259,26 @@ function escucharTicketsResueltos() {
 // la lógica real corre en los listeners de arriba, no en request handlers.
 const app = express()
 app.get('/', (_req, res) => res.status(200).send('Status: OK'))
+
+// --- /salud: para que algo externo sepa que esto se rompió ---
+//
+// Esta ruta existe porque "/" no sirve para vigilar: responde 200 mientras el
+// proceso esté vivo, y en el corte de ~19 h del 9-ago (§39.5) el proceso estaba
+// perfectamente vivo — lo que estaba roto era que los envíos no salían. Acá se
+// devuelve si el TRABAJO está saliendo, no si el servidor contesta.
+//
+// 503 cuando algo anda mal, para que el vigilante no tenga que interpretar el
+// cuerpo de la respuesta: un chequeo que depende de leer JSON bien es un
+// chequeo que falla en silencio el día que el formato cambia.
+//
+// Sin datos personales a propósito: devuelve conteos y minutos, nunca números
+// de teléfono, nombres ni contenido de reportes. Es una URL pública sin
+// autenticación, y lo que se publica en una URL pública hay que asumirlo leído
+// por cualquiera.
+app.get('/salud', (_req, res) => {
+  const informe = diagnostico()
+  res.status(informe.ok ? 200 : 503).json(informe)
+})
 
 // --- Webhook de consultas del vecino (opcional) ---
 // Solo se monta si están las DOS variables. Sin WHATSAPP_APP_SECRET no se puede
