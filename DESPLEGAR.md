@@ -149,3 +149,193 @@ npm run desplegar:reglas
 
 Y siempre **los índices antes que el hosting** (ver §26): si se despliega al
 revés, la app queda rota para los vecinos mientras los índices se construyen.
+
+---
+
+# Despliegue automático (configúralo una vez, sin terminal)
+
+Esto es lo que hace que **nunca más tengas que escribir un comando** para
+publicar. Se configura una sola vez, todo desde el navegador, y desde ahí:
+
+- **Al abrir un Pull Request** → publica una **vista previa** en una URL temporal
+  y la deja como comentario en el propio PR. Miras los cambios antes de que los
+  vea ningún vecino.
+- **Al apretar "Merge"** → publica en el sitio real, solo.
+
+El repositorio ya trae el flujo de trabajo escrito
+(`.github/workflows/desplegar.yml`). Falta darle permiso a GitHub para publicar,
+y eso solo puedes hacerlo tú porque requiere tu cuenta de Google.
+
+**No necesitas PowerShell ni la consola para nada de lo que sigue.**
+
+---
+
+## Paso 1 — Crear el permiso (navegador)
+
+1. Abre <https://console.cloud.google.com/iam-admin/serviceaccounts?project=app-incidencias-urbanas>
+   e inicia sesión con la **misma cuenta de Google** con la que creaste Firebase.
+2. Arriba, botón **"+ CREAR CUENTA DE SERVICIO"**.
+3. **Nombre**: escribe `github-desplegador` → botón **CREAR Y CONTINUAR**.
+4. Aparece **"Otorgar a esta cuenta de servicio acceso al proyecto"**. Ahí, en el
+   desplegable **Rol**, busca y agrega estos dos, uno por uno con
+   **"+ AGREGAR OTRO ROL"**:
+   - `Firebase Hosting Admin`
+   - `Cloud Run Viewer`
+
+   Solo esos dos. Botón **CONTINUAR** → **LISTO**.
+
+   > **Importante**: no reutilices aquí el archivo `serviceAccountKey.json` que
+   > usas para los respaldos. Ese tiene acceso total a la base de datos y se
+   > salta todas las reglas de seguridad — y ahora hay un municipio real con
+   > datos de vecinos adentro. Esta cuenta nueva solo puede publicar el sitio.
+
+5. En la lista, haz clic sobre `github-desplegador` que acabas de crear.
+6. Pestaña **CLAVES** → **AGREGAR CLAVE** → **Crear clave nueva** → elige
+   **JSON** → **CREAR**.
+7. Se descarga un archivo `.json` a tu carpeta de Descargas.
+8. Ábrelo con el **Bloc de notas** (clic derecho → Abrir con → Bloc de notas) y
+   selecciona todo el contenido (`Ctrl+E`, o `Ctrl+A`) y cópialo (`Ctrl+C`).
+   Es desde la primera `{` hasta la última `}`.
+
+### Si la cuenta quedó sin roles
+
+En la pantalla de creación, el paso **"Otorgar a esta cuenta de servicio acceso
+al proyecto"** es opcional y se salta con un clic en **LISTO**. Si pasó eso, el
+despliegue falla con un 403 y este mensaje en el registro:
+
+```
+This account is missing the following required permissions
+on project app-incidencias-urbanas:
+
+  firebase.projects.get
+  firebasehosting.sites.update
+```
+
+Ojo con el diagnóstico: eso **no** significa que el secreto esté mal. Al
+contrario — para llegar a ese error la credencial tuvo que leerse y
+autenticarse contra Google. Cuando el secreto falta, el error es otro
+(`Input required and not supplied: firebaseServiceAccount`, en 0 segundos).
+
+Se arregla sin rehacer la cuenta ni el secreto:
+
+1. Abre <https://console.cloud.google.com/iam-admin/iam?project=app-incidencias-urbanas>.
+   Fíjate que dice **IAM**, no "Cuentas de servicio": es otra pantalla.
+2. Botón **+ CONCEDER ACCESO**.
+3. En **Principales nuevas**, pega el correo de la cuenta:
+   `github-desplegador@app-incidencias-urbanas.iam.gserviceaccount.com`
+
+   > El correo exacto está en la columna **Correo electrónico** de
+   > <https://console.cloud.google.com/iam-admin/serviceaccounts?project=app-incidencias-urbanas>.
+
+4. En **Asignar roles**, agrega los dos, uno con **+ AGREGAR OTRO ROL**:
+   `Firebase Hosting Admin` y `Cloud Run Viewer`.
+5. **GUARDAR**, y espera uno o dos minutos: Google tarda en propagar los
+   permisos, así que un reintento inmediato puede volver a dar 403.
+
+Una cuenta sin ningún rol **no aparece en la lista de IAM**. Si no la ves ahí,
+eso confirma el diagnóstico en vez de contradecirlo.
+
+## Paso 2 — Pegarlo en GitHub (navegador)
+
+1. Abre <https://github.com/luisogonzalez30-coder/luis1/settings/secrets/actions>
+2. Botón verde **"New repository secret"**.
+3. **Name**: `FIREBASE_SERVICE_ACCOUNT`
+   **Secret**: pega (`Ctrl+V`) lo que copiaste del `.json`.
+4. **Add secret**.
+
+## Paso 3 — Los valores de configuración
+
+> **Un build verde NO prueba que estos secretos existan.** Durante un tiempo
+> esta guía decía que el paso 3 ya estaba hecho, porque el paso **Compilar**
+> pasaba en verde. Es un razonamiento falso: Vite no falla cuando falta un
+> `VITE_*`, lo reemplaza por `undefined` y compila igual. El sitio se publica
+> y queda muerto — `firebase.js` lanza `auth/invalid-api-key` al cargar el
+> módulo, React nunca llega a montarse, y el vecino ve la pantalla de carga
+> girando para siempre. Pasó de verdad en el primer despliegue automático.
+>
+> Ahora el flujo lo comprueba antes de compilar (paso **"Comprobar la
+> configuración antes de compilar"**) y falla nombrando los que falten, sin
+> imprimir nunca su valor.
+
+Estos se incrustan cuando se compila el sitio. Están en tu archivo `.env`.
+
+**Para abrirlo sin terminal**: entra a la carpeta
+`C:\Users\Administrador\Desktop\kpop\reporte-incidencias`, busca el
+archivo llamado **`.env`** (así, empezando con punto), clic derecho → **Abrir
+con** → **Bloc de notas**.
+
+> Si no ves el archivo: en el Explorador, pestaña **Vista** → marca
+> **"Elementos ocultos"**.
+
+Adentro vas a ver líneas como `VITE_FIREBASE_API_KEY=AIza...`. De cada una copia
+**solo lo que va después del signo `=`**, sin comillas ni espacios.
+
+Vuelve a <https://github.com/luisogonzalez30-coder/luis1/settings/secrets/actions>
+y crea uno por uno, con **New repository secret**:
+
+| Name | Secret |
+|---|---|
+| `VITE_FIREBASE_API_KEY` | del `.env` |
+| `VITE_FIREBASE_AUTH_DOMAIN` | del `.env` |
+| `VITE_FIREBASE_PROJECT_ID` | `app-incidencias-urbanas` |
+| `VITE_FIREBASE_STORAGE_BUCKET` | del `.env` |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | del `.env` |
+| `VITE_FIREBASE_APP_ID` | del `.env` |
+| `VITE_CLOUDINARY_CLOUD_NAME` | `ugiblcuk` |
+| `VITE_CLOUDINARY_UPLOAD_PRESET` | `reporte_incidencias` |
+
+Dos ya están escritos acá y uno lo sabemos, así que son **cinco** que copiar.
+
+> Esta configuración de Firebase **no es secreta**: viaja dentro del JavaScript
+> que recibe cualquier visitante del sitio, y lo que protege tus datos son las
+> reglas de Firestore. Van como secretos solo para no subir el `.env` al
+> repositorio.
+
+## Paso 4 — Publicar, sin escribir un comando
+
+Entra al Pull Request: <https://github.com/luisogonzalez30-coder/luis1/pull/3>
+
+- En un par de minutos aparece un comentario automático con una **URL de vista
+  previa**. Ábrela y revisa que todo esté bien.
+- Cuando estés conforme, aprieta el botón verde **"Merge pull request"**.
+- El sitio real se actualiza solo en unos minutos.
+
+Y de ahí en adelante, cada cambio funciona igual: se abre un PR, miras la vista
+previa, aprietas Merge.
+
+## Si algo sale mal
+
+Entra a <https://github.com/luisogonzalez30-coder/luis1/actions> y abre la
+ejecución marcada en rojo. El nombre del paso que falló dice qué pasó:
+
+| Paso que falla | Qué revisar |
+|---|---|
+| `Compilar` | Falta algún secreto `VITE_*`, o quedó con espacios/comillas de más |
+| `Comprobar que el build no salió vacío` | Algún secreto `VITE_*` quedó vacío |
+| `Publicar…` con error de permisos | Faltó un rol en el paso 1, o el JSON se pegó incompleto |
+| `Instalar dependencias` | Avísame y lo reviso |
+
+## Alternativa con terminal, si prefieres
+
+Un comando hace los pasos 1 y 2 solo:
+
+```powershell
+npx firebase init hosting:github
+```
+
+Crea la cuenta de servicio y guarda el secreto en GitHub por ti (con el nombre
+`FIREBASE_SERVICE_ACCOUNT_APP_INCIDENCIAS_URBANAS`, que el flujo de trabajo
+también acepta). Cuando pregunte si quiere crear sus propios archivos de flujo,
+responde que **no**. Igual quedan pendientes los secretos del paso 3.
+
+**Cómo abrir PowerShell en la carpeta correcta**: entra a
+`C:\Users\Administrador\Desktop\kpop\reporte-incidencias` en el
+Explorador, haz clic en la **barra de direcciones** de arriba (donde dice la
+ruta), borra lo que hay, escribe `powershell` y presiona **Enter**. Se abre ya
+parado en esa carpeta.
+
+## Qué NO despliega esto
+
+Solo el sitio. **Las reglas e índices de Firestore siguen siendo manuales**, a
+propósito: una regla mal desplegada puede dejar la app inaccesible o abrir datos
+de los vecinos, y eso no debería pasar sin que alguien lo mire.

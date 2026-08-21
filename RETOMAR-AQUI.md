@@ -77,16 +77,93 @@ Los textos aprobados de las dos plantillas quedaron guardados en §39.2 (el text
 
 ---
 
+## Despliegue automático: funcionando (21-ago-2026)
+
+Se configuró de punta a punta y **está publicando**. Al abrir o actualizar un PR
+sube una vista previa a una URL temporal y la deja como comentario; al hacer
+merge a `main` publica en producción. Guía clic por clic, sin terminal, en
+**`DESPLEGAR.md`**.
+
+| Pieza | Estado |
+|---|---|
+| Cuenta de servicio `github-desplegador` en Google Cloud | ✅ creada |
+| Roles `Firebase Hosting Admin` + `Cloud Run Viewer` en IAM | ✅ concedidos |
+| Secreto `FIREBASE_SERVICE_ACCOUNT` en GitHub | ✅ creado |
+| Los 8 secretos `VITE_*` en GitHub | ✅ creados |
+| Vista previa publicándose sola en el PR #3 | ✅ verificado |
+| Merge a `main` → producción | ⬜ **nunca se ha ejecutado todavía** |
+
+Esa última fila importa: el flujo solo ha corrido sobre `pull_request`. **Por
+esta vía no se ha publicado nada en producción.**
+
+### Tres diagnósticos equivocados que costaron vueltas
+
+Valen más que el resultado, porque los tres fallaban en silencio.
+
+**1. Un build verde NO prueba que los `VITE_*` existan.** Se dio por hecho que
+estaban configurados porque el paso "Compilar" pasaba. Es falso: Vite no falla
+cuando falta un `VITE_*`, lo reemplaza por `undefined` y compila igual. Los ocho
+estaban vacíos. Ese razonamiento erróneo llegó a quedar escrito acá y en
+`DESPLEGAR.md`, mandando al usuario a saltarse un paso que sí hacía falta.
+
+**2. Sin esos valores el sitio se publica y queda muerto, sin ningún error a la
+vista.** `firebase.js` llama a `getAuth(app)` al evaluarse el módulo; con la
+configuración vacía lanza `auth/invalid-api-key` durante la cadena de imports,
+antes de que `main.jsx` ejecute una línea. Y como el `#carga-inicial` de
+`index.html` vive dentro de `#root` y solo desaparece cuando React lo reemplaza,
+el vecino ve el logo girando **para siempre**. La CI, verde.
+
+Arreglado por los dos lados: el flujo comprueba los ocho antes de compilar y
+falla nombrando los que falten (sin imprimir valores), y `main.jsx` importa
+`App` de forma dinámica para poder atrapar el error y mostrar una pantalla que
+explica que el problema es del servidor, con los números de emergencia visibles.
+
+**3. Un 403 de Google significa que el secreto está BIEN.** Cuando la cuenta de
+servicio existía pero sin roles, el error era
+`This account is missing the following required permissions`. Para llegar ahí la
+credencial tuvo que leerse y autenticarse. Cuando el secreto de verdad falta, el
+error es otro: `Input required and not supplied: firebaseServiceAccount`, en 0
+segundos, sin contactar a Google. Confundirlos lleva a rehacer un secreto que
+estaba correcto.
+
+### Un dato que se descubrió por ir a la fuente
+
+El bucket es `app-incidencias-urbanas.firebasestorage.app`, **no**
+`.appspot.com`. Se había supuesto lo segundo por costumbre; el valor real salió
+de la consola de Firebase. Con el supuesto, las fotos habrían fallado sin dar un
+error claro.
+
+### La regla que sigue vigente
+
+Trabajando desde Claude Code **en la nube** no existen `.env` ni
+`serviceAccountKey.json` —están en `.gitignore` a propósito— y el proxy bloquea
+el dominio del sitio. **Si la sesión no puede desplegar ni abrir el sitio,
+decirlo en el primer mensaje, no al final.** Eso costó varias idas y vueltas con
+el usuario, que revisaba el sitio y lo veía idéntico.
+
+Ahora hay salida: la vista previa del PR se publica sola y el usuario la abre
+desde su lado. La revisión visual sigue siendo suya — desde la nube no se puede
+ver el sitio publicado, solo leer código y registros.
+
+**Alternativa que evitaría los 8 secretos**: esos valores **no son secretos** —
+viajan dentro del JavaScript que descarga cualquier visitante, y lo que protege
+los datos son las reglas de Firestore. Se pueden commitear como
+`.env.production` y sacar del workflow. Se le ofreció al usuario y prefirió no
+decidirlo; **queda como opción abierta, no como pendiente**.
+
+---
+
 ## Te toca a ti (bloqueado sin tu acción)
 
 1. ~~Desplegar las reglas~~ — ✅ hecho el 10-ago.
 2. ~~Desplegar el frontend~~ — ✅ hecho el 10-ago: §35 a §37 y §40 están en línea.
-3. **Confirmar las 16 coordenadas de sectores que faltan**: `node scripts/configurar-sectores.mjs licanten --revisar` da un link de Google Maps por sector, menos de un minuto cada uno. Los 3 confirmados ya quedaron cargados el 11-ago (y con la coordenada del centro **corregida**, ver §43.1). Mientras las otras 16 no estén, sus incidencias se agrupan en "Fuera de los sectores definidos" y el buscador de direcciones sigue sin su fuente local, la que funciona sin internet (§37.3).
-4. **Correo de datos personales del municipio**: `node scripts/configurar-contacto-datos.mjs licanten <correo@municipalidad>`. Está vacío, así que las páginas legales mandan al vecino a la Oficina de Partes.
-5. **Revocar la cuenta `TERRENO` del bot viejo** si sigue en `usuarios_municipales`: nadie la usa y tiene permiso de escritura en producción. El bot actual usa cuenta de servicio.
-6. **Confirmar visualmente** que el PDF de la Cuenta Pública sale bien paginado — requiere login al panel del Alcalde, no tengo acceso.
-7. **Tarea programada del respaldo diario** en Windows: nunca confirmaste si la creaste (§25).
-8. **WhatsApp del Alcalde**, si algún día se repone la alerta: `node scripts/configurar-whatsapp-alcalde.mjs licanten +569XXXXXXXX`. Hoy guardar el número no sirve de nada por sí solo (§39.3).
+3. **Revisar la vista previa del PR #3 y hacer merge**: la vista previa se publica sola en <https://github.com/luisogonzalez30-coder/luis1/pull/3> (comentario automático con la URL, vence a los 7 días). Ahí está todo lo de esta tanda sin publicar: rediseño completo, mapa de calor, PDF gerencial, compresión de fotos, páginas legales y sectores reales. **Son 25 commits y 21 archivos (+6.956 líneas) de una vez, sobre un municipio con vecinos reales usándolo**, así que revisar antes del merge no es opcional. El botón **Merge pull request** publica en producción.
+4. **Confirmar las 16 coordenadas de sectores que faltan**: `node scripts/configurar-sectores.mjs licanten --revisar` da un link de Google Maps por sector, menos de un minuto cada uno. Los 3 confirmados ya quedaron cargados el 11-ago (y con la coordenada del centro **corregida**, ver §43.1). Mientras las otras 16 no estén, sus incidencias se agrupan en "Fuera de los sectores definidos" y el buscador de direcciones sigue sin su fuente local, la que funciona sin internet (§37.3).
+5. **Correo de datos personales del municipio**: `node scripts/configurar-contacto-datos.mjs licanten <correo@municipalidad>`. Está vacío, así que las páginas legales mandan al vecino a la Oficina de Partes.
+6. **Revocar la cuenta `TERRENO` del bot viejo** si sigue en `usuarios_municipales`: nadie la usa y tiene permiso de escritura en producción. El bot actual usa cuenta de servicio.
+7. **Confirmar visualmente** que el PDF de la Cuenta Pública sale bien paginado — requiere login al panel del Alcalde, no tengo acceso.
+8. **Tarea programada del respaldo diario** en Windows: nunca confirmaste si la creaste (§25).
+9. **WhatsApp del Alcalde**, si algún día se repone la alerta: `node scripts/configurar-whatsapp-alcalde.mjs licanten +569XXXXXXXX`. Hoy guardar el número no sirve de nada por sí solo (§39.3).
 
 ---
 

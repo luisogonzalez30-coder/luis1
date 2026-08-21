@@ -127,3 +127,50 @@ Cambiar solo esto:
 5. En §5, la semana 1 menciona los sectores: cambiar por los de esa comuna.
 
 El resto del documento es genérico a propósito.
+
+---
+
+## 6. El tope de Compra Ágil se mide CON IVA (19-ago-2026)
+
+Esto invalida los cálculos de la sección 2 y de cualquier versión anterior de la propuesta,
+que comparaban el **valor neto** contra las 100 UTM. Está mal.
+
+**El criterio real.** El material oficial de ChileCompra dice que las 100 UTM incluyen el IVA
+y todos los costos asociados a la adquisición, y le indica al proveedor que el valor cotizado
+es el total, con impuestos y despacho incluidos. La norma vigente son los **artículos 97 y 98
+del DS 661/2024 de Hacienda** (el reglamento nuevo), no el antiguo artículo 10 bis del DS 250
+ni "la Ley 21.634" a secas. Citar el DS 661 frente a un asesor jurídico municipal.
+
+Fuente: `Masterclass-Compra-Agil-Proveedor.pdf`, ChileCompra, agosto 2025.
+
+**Lo que se rompía con los precios anteriores** (activación 44 UF + mensual 13 UF):
+
+| Concepto | UF | Neto | UTM neto | Con IVA | UTM c/IVA |
+|---|---|---|---|---|---|
+| Pack promocional | 171 | $6.986.261 | 97,5 ✅ | $8.313.651 | **116,0 ❌** |
+| Suscripción anual sola | 156 | $6.373.431 | 88,9 | $7.584.383 | **105,9 ❌** |
+| Primer año a lista | 200 | $8.171.066 | 114,0 | $9.723.569 | **135,7 ❌** |
+
+No solo se pasaba el primer año: **la renovación del año 2 tampoco cabía**. Ese era el error
+más caro, porque obligaba a cambiar de procedimiento al año siguiente.
+
+**Los topes reales, con IVA:**
+
+- Máximo absoluto para caber en Compra Ágil: **147,4 UF**
+- Mensualidad máxima para que 12 meses quepan: **12,28 UF**
+
+**Precios adoptados (19-ago-2026):** mensual 13 → **12 UF**, anual **144 UF**, pack del primer
+año **144 UF** con la activación incluida sin costo. 144 UF = **97,7 UTM con IVA**, con 2,3 UTM
+de holgura. El mismo número sirve para cada renovación, así que el municipio nunca tiene que
+cambiar de vía de compra.
+
+Costo de la corrección: 27 UF el primer año, 12 UF al año de forma recurrente.
+
+**Otro dato del mismo documento:** en servicios de ejecución diferida en el tiempo se mide el
+**monto total del contrato**, no la cuota mensual. Eso cierra definitivamente la idea de
+facturar mes a mes para bajar del tope — además de lo que ya dice el reglamento sobre
+fraccionamiento.
+
+**Al reutilizar la propuesta con otro municipio:** el punto 4 de la sección 5 de este documento
+dice "recalcular el equivalente en pesos y en UTM". Recalcularlo **con IVA**. Un plan que en
+neto se ve holgado puede estar 16 UTM sobre el tope.

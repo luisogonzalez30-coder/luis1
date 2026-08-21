@@ -1,0 +1,15 @@
+# El texto se normaliza a LF dentro del repositorio.
+* text=auto
+
+# Y los binarios quedan exentos. Va DESPUES de la linea de arriba a proposito:
+# en .gitattributes gana la ultima regla que coincide, asi que al reves "binary"
+# no surtiria efecto. Sin esto, en Windows core.autocrlf=true convierte saltos
+# de linea al clonar y CORROMPE los PDF de docs/ y las imagenes.
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
