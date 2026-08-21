@@ -197,6 +197,44 @@ y eso solo puedes hacerlo tú porque requiere tu cuenta de Google.
    selecciona todo el contenido (`Ctrl+E`, o `Ctrl+A`) y cópialo (`Ctrl+C`).
    Es desde la primera `{` hasta la última `}`.
 
+### Si la cuenta quedó sin roles
+
+En la pantalla de creación, el paso **"Otorgar a esta cuenta de servicio acceso
+al proyecto"** es opcional y se salta con un clic en **LISTO**. Si pasó eso, el
+despliegue falla con un 403 y este mensaje en el registro:
+
+```
+This account is missing the following required permissions
+on project app-incidencias-urbanas:
+
+  firebase.projects.get
+  firebasehosting.sites.update
+```
+
+Ojo con el diagnóstico: eso **no** significa que el secreto esté mal. Al
+contrario — para llegar a ese error la credencial tuvo que leerse y
+autenticarse contra Google. Cuando el secreto falta, el error es otro
+(`Input required and not supplied: firebaseServiceAccount`, en 0 segundos).
+
+Se arregla sin rehacer la cuenta ni el secreto:
+
+1. Abre <https://console.cloud.google.com/iam-admin/iam?project=app-incidencias-urbanas>.
+   Fíjate que dice **IAM**, no "Cuentas de servicio": es otra pantalla.
+2. Botón **+ CONCEDER ACCESO**.
+3. En **Principales nuevas**, pega el correo de la cuenta:
+   `github-desplegador@app-incidencias-urbanas.iam.gserviceaccount.com`
+
+   > El correo exacto está en la columna **Correo electrónico** de
+   > <https://console.cloud.google.com/iam-admin/serviceaccounts?project=app-incidencias-urbanas>.
+
+4. En **Asignar roles**, agrega los dos, uno con **+ AGREGAR OTRO ROL**:
+   `Firebase Hosting Admin` y `Cloud Run Viewer`.
+5. **GUARDAR**, y espera uno o dos minutos: Google tarda en propagar los
+   permisos, así que un reintento inmediato puede volver a dar 403.
+
+Una cuenta sin ningún rol **no aparece en la lista de IAM**. Si no la ves ahí,
+eso confirma el diagnóstico en vez de contradecirlo.
+
 ## Paso 2 — Pegarlo en GitHub (navegador)
 
 1. Abre <https://github.com/luisogonzalez30-coder/luis1/settings/secrets/actions>
