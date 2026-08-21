@@ -110,15 +110,46 @@ Hace `npm install` + `npm run build` + `firebase deploy --only hosting`.
 **`npm install` no es opcional**: hay dependencias nuevas
 (`browser-image-compression`, `leaflet.heat`, `jspdf`, `jspdf-autotable`).
 
-### El despliegue automático: 1 de 2 pasos hecho
+### El despliegue automático: falta UN secreto (verificado el 20-ago-2026)
 
 Está escrito y validado en `.github/workflows/desplegar.yml`: al abrir un PR
 publica una **vista previa** en una URL temporal, y al hacer merge a `main`
-publica en producción. La guía completa, clic por clic y sin terminal, está en
-**`DESPLEGAR.md`**.
+publica en producción. Guía clic por clic, sin terminal, en **`DESPLEGAR.md`**.
 
-| Paso | Estado |
+**Corrección de lo que decía esta sección antes**: se afirmaba que faltaban los
+8 secretos `VITE_*` y que el `FIREBASE_SERVICE_ACCOUNT` estaba puesto. Es **al
+revés**. Verificado leyendo los logs de las 5 ejecuciones (todas en el PR #3):
+
+| Paso del flujo | Resultado |
 |---|---|
+| Instalar dependencias | ✅ pasa |
+| **Compilar** | ✅ **pasa** → los secretos `VITE_*` sí están configurados |
+| Comprobar que el build no salió vacío | ✅ pasa |
+| **Publicar vista previa** | ❌ **falla** |
+
+El error, textual:
+
+```
+Error: Input required and not supplied: firebaseServiceAccount
+```
+
+Falla en 0 segundos, antes de intentar conectarse a Firebase: la entrada llega
+vacía. O sea que **no existe ninguno de los dos nombres de secreto** que el
+flujo acepta (`FIREBASE_SERVICE_ACCOUNT` o
+`FIREBASE_SERVICE_ACCOUNT_APP_INCIDENCIAS_URBANAS`), o se creó con el nombre mal
+escrito.
+
+**Lo único que falta**: crear ese secreto en
+<https://github.com/luisogonzalez30-coder/luis1/settings/secrets/actions> con el
+JSON completo de la clave de la cuenta de servicio `github-desplegador` (que sí
+existe en Google Cloud). En cuanto esté, el siguiente commit al PR publica la
+vista previa solo.
+
+**Ojo**: el flujo nunca se ha ejecutado sobre `main` —las 5 corridas son de
+`pull_request`—, así que **por esta vía no se ha publicado nada en producción
+todavía**.
+
+---|---|
 | Cuenta de servicio `github-desplegador` en Google Cloud | ✅ creada por el usuario |
 | Secreto `FIREBASE_SERVICE_ACCOUNT` en GitHub | ✅ guardado |
 | Los 8 secretos `VITE_*` en GitHub | ❌ **faltan** |
