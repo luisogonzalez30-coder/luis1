@@ -6,6 +6,7 @@ import { suscribirTrabajadoresMunicipio } from '../../services/trabajadoresServi
 import { esDelMesActual, formatearDuracion, formatearFecha, horasDesde, promedioHoras } from '../../utils/tiempo'
 import Modal from '../common/Modal'
 import ModalDetalleIndicador from './ModalDetalleIndicador'
+import { MAX_INCIDENCIAS_PANEL } from '../../services/incidenciasService'
 
 // Mismo formato que ResumenGastoMensual y ModalDetalleGasto: el Alcalde ve la
 // misma cifra escrita igual en los tres lugares.
@@ -158,6 +159,10 @@ function ModalAsistencia({ trabajadores, hoy, onCerrar }) {
 // resto como línea secundaria. La regla de la skill dataviz es "exactamente una
 // cifra protagonista por vista".
 export default function PanelIndicadores({ incidencias, municipioId, onSeleccionarIncidencia }) {
+  // El panel recibe una ventana acotada, no el histórico completo (ver
+  // MAX_INCIDENCIAS_PANEL en incidenciasService.js). Cuando está llena, decir
+  // "históricos" a secas sería falso.
+  const ventanaLlena = incidencias.length >= MAX_INCIDENCIAS_PANEL
   const [trabajadores, setTrabajadores] = useState([])
   const [detalle, setDetalle] = useState(null)
 
@@ -294,7 +299,7 @@ export default function PanelIndicadores({ incidencias, municipioId, onSeleccion
           icono={CheckCircle2}
           valor={datos.resueltasMes.length}
           etiqueta="Resueltos este mes"
-          apoyo={`${datos.resueltas.length} históricos`}
+          apoyo={`${datos.resueltas.length} ${ventanaLlena ? 'en la ventana cargada' : 'históricos'}`}
           hayDetalle={datos.resueltas.length > 0}
           onAbrir={() => setDetalle('resueltos')}
         />
