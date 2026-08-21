@@ -56,6 +56,60 @@ jobs:
         # package-lock.json, así lo que se publica es lo mismo que se probó.
         run: npm ci
 
+      # Vite NO falla cuando falta un VITE_*: lo reemplaza por undefined y compila
+      # igual. El sitio se publica, pero firebase.js revienta con
+      # "auth/invalid-api-key" al evaluarse el modulo, React nunca monta y el
+      # vecino se queda mirando la pantalla de carga para siempre. Paso de verdad
+      # en el primer despliegue automatico, y lo peor es que la CI estaba verde.
+      # Por eso se comprueba antes de compilar y se falla nombrando lo que falta.
+      - name: Comprobar la configuracion antes de compilar
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_CLOUDINARY_CLOUD_NAME: ${{ secrets.VITE_CLOUDINARY_CLOUD_NAME }}
+          VITE_CLOUDINARY_UPLOAD_PRESET: ${{ secrets.VITE_CLOUDINARY_UPLOAD_PRESET }}
+        shell: bash
+        run: |
+          faltan=""
+          for v in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN \
+                   VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET \
+                   VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID \
+                   VITE_CLOUDINARY_CLOUD_NAME VITE_CLOUDINARY_UPLOAD_PRESET; do
+            # ${!v} es expansion indirecta de bash: toma el valor de la
+            # variable cuyo nombre esta en $v. Se comprueba el valor sin
+            # imprimirlo nunca — al registro solo llega el nombre.
+            # El //[[:space:]]/ descarta un secreto que quedo con solo espacios
+            # o un salto de linea pegado al copiar: para Vite eso es tan
+            # inservible como no tenerlo.
+            if [ -z "${!v//[[:space:]]/}" ]; then
+              faltan="$faltan $v"
+            fi
+          done
+
+          if [ -n "$faltan" ]; then
+            echo "::error::Faltan secretos de configuracion:$faltan"
+            {
+              echo "### Faltan secretos de configuracion"
+              echo ""
+              echo "No se compilo nada. Estos secretos estan vacios o no existen:"
+              echo ""
+              for v in $faltan; do echo "- \`$v\`"; done
+              echo ""
+              echo "Crealos en Settings -> Secrets and variables -> Actions."
+              echo "Los valores salen del archivo .env. Ver DESPLEGAR.md, paso 3."
+              echo ""
+              echo "Sin ellos el sitio compila pero queda muerto: firebase.js lanza"
+              echo "auth/invalid-api-key al cargar y la app no llega a montarse."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "Los 8 secretos de configuracion estan presentes."
+
       - name: Compilar
         # Estas variables se incrustan en el bundle durante el build. Ojo: la
         # configuración web de Firebase NO es secreta —viaja en el JavaScript

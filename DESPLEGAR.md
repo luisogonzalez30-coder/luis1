@@ -243,12 +243,19 @@ eso confirma el diagnóstico en vez de contradecirlo.
    **Secret**: pega (`Ctrl+V`) lo que copiaste del `.json`.
 4. **Add secret**.
 
-## Paso 3 — Los valores de configuración  ✅ YA ESTÁ HECHO
+## Paso 3 — Los valores de configuración
 
-> **No hace falta que hagas nada aquí.** Estos ocho secretos ya están creados en
-> el repositorio. Se comprueba en los registros de las ejecuciones: el paso
-> **Compilar** pasa en verde en todas, y ese paso no podría compilar si faltara
-> alguno. Lo dejo escrito abajo solo por si algún día hay que rehacerlo.
+> **Un build verde NO prueba que estos secretos existan.** Durante un tiempo
+> esta guía decía que el paso 3 ya estaba hecho, porque el paso **Compilar**
+> pasaba en verde. Es un razonamiento falso: Vite no falla cuando falta un
+> `VITE_*`, lo reemplaza por `undefined` y compila igual. El sitio se publica
+> y queda muerto — `firebase.js` lanza `auth/invalid-api-key` al cargar el
+> módulo, React nunca llega a montarse, y el vecino ve la pantalla de carga
+> girando para siempre. Pasó de verdad en el primer despliegue automático.
+>
+> Ahora el flujo lo comprueba antes de compilar (paso **"Comprobar la
+> configuración antes de compilar"**) y falla nombrando los que falten, sin
+> imprimir nunca su valor.
 
 Estos se incrustan cuando se compila el sitio. Están en tu archivo `.env`.
 
