@@ -27,7 +27,20 @@ const ticketsPublicosRef = collection(db, COLECCIONES.TICKETS_PUBLICOS)
 // gama baja que el resto de la app cuida) y agota la cuota gratis de lecturas
 // de Firestore (plan Spark, ver ESTADO_PROYECTO.md §19) — la app se caería
 // justo cuando empiece a usarse en serio.
-const MAX_TICKETS_ACTIVOS = 200
+// Bajado de 200 a 60 el 21-ago-2026. El cálculo que lo motivó: cada vecino que
+// abre el formulario paga estas lecturas, y la cuota gratis de Firestore son
+// 50.000 al día. Con 200 activos + 10 recientes son ~210 lecturas por visita,
+// o sea la app se queda sin cuota alrededor de la visita 240 y el mapa aparece
+// en blanco hasta la medianoche. Con 60 el techo sube a ~700 visitas diarias.
+//
+// Por qué 60 no rompe la detección de duplicados HOY: Licantén promedia ~1,5
+// reportes al día y rara vez pasa de unas decenas sin resolver a la vez, así
+// que la ventana ni se llena. El riesgo aparece en un municipio grande, y ahí
+// la solución no es agrandar la ventana —vuelve el problema de cuota— sino
+// consultar por categoría, que es lo que de verdad mira el detector de
+// duplicados. Eso necesita un índice nuevo y va en un segundo paso, para no
+// publicar la consulta antes de que el índice exista (ESTADO_PROYECTO.md §26).
+const MAX_TICKETS_ACTIVOS = 60
 const MAX_TICKETS_RECIENTES = 500
 
 // El ticket público usa el numero_ticket como ID de documento: si ese número ya
