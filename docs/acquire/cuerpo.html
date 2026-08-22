@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TuMuniAquí — Product & Technology Report</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+
+  :root{
+    --navy:#0A1730;
+    --navy-2:#152647;
+    --blue:#1D4ED8;
+    --blue-soft:#EEF3FE;
+    --mint:#12A66A;
+    --mint-soft:#E7F7F0;
+    --amber:#B45309;
+    --amber-soft:#FEF6E7;
+    --ink:#12203A;
+    --body:#2C3A52;
+    --muted:#64748B;
+    --line:#DCE3EE;
+    --line-soft:#EDF1F7;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{
+    margin:0; font-family:"Segoe UI","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size:9.3pt; line-height:1.47; color:var(--body); background:#fff;
+  }
+
+  /* ---------- COVER ---------- */
+  .cover{
+    height:297mm; width:210mm; background:var(--navy);
+    color:#fff; padding:26mm 20mm; position:relative; overflow:hidden;
+    page-break-after:always; display:flex; flex-direction:column;
+  }
+  .cover::after{
+    content:""; position:absolute; right:-70mm; bottom:-90mm;
+    width:190mm; height:190mm; border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, rgba(95,224,160,.20), rgba(95,224,160,0) 62%);
+  }
+  .cover-top{ display:flex; align-items:center; gap:9px; }
+  .mark{
+    width:26px;height:26px;border-radius:8px;background:#5FE0A0;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--navy);font-weight:800;font-size:12pt;line-height:1;
+  }
+  .cover-brand{ font-size:12pt; font-weight:700; letter-spacing:.2px; }
+  .cover-body{ margin-top:auto; position:relative; z-index:2; }
+  .eyebrow{
+    font-size:8pt; letter-spacing:2.4px; text-transform:uppercase;
+    color:#5FE0A0; font-weight:700; margin-bottom:14px;
+  }
+  .cover h1{ font-size:33pt; line-height:1.08; margin:0 0 14px; font-weight:700; letter-spacing:-.6px; }
+  .cover .lede{ font-size:11.5pt; line-height:1.55; color:#C7D5EE; max-width:150mm; margin:0; }
+  .cover-facts{
+    margin-top:26px; display:grid; grid-template-columns:repeat(4,1fr);
+    gap:10px; border-top:1px solid rgba(255,255,255,.16); padding-top:18px;
+  }
+  .cf-n{ font-size:17pt; font-weight:700; color:#fff; line-height:1.1; }
+  .cf-l{ font-size:7.4pt; color:#8FA3C4; text-transform:uppercase; letter-spacing:.9px; margin-top:4px; }
+  .cover-foot{
+    margin-top:20mm; position:relative; z-index:2;
+    display:flex; justify-content:space-between; align-items:flex-end;
+    font-size:8.4pt; color:#8FA3C4; border-top:1px solid rgba(255,255,255,.16); padding-top:12px;
+  }
+  .cover-foot strong{ color:#C7D5EE; font-weight:600; }
+
+  /* ---------- STRUCTURE ---------- */
+  .sheet{ page-break-before:auto; margin-top:22px; }
+  .sheet.break{ page-break-before:always; margin-top:0; }
+  .sheet:first-of-type{ margin-top:0; }
+  .h2num{ page-break-after:avoid; }
+  h2{ page-break-after:avoid; }
+  .h2rule{ page-break-after:avoid; }
+  .lead{ orphans:3; widows:3; }
+  p, li{ orphans:2; widows:2; }
+  h2{
+    font-size:15pt; color:var(--navy); margin:0 0 3px; font-weight:700;
+    letter-spacing:-.3px; line-height:1.2;
+  }
+  .h2num{
+    display:inline-block; font-size:8pt; font-weight:700; color:var(--blue);
+    letter-spacing:1.6px; text-transform:uppercase; margin-bottom:6px;
+  }
+  .h2rule{ height:2.5px; width:44px; background:var(--mint); margin:9px 0 15px; border-radius:2px; }
+  h3{
+    font-size:10.6pt; color:var(--navy); margin:17px 0 6px; font-weight:700; letter-spacing:-.1px;
+    page-break-after:avoid;
+  }
+  h4{ font-size:9.6pt; color:var(--navy-2); margin:14px 0 5px; font-weight:700; page-break-after:avoid; }
+  p{ margin:0 0 8px; }
+  ul,ol{ margin:0 0 10px; padding-left:16px; }
+  li{ margin-bottom:4px; }
+  strong{ color:var(--ink); font-weight:650; }
+  a{ color:var(--blue); text-decoration:none; }
+  code{
+    font-family:"Consolas","SF Mono",Menlo,monospace; font-size:8.4pt;
+    background:var(--line-soft); padding:1px 4px; border-radius:3px; color:var(--navy-2);
+  }
+  .lead{ font-size:10.4pt; color:var(--navy-2); line-height:1.55; margin-bottom:14px; }
+
+  /* ---------- TABLES ---------- */
+  table{ width:100%; border-collapse:collapse; margin:10px 0 14px; font-size:8.9pt; page-break-inside:auto; }
+  thead{ display:table-header-group; }
+  tr{ page-break-inside:avoid; page-break-after:auto; }
+  th{
+    text-align:left; background:var(--navy); color:#fff; font-weight:600;
+    padding:6px 9px; font-size:8.1pt; letter-spacing:.5px; text-transform:uppercase;
+  }
+  td{ padding:5.5px 9px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tbody tr:nth-child(even) td{ background:#F8FAFD; }
+  td.num, th.num{ text-align:right; white-space:nowrap; }
+  .t-tight td, .t-tight th{ padding:5px 8px; }
+
+  /* ---------- COMPONENTS ---------- */
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+
+  .card{
+    border:1px solid var(--line); border-radius:8px; padding:11px 13px;
+    background:#fff; page-break-inside:avoid;
+  }
+  .card h4{ margin-top:0; }
+  .card p:last-child, .card ul:last-child{ margin-bottom:0; }
+
+  .stat{ border:1px solid var(--line); border-radius:8px; padding:10px 12px; background:#F8FAFD; }
+  .stat .n{ font-size:15pt; font-weight:700; color:var(--navy); line-height:1.15; }
+  .stat .l{ font-size:7.6pt; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; margin-top:3px; }
+
+  .callout{
+    border-left:3px solid var(--mint); background:var(--mint-soft);
+    padding:10px 13px; border-radius:0 6px 6px 0; margin:12px 0; page-break-inside:avoid;
+  }
+  .callout.blue{ border-left-color:var(--blue); background:var(--blue-soft); }
+  .callout.amber{ border-left-color:var(--amber); background:var(--amber-soft); }
+  .callout p:last-child{ margin-bottom:0; }
+  .callout .k{
+    font-size:7.6pt; text-transform:uppercase; letter-spacing:1.3px;
+    font-weight:700; color:var(--mint); display:block; margin-bottom:4px;
+  }
+  .callout.blue .k{ color:var(--blue); }
+  .callout.amber .k{ color:var(--amber); }
+
+  .pill{
+    display:inline-block; font-size:7.4pt; font-weight:700; letter-spacing:.6px;
+    text-transform:uppercase; padding:2px 7px; border-radius:20px; white-space:nowrap;
+  }
+  .pill.live{ background:var(--mint-soft); color:var(--mint); }
+  .pill.next{ background:var(--blue-soft); color:var(--blue); }
+
+  /* flow diagram */
+  .flow{ margin:14px 0 18px; page-break-inside:avoid; }
+  .flow-row{ display:grid; grid-template-columns:1fr 16px 1fr 16px 1fr 16px 1fr; align-items:stretch; gap:0; }
+  .fbox{
+    border:1px solid var(--line); border-top:3px solid var(--blue); border-radius:7px;
+    padding:9px 10px; background:#fff;
+  }
+  .fbox .fh{ font-size:8.6pt; font-weight:700; color:var(--navy); margin-bottom:3px; }
+  .fbox .fp{ font-size:7.9pt; color:var(--muted); line-height:1.4; }
+  .farrow{ display:flex; align-items:center; justify-content:center; color:var(--blue); font-size:12pt; font-weight:700; }
+  .flow-note{ font-size:8pt; color:var(--muted); text-align:center; margin-top:9px; font-style:italic; }
+
+  .kv{ display:grid; grid-template-columns:34% 1fr; gap:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .kv > div{ padding:6px 10px; border-bottom:1px solid var(--line); font-size:8.9pt; }
+  .kv > div:nth-child(4n+1), .kv > div:nth-child(4n+2){ background:#F8FAFD; }
+  .kv > div:nth-child(odd){ font-weight:650; color:var(--navy); }
+  .kv > div:nth-last-child(-n+2){ border-bottom:none; }
+
+  .toc{ font-size:9.4pt; }
+  .toc-row{ display:flex; align-items:baseline; gap:8px; padding:5.5px 0; border-bottom:1px dotted var(--line); }
+  .toc-n{ width:22px; color:var(--blue); font-weight:700; font-size:8.4pt; flex:none; }
+  .toc-t{ flex:1; color:var(--navy-2); }
+  .toc-p{ color:var(--muted); font-size:8.4pt; }
+
+  .footnote{ font-size:7.8pt; color:var(--muted); line-height:1.45; margin-top:6px; }
+  .avoid{ page-break-inside:avoid; }
+
+  /* Spanish annex divider */
+  .divider{
+    background:var(--navy-2); color:#fff; border-radius:12px;
+    padding:26mm 20mm; height:243mm; margin-top:7mm; box-sizing:border-box;
+    display:flex; flex-direction:column; justify-content:center;
+    position:relative; overflow:hidden;
+  }
+  .divider::after{
+    content:""; position:absolute; right:-75mm; bottom:-95mm;
+    width:200mm; height:200mm; border-radius:50%;
+    background:radial-gradient(circle at 32% 32%, rgba(95,224,160,.15), rgba(95,224,160,0) 58%);
+  }
+  .divider .eyebrow, .divider h2, .divider p{ position:relative; z-index:2; }
+  .divider .eyebrow{ color:#5FE0A0; }
+  .divider h2{ color:#fff; font-size:26pt; margin-bottom:12px; }
+  .divider p{ color:#C7D5EE; font-size:11pt; max-width:135mm; }
+</style>
+</head>
+<body>
+
+<!-- ============ TOC ============ -->
+<div class="sheet break">
+  <div class="h2num">Contents</div>
+  <h2>What's in this report</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    This document explains how TuMuniAquí works — end to end, from the resident's phone to the
+    mayor's annual public account — and what an acquirer would be buying. Everything described here
+    is drawn from the production codebase and the project's technical record.
+  </p>
+
+  <div class="toc">
+    <div class="toc-row"><div class="toc-n">1</div><div class="toc-t">Executive summary</div><div class="toc-p">At a glance</div></div>
+    <div class="toc-row"><div class="toc-n">2</div><div class="toc-t">The problem and the wedge</div><div class="toc-p">Why municipalities buy</div></div>
+    <div class="toc-row"><div class="toc-n">3</div><div class="toc-t">How it works, end to end</div><div class="toc-p">The core loop</div></div>
+    <div class="toc-row"><div class="toc-n">4</div><div class="toc-t">The four interfaces</div><div class="toc-p">Resident, Mayor, Department Head, Field Crew</div></div>
+    <div class="toc-row"><div class="toc-n">5</div><div class="toc-t">The WhatsApp layer</div><div class="toc-p">Official Meta Cloud API</div></div>
+    <div class="toc-row"><div class="toc-n">6</div><div class="toc-t">Intelligence built into the product</div><div class="toc-p">Triage, routing, de-duplication, costing</div></div>
+    <div class="toc-row"><div class="toc-n">7</div><div class="toc-t">The public-accountability engine</div><div class="toc-p">Cuenta Pública and transparency</div></div>
+    <div class="toc-row"><div class="toc-n">8</div><div class="toc-t">Technical architecture</div><div class="toc-p">Stack, multi-tenancy, data model</div></div>
+    <div class="toc-row"><div class="toc-n">9</div><div class="toc-t">Security, privacy and Chilean law</div><div class="toc-p">Compliance posture</div></div>
+    <div class="toc-row"><div class="toc-n">10</div><div class="toc-t">Operations and infrastructure</div><div class="toc-p">Hosting, CI/CD, monitoring, backups</div></div>
+    <div class="toc-row"><div class="toc-n">11</div><div class="toc-t">Business model and pricing</div><div class="toc-p">Three tiers, recurring revenue</div></div>
+    <div class="toc-row"><div class="toc-n">12</div><div class="toc-t">The regulatory moat</div><div class="toc-p">Priced under the Compra Ágil ceiling</div></div>
+    <div class="toc-row"><div class="toc-n">13</div><div class="toc-t">Traction and current status</div><div class="toc-p">First customer live</div></div>
+    <div class="toc-row"><div class="toc-n">14</div><div class="toc-t">What's included in the acquisition</div><div class="toc-p">Asset inventory</div></div>
+    <div class="toc-row"><div class="toc-n">15</div><div class="toc-t">Growth levers for an acquirer</div><div class="toc-p">Where the upside is</div></div>
+    <div class="toc-row"><div class="toc-n">16</div><div class="toc-t">Roadmap already specified</div><div class="toc-p">Built, designed, or scheduled</div></div>
+    <div class="toc-row"><div class="toc-n">A</div><div class="toc-t">Anexo — Resumen ejecutivo en español</div><div class="toc-p">Spanish annex</div></div>
+  </div>
+
+  <div class="callout blue" style="margin-top:20px">
+    <span class="k">A note on sourcing</span>
+    <p>
+      Every capability described in this report was verified against the source code and the
+      project's engineering record before being written down. Product URLs, the technology stack,
+      the data model and the pricing structure are stated exactly as they exist today. Figures that
+      depend on the seller's books — revenue recognised, invoices issued, contract execution dates —
+      are marked for the seller to complete in §16 rather than estimated here.
+    </p>
+  </div>
+</div>
+
+<!-- ============ 1. EXEC SUMMARY ============ -->
+<div class="sheet break">
+  <div class="h2num">Section 1</div>
+  <h2>Executive summary</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    TuMuniAquí is a working, deployed, multi-tenant SaaS platform that gives a Chilean municipality
+    a complete citizen-incident operation: a resident-facing progressive web app, a mayor's command
+    centre, per-department operational dashboards, a field-crew view, an official WhatsApp
+    notification channel, and an automated public-accountability report. It is in production and
+    has its first municipality onboarded.
+  </p>
+
+  <div class="grid3" style="margin-bottom:14px">
+    <div class="stat"><div class="n">100</div><div class="l">Front-end source files</div></div>
+    <div class="stat"><div class="n">58</div><div class="l">Incident categories</div></div>
+    <div class="stat"><div class="n">7</div><div class="l">Municipal departments routed</div></div>
+  </div>
+  <div class="grid3" style="margin-bottom:16px">
+    <div class="stat"><div class="n">3</div><div class="l">Role-based access levels</div></div>
+    <div class="stat"><div class="n">4</div><div class="l">Distinct product interfaces</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Paid infra tiers needed</div></div>
+  </div>
+
+  <h3>What the buyer is acquiring</h3>
+  <table>
+    <thead><tr><th style="width:30%">Asset</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>A finished product</td><td>Not a prototype. Deployed, publicly reachable, and used by a real municipality with real residents.</td></tr>
+      <tr><td>A paying customer</td><td>Municipality of Licantén (Maule Region, ~6,900 inhabitants) accepted the project on 11 August 2026 and is live at its own tenant URL.</td></tr>
+      <tr><td>Multi-tenant from day one</td><td>Additional municipalities are onboarded as data, not as forks. One deployment serves all tenants, each with its own slug, branding, map centre, sectors and crews.</td></tr>
+      <tr><td>A regulatory wedge</td><td>Pricing is deliberately set below Chile's <em>Compra Ágil</em> ceiling of 100 UTM, so a municipality can purchase without a public tender. This is the single biggest accelerator of the sales cycle.</td></tr>
+      <tr><td>A recurring model</td><td>One-time setup fee plus a monthly subscription, denominated in UF (Chile's inflation-indexed unit) so contract value does not erode.</td></tr>
+      <tr><td>Near-zero marginal cost</td><td>The entire stack runs on free tiers today: Firebase Spark, Cloudinary free tier, Render free web service, Firebase Hosting. Gross margin per additional tenant is close to 100%.</td></tr>
+      <tr><td>Complete documentation</td><td>A 47-section technical master document, a deployment runbook, a commercial proposal, a sales meeting script proven to close, and a municipal launch communications kit.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Why this product wins with its buyer</h3>
+  <p>
+    The insight the product is built on is that <strong>you do not sell a mayor an app for residents —
+    you sell the mayor their own control panel</strong>. Every Chilean mayor is legally obliged under
+    Ley 18.695 to deliver an annual public account of their administration, and today that document
+    is assembled by hand from spreadsheets collected from each municipal directorate. TuMuniAquí
+    already holds the underlying data — every report, who fixed it, how long it took, what it cost,
+    and the before/after photograph — and produces the report in one click.
+  </p>
+  <p>
+    That reframing is what closed the first customer: the platform was accepted on a live
+    demonstration of the working system, with a resident report filed from a phone in the room and
+    the WhatsApp confirmation arriving in front of the mayor.
+  </p>
+
+  <div class="callout">
+    <span class="k">The compounding asset</span>
+    <p>
+      Every resolved incident writes a permanent, photographed, costed and time-stamped record into
+      the municipality's own history. The longer a municipality uses the platform, the more valuable
+      its public account becomes and the more expensive it is to leave. Retention is structural, not
+      contractual.
+    </p>
+  </div>
+</div>
+
+<!-- ============ 2. PROBLEM ============ -->
+<div class="sheet">
+  <div class="h2num">Section 2</div>
+  <h2>The problem and the wedge</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    In a Chilean comuna, a resident complaint arrives by WhatsApp to a councillor, on Facebook,
+    at the front desk, or verbally to the mayor in the street. Three costs follow from that, and
+    every one of them is felt politically.
+  </p>
+
+  <div class="grid3" style="margin-bottom:16px">
+    <div class="card">
+      <h4>No record exists</h4>
+      <p class="fp" style="font-size:8.7pt;color:var(--body)">
+        Nobody knows how many complaints are open, which ones repeat, or which has gone three weeks
+        untouched. Work is prioritised by whoever complained loudest most recently.
+      </p>
+    </div>
+    <div class="card">
+      <h4>The resident never hears back</h4>
+      <p style="font-size:8.7pt">
+        Even when the municipality fixes the problem, the resident is not told. The work gets done
+        and is not seen — which is politically identical to not doing it.
+      </p>
+    </div>
+    <div class="card">
+      <h4>The public account is manual</h4>
+      <p style="font-size:8.7pt">
+        Each directorate sends a spreadsheet, someone merges them at the last minute, and the figures
+        come from memory rather than from a register.
+      </p>
+    </div>
+  </div>
+
+  <h3>What the platform converts each complaint into</h3>
+  <p>
+    A ticket with a number, an owner, a department, a severity, a location on a map, a budget, an
+    actual cost, a resolution time, photographic evidence before and after, and a resident
+    satisfaction rating. That single conversion is the whole product.
+  </p>
+
+  <h3>The addressable market</h3>
+  <table>
+    <thead><tr><th style="width:38%">Dimension</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Chile</td><td>More than 340 comunas, each an autonomous buyer with its own budget, its own mayor and its own legal obligation to render an annual public account.</td></tr>
+      <tr><td>Beachhead segment</td><td>Small and mid-sized comunas — under-served by enterprise GovTech vendors, and precisely the ones for whom the <em>Compra Ágil</em> purchase route removes the tender barrier.</td></tr>
+      <tr><td>Buying trigger</td><td>Non-discretionary and calendar-driven: the annual public account is required by law every year, for every mayor, forever.</td></tr>
+      <tr><td>Adjacent expansion</td><td>The product is not Chile-specific in its mechanics. Any country with municipal service requests and a mandated accountability report is a port, not a rebuild — the tenant model, categories, departments and legal text are configuration.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout blue">
+    <span class="k">Rural design as a differentiator</span>
+    <p>
+      The platform was built for the Chilean comuna as it actually is, not for a capital city.
+      Addresses are often verbal ("past the bridge, opposite the school"), mobile coverage is patchy,
+      and street-view mapping does not exist. So the product ships free-text location references, an
+      offline queue that submits the report when signal returns, a satellite map layer using Esri
+      World Imagery (no API key, no billing account), and a locality-based sector model built from
+      a centre point and a radius rather than GeoJSON polygons a small municipality could never
+      produce. Enterprise competitors do not build for this user.
+    </p>
+  </div>
+</div>
+
+<!-- ============ 3. HOW IT WORKS ============ -->
+<div class="sheet">
+  <div class="h2num">Section 3</div>
+  <h2>How it works, end to end</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    The core loop runs from the resident's phone to the mayor's annual report without anyone
+    re-keying data. Each stage below is live in production today.
+  </p>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="fbox">
+        <div class="fh">1 · Resident reports</div>
+        <div class="fp">Three steps on the phone: location, category, photo. No download, no signup.</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fbox">
+        <div class="fh">2 · System triages</div>
+        <div class="fp">Severity and owning department assigned automatically from the category. Duplicates merged.</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fbox">
+        <div class="fh">3 · Municipality acts</div>
+        <div class="fp">Department head budgets, names the crew, assigns. Field crew closes with photo and actual cost.</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fbox">
+        <div class="fh">4 · Proof returns</div>
+        <div class="fp">Resident gets a WhatsApp and rates the service. The mayor's public account writes itself.</div>
+      </div>
+    </div>
+    <div class="flow-note">The resident never logs in. The municipality never exports a spreadsheet.</div>
+  </div>
+
+  <h3>Stage 1 — the resident files a report</h3>
+  <p>
+    A resident opens the municipality's own URL (for example <code>/licanten</code>), which loads that
+    tenant's name, logo and colours. The form is a three-step wizard designed for one hand, in
+    sunlight, by an older adult:
+  </p>
+  <table class="t-tight">
+    <thead><tr><th style="width:14%">Step</th><th style="width:30%">What is asked</th><th>How it is made easy</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td><td>Location</td>
+        <td>GPS by default, or tap the map. An address search runs on Nominatim (OpenStreetMap) — free, no API key. A satellite toggle lets rural residents recognise a place with no street names.</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td><td>Category and description</td>
+        <td>A custom bottom-sheet picker with a search box that ignores accents ("arbol" finds "Árbol caído"), across 58 categories in 9 colour-coded groups. The resident never has to know which municipal directorate handles it.</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td><td>Photo and contact</td>
+        <td>Up to three photos, compressed in the browser before upload. Name and a validated Chilean WhatsApp number, stored normalised as <code>+569XXXXXXXX</code> so the notification layer can use it directly.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Before the report is created, the app checks for an existing active report of the
+    <strong>same category within 50 metres</strong> (Haversine distance against the live public
+    ticket feed). If one exists, the resident is shown it and offered "add me to this report"
+    instead of creating a duplicate — so the municipality sees one problem with twenty residents
+    behind it, not twenty problems.
+  </p>
+  <p>
+    If the phone has no signal, the report is queued in local storage and submitted automatically
+    when connectivity returns. Writes are idempotent — the document ID and ticket number are
+    generated client-side and reused on retry — so a flaky connection can never produce a duplicate
+    record.
+  </p>
+
+  <h3>Stage 2 — the system classifies before a human sees it</h3>
+  <div class="kv">
+    <div>Severity triage</div>
+    <div>Every category maps to High, Medium or Low. Gas leaks, exposed cabling, sinkholes, fallen trees and dead street lights are High; potholes and blocked drains Medium; graffiti and overgrown grass Low. No resident input, so no gaming.</div>
+    <div>Department routing</div>
+    <div>The same category maps to one of 7 municipal directorates — Obras (DOM), Tránsito, Operaciones, Aseo y Ornato, Medio Ambiente, Seguridad Ciudadana, Oficina de Partes — so the report lands on the right desk with no triage meeting.</div>
+    <div>Sector assignment</div>
+    <div>Coordinates resolve to a named locality using a centre-plus-radius model; where circles overlap, the nearest centre wins. This is what lets a mayor ask "which sector am I neglecting?"</div>
+    <div>Public ticket</div>
+    <div>A privacy-safe projection of the report is written to a separate collection so anyone can check its status without a login — and without the resident's name, contact or ID number ever being exposed.</div>
+  </div>
+
+  <h3>Stage 3 — the municipality works the case</h3>
+  <p>
+    The department head sees only their own department's reports. Assigning a crew opens a budgeting
+    modal: they tick the specific workers from their roster (each worker carries their own hourly
+    rate), enter estimated hours and a materials description, and the labour cost is computed
+    automatically. Only then does the ticket move to <em>In Progress</em> — the state change and the
+    budget are a single act, so no work is ever in progress without a number attached to it.
+  </p>
+  <p>
+    The field crew view lists what is in progress, and closing a case requires a photo of the
+    finished work plus actual hours and final materials cost. Those two mandatory fields are what
+    make the mayor's monthly spend figure real rather than notional.
+  </p>
+
+  <h3>Stage 4 — the proof goes back out</h3>
+  <p>
+    The resident receives a WhatsApp when the report is received and again when it is resolved, from
+    an official Meta Cloud API number. They can check status at any time without logging in, add a
+    follow-up comment or photo to an existing report, and rate the service one to five stars once it
+    is closed. Those ratings roll up into a "resident satisfaction" indicator on the mayor's panel —
+    and into the annual public account.
+  </p>
+</div>
+
+<!-- ============ 4. INTERFACES ============ -->
+<div class="sheet">
+  <div class="h2num">Section 4</div>
+  <h2>The four interfaces</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    One codebase serves four distinct audiences, each seeing only what their role permits. Access is
+    enforced on the server in Firestore security rules, not merely hidden in the interface.
+  </p>
+
+  <h3>4.1 The resident — progressive web app, no login</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:34%">Capability</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Installable</td><td>Installs to the home screen from the browser. No Play Store, no App Store, no review queue, no store fees.</td></tr>
+      <tr><td>Three-step report</td><td>Location, category, photo — nothing else required.</td></tr>
+      <tr><td>Works without signal</td><td>Offline queue in local storage, automatic submission on reconnect.</td></tr>
+      <tr><td>Duplicate merging</td><td>"This is affecting me too" adds a +1 to an existing report instead of creating noise.</td></tr>
+      <tr><td>Live community map</td><td>Active reports are drawn as severity-coloured pins while the resident picks a location, each with a popup showing the photo, status and support count.</td></tr>
+      <tr><td>Status lookup</td><td>A six-digit ticket number, checkable at <code>/estado</code> without a login, from any device.</td></tr>
+      <tr><td>Follow-up and rating</td><td>Add a comment or a further photo to an open report; rate 1–5 stars once resolved.</td></tr>
+      <tr><td>Recent reports feed</td><td>A public list of what the comuna has reported lately, each opening a detail card with map link, timestamps, status and photos.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 The mayor — command centre</h3>
+  <p>
+    This is the screen that sells the product. Fourteen indicator cards, <strong>every one of them
+    clickable</strong>, each opening a drill-down of the exact records behind the number.
+  </p>
+  <table class="t-tight">
+    <thead><tr><th style="width:30%">Indicator</th><th>What it answers</th></tr></thead>
+    <tbody>
+      <tr><td>Unresolved reports</td><td>The headline figure — pending plus in-progress, with status and crew.</td></tr>
+      <tr><td>Active emergencies</td><td>High-severity cases not yet resolved.</td></tr>
+      <tr><td>Overdue work</td><td>Pending more than four hours without a crew, at any severity.</td></tr>
+      <tr><td>In execution</td><td>Grouped by crew, showing how long each job has been on site.</td></tr>
+      <tr><td>Resolved this month</td><td>Crew, closing date, actual cost, resident rating and elapsed time.</td></tr>
+      <tr><td>Average resolution time</td><td>Opens the reports ordered slowest first — the cases that explain the average.</td></tr>
+      <tr><td>Resident satisfaction</td><td>Opens the ratings worst first, so the mayor sees the complaints, not the compliments.</td></tr>
+      <tr><td>Workers present today</td><td>Attendance roll, with those not yet marked listed first.</td></tr>
+      <tr><td>Crews in the field</td><td>What each crew is working on right now.</td></tr>
+      <tr><td>Month-on-month evolution</td><td>Jobs completed, time to assign, time to resolve, reports received — with the direction of "good" set per indicator, so green always means <em>improved</em>.</td></tr>
+      <tr><td>Spend this month</td><td>Actual cost of everything closed this calendar month, filterable by department, with a line-by-line breakdown of labour hours, named workers, computed labour cost and materials.</td></tr>
+      <tr><td>Performance by directorate</td><td>Seven department cards with volume, overdue alerts and monthly spend.</td></tr>
+      <tr><td>Sector view</td><td>A table by locality with unresolved, total and urgent counts, plus a compliance bar — clicking a sector frames it on the map.</td></tr>
+      <tr><td>Heat map</td><td>Density layer over the comuna showing where problems concentrate.</td></tr>
+    </tbody>
+  </table>
+  <div class="callout blue">
+    <span class="k">A design rule worth noting</span>
+    <p>
+      A card with nothing behind it is not clickable — it does not highlight and does not respond.
+      Promising a detail view that opens empty reads as broken software, and in a mayor's demo that
+      costs the deal. This level of finish is throughout the product, not only on the surface.
+    </p>
+  </div>
+
+  <h3>4.3 The department head — operational dashboard</h3>
+  <p>
+    Scoped to a single directorate, and scoped <em>on the server</em>: the security rules require the
+    officer's department to match the incident's department before any write is accepted, so the
+    restriction cannot be bypassed with developer tools or a direct API call. The department head
+    covers the full cycle within their area — budget, assign, and close — plus a "my team" roster
+    where they take the morning attendance roll, register workers with their hourly rates, and mark
+    who is available versus committed.
+  </p>
+
+  <h3>4.4 The field crew — the phone view</h3>
+  <p>
+    A task list of what is in progress, each opening a detail card with the resident's photo, the
+    location, a Google Maps link, the assigned team, estimated hours, and the mandatory closing
+    fields. There is also a one-tap "message the resident" button that opens WhatsApp with the
+    ticket number and the subject pre-written — a plain <code>wa.me</code> link, so it costs nothing
+    and needs no backend.
+  </p>
+
+  <h3>4.5 Public pages — no login at all</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4>Ticket status <span class="pill live">Live</span></h4>
+      <p style="font-size:8.7pt">Look up any report by its six-digit number. Shows category, severity, status and dates — never the reporter's identity.</p>
+    </div>
+    <div class="card">
+      <h4>Comuna transparency page <span class="pill live">Live</span></h4>
+      <p style="font-size:8.7pt">A public page per municipality supporting the transparency obligations of Ley 20.285.</p>
+    </div>
+    <div class="card">
+      <h4>Privacy policy and terms <span class="pill live">Live</span></h4>
+      <p style="font-size:8.7pt">Published and linked from the same form where the resident submits their data, as Ley 21.719 requires.</p>
+    </div>
+    <div class="card">
+      <h4>Municipality landing page <span class="pill live">Live</span></h4>
+      <p style="font-size:8.7pt">A per-tenant entry page carrying the municipality's branding, plus a neutral marketing landing at <code>tumuniaqui.web.app</code>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 5. WHATSAPP ============ -->
+<div class="sheet">
+  <div class="h2num">Section 5</div>
+  <h2>The WhatsApp layer</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    WhatsApp is the default communication channel in Chile, and it is where this product closes the
+    loop with the resident. The integration runs on Meta's <strong>official Cloud API</strong> — not
+    on an unofficial automation library — which matters more to an acquirer than any feature in it.
+  </p>
+
+  <div class="callout">
+    <span class="k">Why the official API is a material asset</span>
+    <p>
+      Unofficial WhatsApp automation (Baileys, whatsapp-web.js and similar) violates Meta's terms of
+      service, and Meta bans the number without warning or appeal. A GovTech product whose
+      notification channel can vanish overnight is not sellable to a municipality. TuMuniAquí was
+      migrated off that approach onto the official Graph API with an approved business number,
+      approved message templates, and a system-user access token that does not expire. That
+      migration is done, verified in production, and is a permanent de-risking of the asset.
+    </p>
+  </div>
+
+  <h3>What is live today</h3>
+  <table>
+    <thead><tr><th style="width:26%">Event</th><th style="width:26%">Mechanism</th><th>Behaviour</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Report received</strong></td>
+        <td>Approved template <code>alerta_nuevo_ticket</code></td>
+        <td>The resident is messaged within moments of filing, with the readable category name and their ticket number, plus a link to check status.</td>
+      </tr>
+      <tr>
+        <td><strong>Report resolved</strong></td>
+        <td>Approved template <code>ticket_resuelto</code></td>
+        <td>The resident is told the work is done and invited to rate the service at the portal link.</td>
+      </tr>
+      <tr>
+        <td><strong>Resident enquiry</strong></td>
+        <td>Signed inbound webhook</td>
+        <td>A resident messaging the municipal number with a ticket number gets its current status back. Anything the bot does not understand returns a three-button tappable menu rather than an error.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>How it is engineered</h3>
+  <ul>
+    <li><strong>Idempotent by design.</strong> Each notification has its own boolean flag on the incident record, set only once the send succeeds. A restart, a redeploy or a duplicate event cannot double-message a resident.</li>
+    <li><strong>Self-healing backlog.</strong> If Meta rejects a send — for example while a template is still under review — the flag stays false and the message is retried later. When the templates were approved, the queued notifications went out on their own.</li>
+    <li><strong>Signed webhook.</strong> The inbound endpoint is never mounted without signature verification configured. A public URL that would let anyone make the platform message arbitrary numbers is refused at startup rather than exposed.</li>
+    <li><strong>Server-side identity.</strong> The service authenticates to the database with the Firebase Admin SDK under its own service account — there is no shared officer login or password anywhere in the notification path.</li>
+    <li><strong>Independent deployment.</strong> The notification service is a standalone Node/Express application. It can be restarted, scaled or moved without touching the web application residents use.</li>
+    <li><strong>Error translation.</strong> Meta's numeric error codes are translated into plain-language diagnostics in the logs, so an operator can tell a template problem from a token problem without reading Meta's documentation.</li>
+  </ul>
+
+  <h3>Multi-tenant readiness of the channel</h3>
+  <p>
+    The database listeners are already tenant-aware. The message templates themselves currently name
+    the first municipality inside their approved text — parameterising the municipality name and the
+    portal link is a defined, documented task with the exact steps written down, and it is the one
+    thing to do before the second municipality goes live. Meta's two-number limit per account lifts
+    with standard business verification.
+  </p>
+</div>
+
+<!-- ============ 6. INTELLIGENCE ============ -->
+<div class="sheet">
+  <div class="h2num">Section 6</div>
+  <h2>Intelligence built into the product</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    Several behaviours look like small features and are actually the reason the platform survives
+    contact with a real municipality. They are listed here because they are the parts a buyer would
+    otherwise have to discover, and rebuild, the hard way.
+  </p>
+
+  <h3>Waze-style de-duplication</h3>
+  <p>
+    Five residents reporting the same pothole is the failure mode that kills citizen-reporting
+    products: the queue fills with noise and the staff stop trusting it. TuMuniAquí detects a report
+    of the same category within 50 metres of an existing active one and offers to merge. The support
+    count is the political signal — twenty residents behind one report is what moves a case up the
+    queue. Anonymous voting is permitted by the security rules only if the write touches exclusively
+    the vote counter and the voter list, and increments each by exactly one; no other field can be
+    altered by an unauthenticated visitor.
+  </p>
+
+  <h3>Automatic triage and routing</h3>
+  <p>
+    Severity and owning department are derived from the category, never entered by the resident.
+    That removes the two most common sources of dispute — a resident marking everything urgent, and
+    an inter-departmental argument about whose problem it is — and it means the queue is correctly
+    ordered from the moment a report lands.
+  </p>
+
+  <h3>The costing module</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:32%">Element</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Worker roster</td><td>Each worker carries a name, role, hourly rate, department and daily attendance state — so labour cost is computed from the actual people assigned, not a flat rate.</td></tr>
+      <tr><td>Estimated budget</td><td>Named workers, estimated hours, materials description and an overall estimate, captured at the moment of assignment.</td></tr>
+      <tr><td>Actual spend</td><td>Real hours and final materials cost, mandatory at closure — the button stays disabled until both are entered.</td></tr>
+      <tr><td>Mayor's spend KPI</td><td>Monthly total, filterable by department, with a line-by-line view showing hours, the named crew, computed labour cost and materials for each closed case.</td></tr>
+      <tr><td>Reaction time</td><td>Measured from report creation to crew assignment — and deliberately written only once, so re-assigning a crew later cannot quietly improve the metric.</td></tr>
+    </tbody>
+  </table>
+  <div class="callout blue">
+    <span class="k">Metric integrity</span>
+    <p>
+      That last row is a good example of the engineering standard in this codebase. An earlier
+      version reset the assignment timestamp on every re-assignment, which meant a two-week-old case
+      could be made to look freshly picked up simply by pressing a button — the indicator improved
+      by being clicked. It was found and fixed, and the reasoning is written down. Metrics a mayor
+      will publish have to be defensible.
+    </p>
+  </div>
+
+  <h3>The sector model</h3>
+  <p>
+    Mayors think in localities, villages and rural sectors, and the political question they ask is
+    which sector is being neglected. Sectors are defined as a centre point and a radius rather than
+    polygons, so a small municipality can produce them from Google Maps in minutes with no GIS tool
+    and no GeoJSON. Where two circles overlap, the nearest centre wins; anything outside every
+    sector is grouped explicitly as "outside defined sectors" and explained, so a gap is visible
+    rather than silent. For the first municipality, 23 localities are loaded, with the road-adjacent
+    settlements aligned to the actual geometry of the regional route rather than to interpolated
+    coordinates.
+  </p>
+
+  <h3>Resilience details</h3>
+  <ul>
+    <li><strong>Idempotent report creation.</strong> Document ID and ticket number are generated client-side and reused on retry, so a dropped connection cannot create two records.</li>
+    <li><strong>Ticket uniqueness without transactions.</strong> The public ticket collection is create-only for anonymous users, so a collision with an existing number is rejected by the database itself and the number is regenerated — no locking, no contention.</li>
+    <li><strong>Bounded queries.</strong> Live listeners are scoped by tenant and by category rather than reading whole collections, and degrade gracefully to a wider query if a composite index is unavailable.</li>
+    <li><strong>Browser-side image compression.</strong> Photos are compressed before upload, which is what makes the product usable on a rural connection.</li>
+    <li><strong>Anti-spam.</strong> A per-device cooldown limits repeat submissions from the same handset.</li>
+    <li><strong>Graceful failure page.</strong> If the deployment is misconfigured, the app catches it during module load and shows an explanatory screen with emergency phone numbers visible — instead of a spinner that never stops.</li>
+  </ul>
+</div>
+
+<!-- ============ 7. ACCOUNTABILITY ============ -->
+<div class="sheet">
+  <div class="h2num">Section 7</div>
+  <h2>The public-accountability engine</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    This is the feature that converts a mayor from interested to committed, and it is the strategic
+    core of the product's positioning.
+  </p>
+
+  <h3>Cuenta Pública in one click</h3>
+  <p>
+    Every mayor in Chile must deliver an annual public account under Ley 18.695. Today that document
+    is assembled by hand. TuMuniAquí generates it from the work already recorded, for the current
+    year, the previous year, or the trailing twelve months.
+  </p>
+  <table class="t-tight">
+    <thead><tr><th style="width:34%">Section of the report</th><th>Content</th></tr></thead>
+    <tbody>
+      <tr><td>Period summary</td><td>The headline figure — problems resolved — with the period's totals.</td></tr>
+      <tr><td>How we responded</td><td>Reaction time, resolution time, resident satisfaction, labour hours deployed.</td></tr>
+      <tr><td>Performance by directorate</td><td>A table showing each municipal department's volume and outcomes.</td></tr>
+      <tr><td>What residents reported</td><td>Top categories and the severity distribution.</td></tr>
+      <tr><td>Month-by-month evolution</td><td>The trend across the period.</td></tr>
+      <tr><td>Investment executed</td><td>Actual spend, from the closing costs recorded by the crews.</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Two engineering decisions worth reading</h4>
+  <ul>
+    <li>
+      <strong>No PDF library.</strong> The report is produced through the browser's own print dialogue
+      with dedicated print stylesheets — colour preservation forced, page breaks avoided inside
+      sections and immediately after headings. Zero additional bundle weight, and it works on any
+      machine in the municipality.
+    </li>
+    <li>
+      <strong>Charts in pure CSS, not a charting library.</strong> Canvas and SVG charts routinely
+      print blank or cropped. With CSS the browser prints exactly what is on screen. This is the
+      difference between a feature that demos well and a document a mayor can actually hand out.
+    </li>
+  </ul>
+
+  <div class="callout amber">
+    <span class="k">A detail that shows the standard</span>
+    <p>
+      When the report was first validated against real data, reaction time displayed as
+      <em>−7 hours</em>, caused by migrated records whose assignment timestamp preceded their
+      creation. A negative number in the mayor's published document would destroy the credibility of
+      every other figure in it. The fix was to discard incoherent intervals rather than let them
+      distort an average — and the same correction was applied to the mayor's panel and the public
+      transparency page, which carried the same latent risk.
+    </p>
+  </div>
+
+  <h3>The public transparency page</h3>
+  <p>
+    A public page per comuna, supporting the active-transparency obligations of Ley 20.285. Residents
+    and councillors can see what has been reported and resolved without any login and without any
+    personal data being exposed — the public projection of a report deliberately excludes the
+    reporter's name, contact details and identity number.
+  </p>
+
+  <h3>Why this matters commercially</h3>
+  <p>
+    Most citizen-reporting products sell efficiency, which is a benefit a municipality can defer.
+    This one sells a legally mandated deliverable that recurs every year regardless of budget
+    climate or political priority. The buyer is not choosing whether to produce a public account —
+    only whether to produce it by hand.
+  </p>
+</div>
+
+<!-- ============ 8. ARCHITECTURE ============ -->
+<div class="sheet">
+  <div class="h2num">Section 8</div>
+  <h2>Technical architecture</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    A deliberately serverless, low-operations architecture. There is no server to patch, no database
+    to administer, and no fixed monthly infrastructure bill that scales with the number of tenants.
+  </p>
+
+  <h3>Stack</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:26%">Layer</th><th style="width:32%">Technology</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Front end</td><td>React 18, Vite 5, Tailwind CSS 3, React Router 6</td><td>Modern, mainstream, easy to hire for.</td></tr>
+      <tr><td>App delivery</td><td>Progressive web app (vite-plugin-pwa)</td><td>Installs from the browser. No app-store gatekeeping or fees.</td></tr>
+      <tr><td>Maps</td><td>Leaflet + react-leaflet; OpenStreetMap tiles; Esri World Imagery satellite layer</td><td>No API key, no billing account, and better rural coverage in Chile than the paid alternatives.</td></tr>
+      <tr><td>Geocoding</td><td>Nominatim (OpenStreetMap)</td><td>Free address search with no key. A Google Maps loader is written and ready should paid geocoding ever be preferred.</td></tr>
+      <tr><td>Charts</td><td>Recharts, lazy-loaded</td><td>Loaded only inside the dashboards, so it never weighs on the resident's phone.</td></tr>
+      <tr><td>Database</td><td>Cloud Firestore</td><td>Real-time listeners, so dashboards update live with no polling; security enforced declaratively at the data layer.</td></tr>
+      <tr><td>Authentication</td><td>Firebase Auth (email/password)</td><td>Officials only. Residents never authenticate.</td></tr>
+      <tr><td>Image storage</td><td>Cloudinary (unsigned upload preset)</td><td>Free tier, no card required, and no secret key exposed in the browser.</td></tr>
+      <tr><td>Hosting</td><td>Firebase Hosting</td><td>Global CDN, free tier, atomic deploys with instant rollback.</td></tr>
+      <tr><td>Notification service</td><td>Node + Express on Render</td><td>Independent of the web app; can be restarted or moved without any resident-facing downtime.</td></tr>
+      <tr><td>Messaging</td><td>Meta WhatsApp Cloud API (Graph v19.0)</td><td>Official channel, approved templates, non-expiring system-user token.</td></tr>
+      <tr><td>CI/CD</td><td>GitHub Actions</td><td>Preview deploy per pull request, production deploy on merge.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Multi-tenancy</h3>
+  <p>
+    Each municipality is a single document whose ID is its URL slug, holding its institutional name,
+    brand colours, logo, map centre and crew names. Residents reach their municipality at
+    <code>/{slug}</code>; the theme is applied at runtime through CSS custom properties.
+  </p>
+  <p>
+    Officials are different, and deliberately so: their routes carry <strong>no slug at all</strong>.
+    The tenant is read from the officer's own profile record after login, never from the URL — so an
+    official cannot cross into another municipality's data by editing the address bar. Adding a
+    municipality is a data operation, not a deployment.
+  </p>
+
+  <h3>Data model</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:28%">Collection</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>municipalidades/{slug}</code></td><td>Tenant configuration: name, colours, logo, map centre, crews, sectors.</td></tr>
+      <tr><td><code>incidencias/{id}</code></td><td>The full incident record — category, coordinates, severity, department, photos, state, crew, budget, actual spend, rating, notification flags and the full timeline.</td></tr>
+      <tr><td><code>incidencias/{id}/seguimientos</code></td><td>Resident follow-up comments and photos on an existing report.</td></tr>
+      <tr><td><code>tickets_publicos/{numero}</code></td><td>The privacy-safe public projection, keyed by the ticket number itself. Deliberately excludes name, contact, identity number and free-text detail.</td></tr>
+      <tr><td><code>usuarios_municipales/{uid}</code></td><td>Official profiles: role, department and tenant. This is the authorisation source of truth.</td></tr>
+      <tr><td><code>trabajadores/{id}</code></td><td>Worker roster: role, hourly rate, department, attendance and availability.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Role-based access control</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:24%">Role</th><th style="width:34%">Sees</th><th>Can do</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Mayor / Admin</strong></td><td>Everything in their municipality</td><td>Command centre, public account, assign crews, manage officials.</td></tr>
+      <tr><td><strong>Department head</strong></td><td>Only their own directorate</td><td>Budget, assign, close, manage their worker roster.</td></tr>
+      <tr><td><strong>Field crew</strong></td><td>In-progress work</td><td>Close a case with photo and actual cost.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Self-service official management is built in: a mayor creates and revokes accounts from the
+    dashboard. Notably, the security rules prevent a mayor from creating another admin-level account
+    through that interface — a deliberate guard so the convenience feature cannot become a
+    privilege-escalation path. Creating a second administrator remains a manual operation.
+  </p>
+  <p>
+    Roughly 400 lines of declarative Firestore and Storage security rules enforce all of the above at
+    the data layer, so the guarantees hold against a direct API call, not only against the user
+    interface.
+  </p>
+</div>
+
+<!-- ============ 9. SECURITY / LEGAL ============ -->
+<div class="sheet">
+  <div class="h2num">Section 9</div>
+  <h2>Security, privacy and Chilean law</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    This is the section a municipality's legal adviser reads, and it is written to survive that
+    review. Data protection is engineered into the data model rather than asserted in a policy
+    document.
+  </p>
+
+  <h3>Data minimisation, enforced structurally</h3>
+  <ul>
+    <li>
+      <strong>The public projection cannot leak identity.</strong> Status lookup and the transparency
+      page read a separate collection that never receives the reporter's name, contact details,
+      identity number or free-text notes. The exclusion is in the write path, not in a display filter.
+    </li>
+    <li>
+      <strong>National identity numbers are no longer collected at all.</strong> The field, its
+      validator and its lookup path were removed from the product to avoid handling sensitive
+      personal data without necessity. Historical records that carry one retain it; nothing new is
+      written.
+    </li>
+    <li>
+      <strong>An earlier design that would have exposed data was rejected on analysis.</strong>
+      Looking up tickets by identity number was implemented against a device-local index rather than
+      a server-side one, precisely because a publicly readable index would have let anyone enumerate
+      plausible identity numbers and learn who reported what.
+    </li>
+    <li>
+      <strong>Real personal data was purged from the demonstration tenant.</strong> Identity numbers
+      and mobile numbers belonging to real people were deleted from the demo environment, with a
+      backup taken first.
+    </li>
+  </ul>
+
+  <h3>Access control and secrets</h3>
+  <ul>
+    <li>Officials authenticate individually; there is no shared account anywhere in the system.</li>
+    <li>The notification service uses its own service-account credential, not a human login.</li>
+    <li>The inbound webhook refuses to mount without signature verification configured.</li>
+    <li>Anonymous writes are constrained by rule to exactly two operations — creating a report, and adding a single vote — and every other field is unwritable without an authenticated, authorised profile.</li>
+    <li>Runtime secrets live in the deployment platform's environment configuration and Google Secret Manager, never in the repository.</li>
+  </ul>
+
+  <h3>Compliance posture</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:30%">Instrument</th><th>How the product addresses it</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Ley 21.719</strong><br>Personal data protection</td>
+        <td>Privacy policy and terms of service published and linked from the very form where the resident submits data, covering what is collected, why, for how long, and how to exercise access, rectification, cancellation and objection rights. The municipality is positioned as data controller and the platform as processor, with a data-processing agreement contemplated as a contract annex.</td>
+      </tr>
+      <tr>
+        <td><strong>Ley 20.285</strong><br>Transparency</td>
+        <td>A public per-comuna page and the generated public account support active-transparency obligations.</td>
+      </tr>
+      <tr>
+        <td><strong>Ley 18.695</strong><br>Municipal organic law</td>
+        <td>The annual public account is generated from the municipality's own operational record.</td>
+      </tr>
+      <tr>
+        <td><strong>Ley 21.634</strong><br>Public procurement</td>
+        <td>Pricing is set below the 100 UTM <em>Compra Ágil</em> ceiling, so the two principal plans can be purchased without a public tender. See §12.</td>
+      </tr>
+      <tr>
+        <td><strong>Portability</strong></td>
+        <td>The municipality can request a full export of its data in an open format at any time; the commercial terms provide for export on termination and subsequent deletion.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout blue">
+    <span class="k">Data ownership</span>
+    <p>
+      The commercial position — written into the proposal — is that the data belongs to the
+      municipality, not to the vendor. For a public-sector buyer this is not a nicety; it is
+      frequently the clause that determines whether the contract is signed at all, and it is already
+      settled in the product's favour.
+    </p>
+  </div>
+</div>
+
+<!-- ============ 10. OPS ============ -->
+<div class="sheet">
+  <div class="h2num">Section 10</div>
+  <h2>Operations and infrastructure</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    The operating burden is deliberately small. A single technical operator can run the platform for
+    multiple municipalities, and the deployment path requires no terminal.
+  </p>
+
+  <h3>Continuous deployment</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:30%">Stage</th><th>Behaviour</th></tr></thead>
+    <tbody>
+      <tr><td>Pull request opened</td><td>A preview build is published to a temporary URL and posted back as a comment, so a change can be reviewed in a real browser before it reaches residents.</td></tr>
+      <tr><td>Pre-flight configuration check</td><td>The pipeline verifies every required build-time variable is present <em>before</em> compiling, and fails naming the missing ones — without printing their values.</td></tr>
+      <tr><td>Merge to main</td><td>Publishes to production on Firebase Hosting.</td></tr>
+      <tr><td>Service watchdog</td><td>A scheduled workflow polls the notification service's health endpoint and opens — or closes — a tracking issue automatically, so an outage is noticed by the operator rather than by a resident.</td></tr>
+      <tr><td>Runbook</td><td>A click-by-click deployment guide written for a non-terminal user is included in the repository.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout amber">
+    <span class="k">Hard-won reliability engineering</span>
+    <p>
+      That pre-flight check exists because of a real failure that is worth understanding: Vite does
+      not fail the build when a required environment variable is missing — it substitutes
+      <code>undefined</code> and compiles successfully. The site then deploys green, and the resident
+      sees a loading spinner forever with nothing in the logs. Both ends are now fixed: the pipeline
+      refuses to build with missing configuration, and the application catches the failure during
+      module load and renders an explanatory page with emergency numbers visible. This class of
+      silent failure is the most expensive kind for a live public service, and it has been designed
+      out.
+    </p>
+  </div>
+
+  <h3>Current running costs</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:30%">Component</th><th style="width:24%">Provider</th><th>Tier in use</th></tr></thead>
+    <tbody>
+      <tr><td>Database and authentication</td><td>Firebase</td><td>Free (Spark)</td></tr>
+      <tr><td>Web hosting and CDN</td><td>Firebase Hosting</td><td>Free</td></tr>
+      <tr><td>Image storage and delivery</td><td>Cloudinary</td><td>Free (25 GB)</td></tr>
+      <tr><td>Notification service</td><td>Render</td><td>Free web service</td></tr>
+      <tr><td>Maps, tiles and geocoding</td><td>OpenStreetMap / Esri</td><td>Free, no API key</td></tr>
+      <tr><td>CI/CD</td><td>GitHub Actions</td><td>Included</td></tr>
+      <tr><td>Template messaging</td><td>Meta</td><td>Per-message utility rate</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The practical consequence is that the platform's direct cost of goods sold today is close to
+    zero, with per-message templated WhatsApp fees the one usage-linked variable. Every plan tier
+    should be modelled with that per-message rate included; the structural point for an acquirer is
+    that the remaining cost base is fixed and small, so each additional municipality is close to
+    pure margin.
+  </p>
+
+  <h3>Backups and data safety</h3>
+  <ul>
+    <li>A backup script exports the full database to a timestamped file on demand (<code>npm run backup</code>).</li>
+    <li>Point-in-time backups were taken before every destructive maintenance operation performed to date, and retained.</li>
+    <li>Maintenance scripts are written defensively — the sector loader, for instance, refuses to write coordinates that fall outside Chile or a non-positive radius, because a silently misplaced sector is invisible on screen.</li>
+  </ul>
+
+  <h3>Maintenance tooling included</h3>
+  <p>
+    Sixteen operational scripts ship with the repository, covering tenant setup, sector loading and
+    verification, demo preparation and refresh, coordinate repair, orphan-record cleanup,
+    WhatsApp configuration, data-protection contact configuration, overdue-assignment review, and
+    pre-presentation verification. These are the tools that make onboarding a new municipality a
+    repeatable procedure rather than a bespoke project.
+  </p>
+</div>
+
+<!-- ============ 11. BUSINESS MODEL ============ -->
+<div class="sheet">
+  <div class="h2num">Section 11</div>
+  <h2>Business model and pricing</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    A one-time implementation fee plus a monthly subscription, denominated in <strong>UF</strong> —
+    Chile's inflation-indexed accounting unit — so contract value is protected against inflation
+    without renegotiation. Prices exclude VAT.
+  </p>
+
+  <h3>Plan structure</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:22%">Plan</th><th style="width:22%">Population</th>
+        <th class="num">Setup</th><th class="num">Monthly</th><th class="num">First year</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Comuna</strong></td><td>Up to 10,000</td><td class="num">UF 20</td><td class="num">UF 8</td><td class="num">UF 116 <span style="color:var(--muted)">(≈66 UTM)</span></td></tr>
+      <tr><td><strong>Comuna Mayor</strong></td><td>10,001 – 50,000</td><td class="num">UF 24</td><td class="num">UF 12</td><td class="num">UF 168 <span style="color:var(--muted)">(≈96 UTM)</span></td></tr>
+      <tr><td><strong>Ciudad</strong></td><td>Over 50,000</td><td class="num">UF 45</td><td class="num">UF 20</td><td class="num">UF 285 <span style="color:var(--muted)">(≈162 UTM)</span></td></tr>
+    </tbody>
+  </table>
+  <p class="footnote">
+    UF and UTM are Chilean indexed units that move over time; the UTM equivalences shown were
+    computed at the values in force when the pricing was set and should be recalculated at the date
+    of any quotation. Reference values used: UF ≈ CLP 40,845; UTM ≈ CLP 71,649.
+  </p>
+
+  <h3>Worked example — the plan the first customer sits in</h3>
+  <div class="kv">
+    <div>Implementation, one-time</div><div>UF 20 ≈ CLP 817,000</div>
+    <div>Subscription, monthly</div><div>UF 8 ≈ CLP 327,000</div>
+    <div>Total first year</div><div>UF 116 ≈ CLP 4,738,000</div>
+    <div>Annual renewal thereafter</div><div>UF 96 ≈ CLP 3,921,000</div>
+    <div>Prepaid annual option</div><div>11 months charged instead of 12 — UF 108 ≈ CLP 4,411,000</div>
+  </div>
+
+  <h3>What is included, and why it is priced this way</h3>
+  <ul>
+    <li><strong>No usage-based charges.</strong> No fee per report, per resident or per official. A municipality that uses the platform heavily pays the same as one that barely uses it — charging the hardest-working municipality more would be self-defeating, and it is a genuinely persuasive argument in the sales meeting.</li>
+    <li><strong>Hosting, database, backups and all new features</strong> released during the contract term are included.</li>
+    <li><strong>Four hours a month of adjustments</strong> at no charge — adding categories, changing sectors, adding officials, correcting data. This gives small requests a defined home so they cannot become unbounded free work; beyond that, development is quoted at UF 2 per hour.</li>
+    <li><strong>Support</strong> through a single point of contact by email and WhatsApp on business days, with tiered response commitments by severity.</li>
+    <li><strong>Training</strong> for officials joining during the year, delivered remotely.</li>
+  </ul>
+
+  <h3>Revenue characteristics</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:34%">Characteristic</th><th>Implication for an acquirer</th></tr></thead>
+    <tbody>
+      <tr><td>Public-sector counterparty</td><td>Municipalities do not churn casually; a contract renewal is an administrative act, not a purchasing decision made afresh.</td></tr>
+      <tr><td>Inflation-indexed</td><td>UF denomination means real contract value is preserved without renegotiating.</td></tr>
+      <tr><td>Front-loaded cash</td><td>The setup fee lands at the start of the relationship, and the prepaid annual option pulls a full year forward at a one-month discount.</td></tr>
+      <tr><td>Near-zero marginal cost</td><td>Additional tenants consume free-tier infrastructure; incremental gross margin approaches 100%.</td></tr>
+      <tr><td>Reference-driven sales</td><td>Chilean mayors and municipal directors are a closely networked community. The first reference customer is disproportionately valuable, and it already exists.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ 12. MOAT ============ -->
+<div class="sheet">
+  <div class="h2num">Section 12</div>
+  <h2>The regulatory moat</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    This is the least obvious and most valuable piece of commercial design in the business, and it
+    deserves to be understood clearly before valuing the asset.
+  </p>
+
+  <h3>The mechanism</h3>
+  <p>
+    Under Chilean public-procurement law (Ley 21.634), a municipality may purchase goods and
+    services below a threshold of <strong>100 UTM</strong> through <em>Compra Ágil</em> — a
+    simplified, online, same-week purchase route. Above that threshold, the municipality must run a
+    public tender: months of process, formal technical specifications, and open competition against
+    established vendors with dedicated bid teams.
+  </p>
+
+  <h3>What the pricing does with it</h3>
+  <p>
+    The price was not derived from cost or from the value of the work. It was set by the location of
+    the buying barrier. The <strong>Comuna</strong> plan lands at roughly 66 UTM for a full first
+    year and the <strong>Comuna Mayor</strong> plan at roughly 96 UTM — both under the ceiling. The
+    headroom on the entry plan is deliberate, so that a movement in the indexed units, or an
+    additional item requested by the municipality, does not push the purchase over the line and
+    destroy the route to market.
+  </p>
+
+  <div class="callout">
+    <span class="k">Why this is a moat and not just a price point</span>
+    <p>
+      A competitor selling an enterprise GovTech platform at enterprise pricing is structurally
+      unable to reach this buyer without a tender — and a tender for a small comuna is rarely worth
+      an enterprise vendor's cost of bidding. TuMuniAquí can be bought in a week, by a municipality
+      too small for the incumbents to chase, at a price that fits a line item rather than a capital
+      programme. The pricing, the product scope and the buyer segment are aligned by design, and
+      that alignment is the defensible position.
+    </p>
+  </div>
+
+  <h3>Consequences for the sales motion</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:36%">Without the ceiling design</th><th>With it</th></tr></thead>
+    <tbody>
+      <tr><td>Public tender required</td><td>Direct purchase through Compra Ágil</td></tr>
+      <tr><td>Months of procurement process</td><td>Days</td></tr>
+      <tr><td>Formal technical specifications drafted by the municipality</td><td>A quotation</td></tr>
+      <tr><td>Open competition with large vendors</td><td>A single-vendor decision by the mayor and the finance directorate</td></tr>
+      <tr><td>Sales cycle dominated by procurement</td><td>Sales cycle dominated by the demonstration</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Ceiling discipline is part of the asset</h3>
+  <p>
+    The pricing documentation includes an explicit warning that the mid-tier plan sits close to the
+    ceiling and must be recalculated at the moment of quoting, since a movement in either indexed
+    unit could push it over. An acquirer inherits not just the price list but the reasoning behind
+    it and the guard-rails that keep it working.
+  </p>
+</div>
+
+<!-- ============ 13. TRACTION ============ -->
+<div class="sheet">
+  <div class="h2num">Section 13</div>
+  <h2>Traction and current status</h2>
+  <div class="h2rule"></div>
+
+  <h3>The first municipality</h3>
+  <div class="kv">
+    <div>Customer</div><div>Ilustre Municipalidad de Licantén — Maule Region, Chile</div>
+    <div>Population</div><div>Approximately 6,900 inhabitants (Plan Comuna tier)</div>
+    <div>Accepted</div><div>11 August 2026, by the mayor</div>
+    <div>Status</div><div>Live in production on its own tenant, with real residents filing reports</div>
+    <div>Localities loaded</div><div>23 sectors mapped for the comuna</div>
+    <div>Notification channel</div><div>Official WhatsApp business number, quality rating GREEN, two approved message templates</div>
+  </div>
+
+  <div class="callout">
+    <span class="k">How it was won — and why that matters</span>
+    <p>
+      The mayor accepted after a twenty-minute meeting built around a live demonstration of the
+      working system: a report was filed from a phone in the room and the WhatsApp confirmation
+      arrived in front of him. Crucially, the platform was sold on <strong>what it actually does
+      today</strong>; features still in development were explicitly presented as such. The
+      acquirer inherits a customer relationship with no over-promise to make good on — anything
+      shipped from here adds to the relationship rather than repairing it.
+    </p>
+  </div>
+
+  <h3>Production environments</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:36%">Environment</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>app-incidencias-urbanas.web.app/licanten</code></td><td>The live customer tenant.</td></tr>
+      <tr><td><code>app-incidencias-urbanas.web.app/demo</code></td><td>A fully populated demonstration tenant used for sales meetings — 101 reports, three sectors, ratings and a correctly centred map, with all real personal data removed.</td></tr>
+      <tr><td><code>tumuniaqui.web.app</code></td><td>The commercial landing site: positioning, the three price plans, a savings calculator, a QR code to the demo and a direct WhatsApp contact button. Hosted separately, so publishing marketing changes can never affect the live application residents use.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Codebase and engineering record</h3>
+  <div class="grid3" style="margin-bottom:12px">
+    <div class="stat"><div class="n">~15,700</div><div class="l">Lines of application code</div></div>
+    <div class="stat"><div class="n">45</div><div class="l">React components</div></div>
+    <div class="stat"><div class="n">13</div><div class="l">Application pages</div></div>
+  </div>
+  <div class="grid3">
+    <div class="stat"><div class="n">8</div><div class="l">Service modules</div></div>
+    <div class="stat"><div class="n">16</div><div class="l">Operational scripts</div></div>
+    <div class="stat"><div class="n">47</div><div class="l">Documented technical sections</div></div>
+  </div>
+
+  <h3>The go-to-market kit, already built</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:36%">Asset</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td>Commercial proposal</td><td>A complete municipal services proposal: scope, pricing, service commitments, legal and data-protection positioning, and the purchase route. Reusable for any municipality by changing the tenant details.</td></tr>
+      <tr><td>Mayor meeting script</td><td>A twenty-minute meeting guide with timings, exact phrasing, objection handling and the links to open in order — <strong>tested, and it closed the first customer</strong>.</td></tr>
+      <tr><td>Launch communications kit</td><td>Ready-to-publish material for the municipality's own launch: QR poster, Facebook posts, a message for neighbourhood associations, a front-desk sign, a radio script and a mayor's video script.</td></tr>
+      <tr><td>Internal pricing notes</td><td>The derivation of every figure, the procurement-ceiling arithmetic, and the reasoning behind each commercial term.</td></tr>
+      <tr><td>Onboarding checklist</td><td>The exact data required to bring a new municipality live — institutional name, map centre, brand colours, logo, crew names, sectors with reference points, and officials with roles.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ 14. WHAT'S INCLUDED ============ -->
+<div class="sheet">
+  <div class="h2num">Section 14</div>
+  <h2>What's included in the acquisition</h2>
+  <div class="h2rule"></div>
+
+  <table>
+    <thead><tr><th style="width:30%">Category</th><th>Included</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Source code</strong></td>
+        <td>The complete repository: the React progressive web app, the Node/Express WhatsApp notification service, Firebase Cloud Functions, Firestore and Storage security rules, database index definitions, the marketing landing site, and sixteen operational scripts.</td>
+      </tr>
+      <tr>
+        <td><strong>Live deployments</strong></td>
+        <td>The production application, the demonstration tenant, and the commercial landing site.</td>
+      </tr>
+      <tr>
+        <td><strong>Customer relationship</strong></td>
+        <td>The Municipality of Licantén, live and operating.</td>
+      </tr>
+      <tr>
+        <td><strong>Infrastructure accounts</strong></td>
+        <td>Firebase / Google Cloud project, Cloudinary account, Render service, and the Meta WhatsApp Business assets — subject to transfer arrangements agreed between the parties.</td>
+      </tr>
+      <tr>
+        <td><strong>WhatsApp assets</strong></td>
+        <td>The business phone number with a GREEN quality rating, two approved message templates in Chilean Spanish, and the approved Meta application and webhook configuration. Template approval takes real calendar time; inheriting approved templates is a genuine head start.</td>
+      </tr>
+      <tr>
+        <td><strong>Technical documentation</strong></td>
+        <td>A 47-section technical master document covering architecture, data schemas, security rules, design decisions and the reasoning behind them; a click-by-click deployment runbook; and a handover document describing exactly where the work stands.</td>
+      </tr>
+      <tr>
+        <td><strong>Commercial documentation</strong></td>
+        <td>The municipal proposal, internal pricing derivation, the proven mayor meeting script, the launch communications kit, and the onboarding data checklist.</td>
+      </tr>
+      <tr>
+        <td><strong>Brand</strong></td>
+        <td>The TuMuniAquí name, visual identity, landing site and marketing copy.</td>
+      </tr>
+      <tr>
+        <td><strong>CI/CD and tooling</strong></td>
+        <td>GitHub Actions workflows for preview and production deployment, the configuration pre-flight check, and the service health watchdog.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout blue">
+    <span class="k">On documentation quality</span>
+    <p>
+      The engineering record is unusually thorough for a project of this size. It documents not only
+      what was built but what was tried and rejected and why — including failure modes discovered in
+      production and the reasoning behind each fix. For an acquirer, this is the difference between
+      inheriting a codebase and inheriting an operable business: the questions a new engineer would
+      spend weeks rediscovering are already answered in writing.
+    </p>
+  </div>
+
+  <h3>Transition support</h3>
+  <p>
+    The founder is available for a handover period to transfer the infrastructure accounts, the Meta
+    business assets and the customer relationship, and to walk an acquiring team through the
+    architecture and the municipal onboarding procedure. Terms to be agreed as part of the
+    transaction.
+  </p>
+</div>
+
+<!-- ============ 15. GROWTH ============ -->
+<div class="sheet">
+  <div class="h2num">Section 15</div>
+  <h2>Growth levers for an acquirer</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    The product is built; the work ahead is distribution. These are the levers available, ordered by
+    how quickly they convert.
+  </p>
+
+  <h3>1 · Replicate the sale — the motion is proven and documented</h3>
+  <p>
+    The hardest part of selling into the public sector is the first reference customer, and it
+    exists. The meeting script that closed it is written down with timings and phrasing. The
+    proposal is a template. The onboarding checklist is a form. A second, fifth and twentieth
+    municipality are execution against a documented playbook, not discovery.
+  </p>
+
+  <h3>2 · Multi-tenant scale is already engineered</h3>
+  <p>
+    Adding a municipality is a data operation — a tenant document, its sectors, its crews and its
+    officials — not a code change or a separate deployment. The unit economics of the tenth
+    municipality are effectively identical to the first, which is precisely the property that makes
+    a distribution-led acquirer's investment compound.
+  </p>
+
+  <h3>3 · Regional and national aggregation</h3>
+  <p>
+    With several comunas on the platform, the same data supports a product one level up: a
+    provincial or regional view comparing response times and resolution rates across municipalities.
+    That is a second buyer — regional government — reachable with no new core engineering, and it
+    also creates peer pressure that pulls neighbouring comunas in.
+  </p>
+
+  <h3>4 · Institutional polish that raises price</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:34%">Lever</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td>Custom domain per municipality</td><td>A branded institutional address projects the seriousness a public body expects, and is a routine configuration step.</td></tr>
+      <tr><td>Paid infrastructure tiers</td><td>Moving the free-tier services onto paid plans unlocks formal availability commitments — which in turn support higher pricing to larger municipalities.</td></tr>
+      <tr><td>Written user manual</td><td>An operations manual for municipal staff shortens onboarding and reduces support load per tenant.</td></tr>
+      <tr><td>Automated test suite</td><td>The natural investment for a team shipping faster than one operator can verify by hand.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5 · Feature expansion with existing data</h3>
+  <ul>
+    <li><strong>Emergency escalation to the mayor's phone.</strong> Specified in full, with the data model, the configuration script and the tenant field already in place. It is the single most compelling feature in the sales conversation and it is a defined build.</li>
+    <li><strong>"Crew assigned" notification.</strong> The code is written and deliberately gated behind a configuration flag, pending its message template. Enabling it is a configuration step once the template is approved.</li>
+    <li><strong>Predictive maintenance.</strong> Every incident carries a category, a location, a cost and a resolution time. With volume across municipalities, that dataset supports recurrence detection and preventive scheduling — a materially higher-value product sold to the same buyer.</li>
+    <li><strong>Materials price catalogue.</strong> The scaffolding exists; historical closing costs can build reference pricing per material and per job type automatically.</li>
+  </ul>
+
+  <h3>6 · Geographic portability</h3>
+  <p>
+    Nothing in the architecture is Chile-specific. Categories, departments, sectors, branding and
+    legal text are all configuration. Any jurisdiction where municipalities receive service requests
+    and are obliged to report on their performance is a localisation exercise rather than a rebuild —
+    and the Spanish-language product is immediately intelligible across most of Latin America.
+  </p>
+</div>
+
+<!-- ============ 16. ROADMAP + FINANCIALS ============ -->
+<div class="sheet">
+  <div class="h2num">Section 16</div>
+  <h2>Roadmap already specified</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    An acquirer is not starting from a blank backlog. The following items are already designed at
+    specification level — data model, configuration surface and behaviour defined — which is the
+    expensive half of the work.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:30%">Item</th><th style="width:14%">State</th><th>What remains</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Emergency alert to the mayor's phone</strong></td>
+        <td><span class="pill next">Specified</span></td>
+        <td>Fully specified, including the message content, the per-tenant configuration field and its setup script. Requires a listener and an approved message template.</td>
+      </tr>
+      <tr>
+        <td><strong>"Crew assigned" notification</strong></td>
+        <td><span class="pill next">Built, gated</span></td>
+        <td>Code complete and deliberately disabled behind a configuration flag until its message template is approved. The template text is already drafted.</td>
+      </tr>
+      <tr>
+        <td><strong>WhatsApp multi-tenant templates</strong></td>
+        <td><span class="pill next">Specified</span></td>
+        <td>Parameterise the municipality name and portal link inside the approved templates. The steps are documented; the database listeners are already tenant-aware.</td>
+      </tr>
+      <tr>
+        <td><strong>Custom institutional domain</strong></td>
+        <td><span class="pill next">Ready</span></td>
+        <td>A configuration step on the hosting platform, with the marketing site's SEO tags already prepared for it.</td>
+      </tr>
+      <tr>
+        <td><strong>Municipal onboarding form</strong></td>
+        <td><span class="pill next">Specified</span></td>
+        <td>The complete list of required data is written down; the remaining work is formatting it as a client-facing form.</td>
+      </tr>
+      <tr>
+        <td><strong>Staff user manual</strong></td>
+        <td><span class="pill next">Scoped</span></td>
+        <td>Approximately ten pages with screenshots — one for department heads, one for field crews.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 style="margin-top:26px">Financial summary</h2>
+  <div class="h2rule"></div>
+
+  <p>
+    The figures below depend on the seller's own accounting records and contract execution and are
+    therefore left to be completed rather than estimated in this document. Everything else in this
+    report was verified against the product itself; this table should be filled in with the same
+    standard of accuracy before the listing is published.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:44%">Metric</th><th>To confirm</th></tr></thead>
+    <tbody>
+      <tr><td>Contract value — first customer, year one</td><td style="color:var(--muted)">UF 116 list price — confirm the executed figure</td></tr>
+      <tr><td>Revenue recognised to date</td><td style="color:var(--muted)">To be completed by the seller</td></tr>
+      <tr><td>Invoices issued to date</td><td style="color:var(--muted)">To be completed by the seller</td></tr>
+      <tr><td>Monthly recurring revenue</td><td style="color:var(--muted)">To be completed by the seller</td></tr>
+      <tr><td>Monthly operating costs</td><td style="color:var(--muted)">Free infrastructure tiers plus per-message WhatsApp fees — confirm actuals</td></tr>
+      <tr><td>Pipeline — municipalities in conversation</td><td style="color:var(--muted)">To be completed by the seller</td></tr>
+      <tr><td>Legal entity</td><td style="color:var(--muted)">Chilean SpA — confirm registration details</td></tr>
+      <tr><td>Founder time commitment</td><td style="color:var(--muted)">To be completed by the seller</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout amber">
+    <span class="k">Before publishing</span>
+    <p>
+      Complete every row above with figures that can be evidenced. On Acquire.com a buyer will
+      request supporting documentation during diligence, and a number that cannot be evidenced costs
+      more credibility than a small number ever would.
+    </p>
+  </div>
+</div>
+
+<!-- ============ SPANISH DIVIDER ============ -->
+<div class="sheet break">
+  <div class="divider">
+    <div class="eyebrow">Anexo A</div>
+    <h2>Resumen ejecutivo<br>en español</h2>
+    <p>
+      Versión condensada del informe para lectura en español: qué es TuMuniAquí, cómo funciona,
+      qué está en producción, cómo se monetiza y qué incluye la venta.
+    </p>
+  </div>
+</div>
+
+<!-- ============ SPANISH ANNEX ============ -->
+<div class="sheet break">
+  <div class="h2num">Anexo A · 1</div>
+  <h2>Qué es TuMuniAquí</h2>
+  <div class="h2rule"></div>
+
+  <p class="lead">
+    Plataforma SaaS multi-municipio, en producción, con la que los vecinos de una comuna reportan un
+    bache, una luminaria apagada o un basural desde el celular, y con la que la municipalidad los
+    asigna, resuelve y demuestra que los resolvió — con la Cuenta Pública anual generada sola a
+    partir de ese mismo trabajo.
+  </p>
+
+  <h3>El ciclo completo, hoy en funcionamiento</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:22%">Etapa</th><th>Qué ocurre</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1. El vecino reporta</strong></td><td>Tres pasos en el celular: ubicación, categoría y foto. Sin descargar nada y sin registrarse. Funciona sin señal: el reporte se guarda y se envía solo cuando vuelve la conexión.</td></tr>
+      <tr><td><strong>2. El sistema clasifica</strong></td><td>Gravedad y dirección municipal responsable se calculan solas desde la categoría. Si ya hay un reporte igual a menos de 50 metros, se ofrece sumarse con un "+1" en vez de duplicar.</td></tr>
+      <tr><td><strong>3. El municipio trabaja</strong></td><td>El Jefe de Departamento presupuesta (elige a las personas de su equipo, cada una con su tarifa por hora), asigna cuadrilla y el ticket pasa a En Proceso. Terreno cierra con foto y gasto real obligatorios.</td></tr>
+      <tr><td><strong>4. La prueba vuelve</strong></td><td>El vecino recibe WhatsApp al ingresar su reporte y al resolverse, consulta su estado sin login y califica de 1 a 5 estrellas. Todo eso alimenta el panel del Alcalde y la Cuenta Pública.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Las cuatro interfaces</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4>Vecino — PWA sin login</h4>
+      <p style="font-size:8.7pt">58 categorías en 9 grupos con buscador sin tildes, hasta 3 fotos comprimidas en el navegador, mapa con capa satelital, cola offline, consulta de ticket de 6 dígitos, seguimiento y calificación.</p>
+    </div>
+    <div class="card">
+      <h4>Alcalde — panel de control</h4>
+      <p style="font-size:8.7pt">14 indicadores, todos clicables, cada uno abriendo el detalle de los reportes que producen la cifra. Mapa de calor, vista por sectores, comparación mes contra mes y gasto del mes con detalle línea por línea.</p>
+    </div>
+    <div class="card">
+      <h4>Jefe de Departamento</h4>
+      <p style="font-size:8.7pt">Solo su dirección municipal — acotado en las reglas del servidor, no solo en pantalla. Presupuesta, asigna, cierra y gestiona su equipo con asistencia diaria y tarifas por hora.</p>
+    </div>
+    <div class="card">
+      <h4>Cuadrilla — vista de terreno</h4>
+      <p style="font-size:8.7pt">Lista de trabajos en proceso, con foto del vecino, link a Google Maps, equipo asignado, cierre con foto y gasto real, y botón para escribirle al vecino por WhatsApp.</p>
+    </div>
+  </div>
+
+  <h3>Lo que está verificado en producción</h3>
+  <ul>
+    <li><strong>Licantén es cliente</strong> desde el 11 de agosto de 2026, con su propio tenant en línea y 23 localidades cargadas como sectores.</li>
+    <li><strong>WhatsApp por la API oficial de Meta</strong>, con número de calidad GREEN, dos plantillas aprobadas en <code>es_CL</code> y token de usuario de sistema que no expira. La cadena completa está verificada en vivo.</li>
+    <li><strong>Multi-tenant real</strong>: dar de alta una municipalidad es cargar datos, no desplegar otra copia.</li>
+    <li><strong>Despliegue automático</strong>: cada pull request publica una vista previa y el merge publica en producción, con verificación previa de configuración y un vigilante que abre un aviso si el servicio de notificaciones se cae.</li>
+    <li><strong>Infraestructura en capa gratuita</strong>: Firebase, Cloudinary, Render y Firebase Hosting. El costo marginal por municipalidad adicional es prácticamente cero.</li>
+  </ul>
+</div>
+
+<div class="sheet break">
+  <div class="h2num">Anexo A · 2</div>
+  <h2>Modelo de negocio y qué incluye la venta</h2>
+  <div class="h2rule"></div>
+
+  <h3>Planes</h3>
+  <table>
+    <thead><tr><th style="width:24%">Plan</th><th style="width:22%">Población</th><th class="num">Puesta en marcha</th><th class="num">Mensual</th><th class="num">Primer año</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Comuna</strong></td><td>hasta 10.000 hab.</td><td class="num">UF 20</td><td class="num">UF 8</td><td class="num">UF 116 (≈66 UTM)</td></tr>
+      <tr><td><strong>Comuna Mayor</strong></td><td>10.001 a 50.000</td><td class="num">UF 24</td><td class="num">UF 12</td><td class="num">UF 168 (≈96 UTM)</td></tr>
+      <tr><td><strong>Ciudad</strong></td><td>más de 50.000</td><td class="num">UF 45</td><td class="num">UF 20</td><td class="num">UF 285 (≈162 UTM)</td></tr>
+    </tbody>
+  </table>
+  <p class="footnote">
+    Valores en UF, sin IVA, para que el contrato no se desactualice con la inflación. Las
+    equivalencias en UTM se calcularon con los valores vigentes al momento de fijar los precios y
+    deben recalcularse al cotizar.
+  </p>
+
+  <div class="callout">
+    <span class="k">La ventaja regulatoria — el punto más importante del modelo</span>
+    <p>
+      El precio no se fijó por costo ni por el valor del trabajo, sino por dónde está la barrera de
+      compra. Bajo <strong>100 UTM</strong>, una municipalidad puede contratar por <strong>Compra
+      Ágil</strong> (Ley 21.634), sin licitación pública. Los planes Comuna y Comuna Mayor caben bajo
+      ese tope, con holgura deliberada en el plan de entrada. Un competidor con precio empresarial
+      no puede llegar a este comprador sin licitación — y una licitación de una comuna pequeña rara
+      vez le compensa. Esa alineación entre precio, alcance y segmento es la posición defendible del
+      negocio.
+    </p>
+  </div>
+
+  <h3>Características del ingreso</h3>
+  <ul>
+    <li><strong>Sin cobro por uso</strong>: ni por reporte, ni por vecino, ni por funcionario. Un municipio que usa mucho la plataforma paga lo mismo que uno que la usa poco — y es un argumento de venta real.</li>
+    <li><strong>Caja adelantada</strong>: la puesta en marcha se cobra al inicio, y el pago anual anticipado adelanta el año completo cobrando 11 meses en vez de 12.</li>
+    <li><strong>Contraparte pública</strong>: las municipalidades no cambian de proveedor con facilidad; la renovación es un acto administrativo, no una decisión de compra desde cero.</li>
+    <li><strong>Venta por referencia</strong>: alcaldes y directores municipales son una comunidad conectada. El primer cliente de referencia vale de forma desproporcionada, y ya existe.</li>
+  </ul>
+
+  <h3>Qué incluye la venta</h3>
+  <table class="t-tight">
+    <thead><tr><th style="width:30%">Categoría</th><th>Detalle</th></tr></thead>
+    <tbody>
+      <tr><td>Código fuente</td><td>La PWA en React, el servicio de notificaciones en Node/Express, las Cloud Functions, las reglas de seguridad, los índices, la landing comercial y 16 scripts de operación.</td></tr>
+      <tr><td>Despliegues en vivo</td><td>La aplicación en producción, el tenant de demostración y el sitio comercial.</td></tr>
+      <tr><td>Relación con el cliente</td><td>La Ilustre Municipalidad de Licantén, operando.</td></tr>
+      <tr><td>Activos de WhatsApp</td><td>Número de negocio con calidad GREEN, dos plantillas aprobadas y la aplicación de Meta configurada. La aprobación de plantillas toma tiempo real de calendario: heredarlas es una ventaja concreta.</td></tr>
+      <tr><td>Documentación técnica</td><td>Documento maestro de 47 secciones con arquitectura, esquemas, reglas y el porqué de cada decisión; guía de despliegue clic por clic; y documento de traspaso.</td></tr>
+      <tr><td>Material comercial</td><td>Propuesta municipal, notas internas de precios, pauta de reunión con el Alcalde <strong>probada y ganada</strong>, kit de difusión para el lanzamiento y checklist de alta de municipalidad.</td></tr>
+      <tr><td>Marca</td><td>El nombre TuMuniAquí, su identidad visual y la landing comercial.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Dónde está el crecimiento</h3>
+  <ol>
+    <li><strong>Repetir la venta.</strong> Lo difícil del sector público es el primer cliente de referencia, y ya existe. La pauta que lo cerró está escrita con tiempos y frases textuales; la propuesta es una plantilla; el alta es un formulario.</li>
+    <li><strong>Escalar el multi-tenant.</strong> La décima municipalidad tiene prácticamente la misma economía unitaria que la primera.</li>
+    <li><strong>Agregación regional.</strong> Con varias comunas dentro, los mismos datos habilitan una vista provincial o regional comparando tiempos de respuesta — otro comprador, sin desarrollo de núcleo nuevo.</li>
+    <li><strong>Alerta de emergencia al Alcalde.</strong> Especificada completa, con el campo por tenant y su script ya en el producto. Es la función más vendedora de la propuesta.</li>
+    <li><strong>Portabilidad geográfica.</strong> Nada de la arquitectura es específico de Chile: categorías, departamentos, sectores y textos legales son configuración. En español, el producto se entiende de inmediato en casi toda Latinoamérica.</li>
+  </ol>
+
+  <div class="callout blue">
+    <span class="k">Nota final</span>
+    <p>
+      Este informe describe el producto tal como está construido y verificado. Las cifras
+      financieras del §16 quedaron marcadas para completar con los registros contables reales antes
+      de publicar la ficha en Acquire.com: en due diligence el comprador va a pedir respaldo, y un
+      número sin respaldo cuesta más credibilidad de lo que jamás aportaría una cifra alta.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>
