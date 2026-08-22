@@ -16,3 +16,6 @@ entrega-2026-08-02/
 
 # Scripts temporales de QA: llevan contrasenas de prueba en texto plano
 .qa-*.mjs
+
+# Cache del historico de Mercado Publico: se regenera con `npm run mp:historico`
+.cache-mercadopublico.json
