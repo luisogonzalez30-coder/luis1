@@ -99,6 +99,9 @@ for (const [i, c] of aPedir.entries()) {
       fono: oc.Comprador?.FonoContacto ?? '',
       proveedor: oc.Proveedor?.Nombre ?? '',
       total: Number(oc.Total) || 0,
+      // Sin la moneda el monto miente feo: la API mezcla CLP con CLF (UF) y
+      // USD en el mismo listado, y "4.126" en CLF son ~$160 millones.
+      moneda: oc.TipoMoneda ?? '',
       fecha: (oc.Fechas?.FechaEnvio ?? oc.Fechas?.FechaCreacion ?? '').slice(0, 10),
       link: `https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?qs=${c.codigo}`,
     })
@@ -117,12 +120,15 @@ for (const d of detalladas) {
   if (!k) continue
   const acc = porOrganismo.get(k) ?? {
     organismo: d.organismo, region: d.region, comuna: d.comuna,
-    agil: 0, directo: 0, monto: 0, contactos: new Set(), ejemplos: [],
+    agil: 0, directo: 0, montos: {}, contactos: new Set(), ejemplos: [],
   }
   acc[d.mecanismo === 'Compra Ágil' ? 'agil' : 'directo']++
-  acc.monto += d.total
+  // Por moneda y no en un solo total: sumar CLP con CLF (UF) da un numero que
+  // no significa nada. 4.126 CLF son ~$160 millones, no $4.126.
+  const m = d.moneda || 'CLP'
+  acc.montos[m] = (acc.montos[m] ?? 0) + d.total
   if (d.contacto) acc.contactos.add(`${d.contacto}${d.mail ? ` <${d.mail}>` : ''}`)
-  if (acc.ejemplos.length < 3) acc.ejemplos.push(`${d.nombre} ($${fmt(d.total)})`)
+  if (acc.ejemplos.length < 3) acc.ejemplos.push(`${d.nombre} (${fmt(d.total)} ${m})`)
   porOrganismo.set(k, acc)
 }
 
@@ -137,7 +143,11 @@ console.log(`${'═'.repeat(78)}\n`)
 for (const [i, l] of leads.entries()) {
   console.log(`${String(i + 1).padStart(2)}. ${l.organismo}  [${l.region}]`)
   console.log(`    ${l.compras} compras del rubro sin licitar · ${l.agil} Compra Ágil · ${l.directo} Trato Directo`)
-  console.log(`    Monto acumulado: $${fmt(Math.round(l.monto))}`)
+  console.log(
+    `    Monto acumulado: ${Object.entries(l.montos)
+      .map(([m, v]) => `${fmt(Math.round(v))} ${m}`)
+      .join(' + ')}`
+  )
   if (l.contactos.size) console.log(`    Contacto: ${[...l.contactos].slice(0, 2).join(' · ')}`)
   for (const e of l.ejemplos) console.log(`      · ${e}`)
   console.log()
@@ -146,7 +156,7 @@ for (const [i, l] of leads.entries()) {
 const csv = opcion('csv')
 if (csv) {
   const cols = ['codigo', 'fecha', 'mecanismo', 'organismo', 'unidad', 'region', 'comuna',
-    'contacto', 'mail', 'fono', 'nombre', 'total', 'proveedor', 'link']
+    'contacto', 'mail', 'fono', 'nombre', 'total', 'moneda', 'proveedor', 'link']
   const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`
   writeFileSync(csv, [cols.join(','), ...detalladas.map(d => cols.map(c => esc(d[c])).join(','))].join('\n'), 'utf-8')
   console.log(`  → ${csv} (${detalladas.length} filas)`)
