@@ -42,8 +42,14 @@ const campo = (obj, ...nombres) => {
 /**
  * ¿El texto pega con el rubro? Devuelve el puntaje de fit y qué términos
  * pegaron, o null si está excluido.
+ *
+ * `exigirProducto` descarta el texto que solo pegó por términos marcados
+ * `contexto` en el perfil (nombres de área municipal). Se usa en las órdenes
+ * de compra: ahí el nombre es "ASEO Y ORNATO, STOCK DE POLIETILENO", donde el
+ * área pega y el producto no tiene nada que ver con nosotros. En licitaciones
+ * queda apagado, porque el aviso suele nombrar el área y el objeto juntos.
  */
-export const evaluarTexto = texto => {
+export const evaluarTexto = (texto, { exigirProducto = false } = {}) => {
   const t = normalizar(texto)
   if (!t) return { puntaje: 0, terminos: [] }
 
@@ -53,17 +59,28 @@ export const evaluarTexto = texto => {
 
   const terminos = []
   let mayorPeso = 0
-  for (const { termino, peso } of PALABRAS_CLAVE) {
+  let hayProducto = false
+  for (const { termino, peso, contexto } of PALABRAS_CLAVE) {
     if (t.includes(normalizar(termino))) {
       terminos.push(termino)
       mayorPeso = Math.max(mayorPeso, peso)
+      if (!contexto) hayProducto = true
     }
   }
+  if (exigirProducto && !hayProducto) return { puntaje: 0, terminos: [] }
+
   // El término más fuerte manda; los demás suman poco para no premiar avisos
   // largos que nombran medio mundo.
   const puntaje = mayorPeso === 0 ? 0 : mayorPeso + Math.min(terminos.length - 1, 3)
   return { puntaje, terminos }
 }
+
+/**
+ * ¿Es la licitación de un Convenio Marco? Se detecta por texto porque la API
+ * no lo expone como tipo: el llamado viaja como una licitación cualquiera (la
+ * de agosto 2026 salió como LR).
+ */
+export const esConvenioMarco = texto => normalizar(texto).includes('convenio marco')
 
 const diasHasta = fechaIso => {
   if (!fechaIso) return null
@@ -98,8 +115,18 @@ export const puntuarLicitacion = (lic, { recurrencia = new Map() } = {}) => {
   razones.push(`rubro: ${fit.terminos.slice(0, 3).join(', ')}`)
 
   // Competencia: los tramos chicos son donde un proveedor pequeño gana.
+  //
+  // El Convenio Marco es la excepción, y hay que tratarlo aparte o el criterio
+  // lo entierra: viaja como licitación de tramo grande (LR), así que el −2 lo
+  // manda al fondo del listado. Pero el tramo acá no mide competencia — una
+  // vez adjudicado, cualquier organismo compra del catálogo sin licitar, que
+  // es el canal de MENOR competencia de todos. Se puntúa por lo que es.
   const info = TIPOS[tipo]
-  if (info?.chica) {
+  const convenioMarco = esConvenioMarco(`${nombre} ${descripcion}`)
+  if (convenioMarco) {
+    puntaje += 12
+    razones.push('CONVENIO MARCO: catálogo sin licitar, el canal de menor competencia')
+  } else if (info?.chica) {
     puntaje += 4
     razones.push(`monto chico (${tipo}, ${info.tramo})`)
   } else if (info) {
@@ -158,7 +185,7 @@ export const puntuarLicitacion = (lic, { recurrencia = new Map() } = {}) => {
     dias,
     puntaje,
     razones,
-    mecanismo: 'Licitación',
+    mecanismo: convenioMarco ? 'Convenio Marco' : 'Licitación',
     link: `https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?qs=${
       campo(lic, 'CodigoExterno', 'Codigo') ?? ''
     }`,
@@ -170,6 +197,9 @@ export const nivel = puntaje => (puntaje >= 16 ? 'Alto' : puntaje >= 10 ? 'Medio
 
 /** Acción concreta según qué hizo subir el puntaje. */
 export const accionRecomendada = op => {
+  if (op.mecanismo === 'Convenio Marco') {
+    return 'PRIORIDAD: postular al Convenio Marco. Dura 2-3 años y después venden sin licitar'
+  }
   if (op.mecanismo === 'Trato Directo' || op.mecanismo === 'Compra Ágil') {
     return `Contactar a la unidad de compras de ${op.comprador || 'el organismo'} antes de la próxima compra`
   }

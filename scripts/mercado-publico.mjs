@@ -222,8 +222,11 @@ const historico = async mp => {
     }
 
     // Filtro por texto sobre el nombre de la OC, que es lo que trae el listado.
+    // exigirProducto: sin eso, las compras de las direcciones de Aseo y Ornato
+    // y Alumbrado copan el resultado con bolsas de basura y luminarias, y cada
+    // una cuesta una petición de ficha.
     for (const oc of listado) {
-      const r = evaluarTexto(campo(oc, 'Nombre') ?? '')
+      const r = evaluarTexto(campo(oc, 'Nombre') ?? '', { exigirProducto: true })
       if (!r || r.puntaje === 0) continue
       compras.push({
         codigo: campo(oc, 'Codigo', 'CodigoOrden'),
