@@ -1,0 +1,235 @@
+# Revisión diaria de TODOS los sistemas, cada mañana a las 9:00 de Chile.
+#
+# Por qué existe además del vigilante de 30 minutos (vigilar.yml):
+#
+#   vigilar.yml      → "¿se cayó algo AHORA?" cada media hora, sobre 2 cosas
+#                      (sitio del vecino + /salud del bot). Avisa rápido.
+#   esta revisión    → "¿está TODO sano?" una vez al día, sobre todo el
+#                      conjunto: app, portal de tickets, PWA, landing
+#                      comercial, bot y certificados. Además deja un informe
+#                      con números aunque esté todo bien, que es lo que permite
+#                      ver una degradación antes de que sea una caída.
+#
+# La revisión en sí vive en scripts/revisar-sistemas.mjs, no acá, para poder
+# correrla a mano con `npm run revisar` sin esperar a las 9 ni abrir GitHub.
+
+name: Revisión diaria de sistemas
+
+on:
+  schedule:
+    # GitHub solo entiende UTC y no sabe nada de horario de verano. Chile se
+    # mueve entre UTC-4 (invierno) y UTC-3 (verano), así que las 9:00 de allá
+    # caen a las 13:00 UTC medio año y a las 12:00 UTC el otro medio.
+    # Se programan las dos horas y el primer paso descarta la que no
+    # corresponde mirando la hora real en América/Santiago. Sale una sola
+    # corrida útil al día, sin tener que acordarse de cambiar el cron en
+    # septiembre y en abril.
+    - cron: '0 12 * * *'
+    - cron: '0 13 * * *'
+
+  # Para revisar en cualquier momento sin esperar a mañana.
+  workflow_dispatch:
+
+  # Cuando se toca la propia revisión, se corre una vez. Una revisión rota es
+  # peor que no tenerla —da tranquilidad falsa— y el único momento en que se
+  # puede romper es justo este.
+  push:
+    paths:
+      - '.github/workflows/revision-diaria.yml'
+      - 'scripts/revisar-sistemas.mjs'
+
+concurrency:
+  group: revision-diaria
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ¿Son las 9 de la mañana en Chile?
+        id: hora
+        shell: bash
+        run: |
+          # Solo aplica a las corridas programadas: una revisión pedida a mano
+          # o disparada por un cambio tiene que correr siempre.
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "corresponde=si" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          hora_chile=$(TZ=America/Santiago date +%H)
+          if [ "$hora_chile" = "09" ]; then
+            echo "corresponde=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "corresponde=no" >> "$GITHUB_OUTPUT"
+            echo "En Chile son las $hora_chile:00, no las 09:00. Esta es la corrida del otro huso; se omite."
+          fi
+
+      - name: Descargar el código
+        if: steps.hora.outputs.corresponde == 'si'
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        if: steps.hora.outputs.corresponde == 'si'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # --- ¿Lo desplegado corresponde al código de hoy? ---------------------
+      # El error más repetido del proyecto (ESTADO_PROYECTO.md §23, §26): el
+      # código está en main, la CI verde, y producción sigue sirviendo un build
+      # anterior — sin ningún síntoma, hasta que alguien nota que algo que se
+      # programó hace semanas simplemente no existe para los vecinos.
+      #
+      # Vite le pone al bundle un hash de su contenido, así que compilar el
+      # código actual y comparar el nombre del archivo con el que sirve
+      # producción responde la pregunta. Necesita los mismos secretos que el
+      # despliegue, porque esas variables se incrustan en el bundle y cambian
+      # su hash; sin ellos se salta la comparación en vez de inventar una
+      # diferencia que no significa nada.
+      - name: Compilar para comparar con lo desplegado
+        if: steps.hora.outputs.corresponde == 'si'
+        id: build
+        continue-on-error: true
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_CLOUDINARY_CLOUD_NAME: ${{ secrets.VITE_CLOUDINARY_CLOUD_NAME }}
+          VITE_CLOUDINARY_UPLOAD_PRESET: ${{ secrets.VITE_CLOUDINARY_UPLOAD_PRESET }}
+          VITE_USE_FIREBASE_EMULATORS: 'false'
+        shell: bash
+        run: |
+          for v in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN \
+                   VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET \
+                   VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID \
+                   VITE_CLOUDINARY_CLOUD_NAME VITE_CLOUDINARY_UPLOAD_PRESET; do
+            if [ -z "${!v//[[:space:]]/}" ]; then
+              echo "Falta $v: se omite la comparación con lo desplegado."
+              exit 0
+            fi
+          done
+
+          npm ci
+          npm run build
+          bundle=$(ls dist/assets/index-*.js | head -n1 | xargs basename)
+          echo "bundle=$bundle" >> "$GITHUB_OUTPUT"
+          echo "El código actual compila $bundle."
+
+      # --- La revisión propiamente tal --------------------------------------
+      - name: Revisar todos los sistemas
+        if: steps.hora.outputs.corresponde == 'si'
+        id: revisar
+        env:
+          # Igual que en vigilar.yml: la dirección del bot se guarda como
+          # variable (Settings -> Secrets and variables -> Actions -> Variables)
+          # y no como secreto, porque no es secreta y sirve poder leerla en los
+          # registros cuando algo falla. Si no está, el script usa la conocida.
+          URL_BOT: ${{ vars.URL_BOT }}
+          BUNDLE_LOCAL: ${{ steps.build.outputs.bundle }}
+        run: node scripts/revisar-sistemas.mjs
+
+      # --- Avisar cuando algo está roto -------------------------------------
+      # Mismo mecanismo que vigilar.yml: el aviso es un issue, porque es lo
+      # único que llega al correo sin credenciales nuevas ni otro servicio que
+      # también se pueda caer sin que nadie lo note.
+      #
+      # Etiqueta propia (revision-diaria) para no pelear con el vigilante de 30
+      # minutos: aquel abre y cierra su aviso en minutos, este vive un día.
+      #
+      # En las corridas por cambio del propio archivo no se toca ningún aviso:
+      # ahí lo que se está probando es la revisión, no el servicio, y abrir un
+      # issue con el resultado de una prueba confunde a quien lo lea.
+      - name: Avisar o dar por superado
+        if: always() && steps.hora.outputs.corresponde == 'si' && github.event_name != 'push'
+        uses: actions/github-script@v7
+        env:
+          HAY_FALLAS: ${{ steps.revisar.outputs.hay }}
+          DETALLE: ${{ steps.revisar.outputs.detalle }}
+          RESULTADO: ${{ steps.revisar.outcome }}
+        with:
+          script: |
+            const ETIQUETA = 'revision-diaria'
+            const TITULO = 'La revisión diaria encontró problemas'
+            // Si la revisión se cayó sin alcanzar a dejar su resultado (un
+            // error del propio script, el runner que muere), eso también es un
+            // problema: darlo por bueno cerraría un aviso abierto diciendo que
+            // todo está bien cuando en realidad nadie miró nada.
+            const hayFallas = process.env.HAY_FALLAS === 'si' || process.env.RESULTADO === 'failure'
+
+            // El issue abierto ES el estado; no hay nada guardado aparte que se
+            // pueda desincronizar. Filtrar por una etiqueta que todavía no
+            // existe puede fallar en vez de devolver lista vacía, y eso dejaría
+            // sin aviso justo la primera vez que hace falta.
+            let issue = null
+            try {
+              const { data: abiertos } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                labels: ETIQUETA,
+              })
+              issue = abiertos[0] || null
+            } catch (error) {
+              core.warning(`No se pudo buscar avisos abiertos (${error.message}); se asume que no hay.`)
+            }
+
+            if (hayFallas) {
+              const cuerpo = [
+                'La revisión diaria de sistemas encontró esto:',
+                '',
+                process.env.DETALLE || '(sin detalle: la revisión no llegó a terminar)',
+                '',
+                `Revisado: ${new Date().toISOString()}`,
+                `Informe completo: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                '',
+                'Dónde mirar:',
+                '- Registros del bot en Render',
+                '- Estado de las plantillas en Meta (una edición las deja "En revisión" y corta los envíos)',
+                '- Uso de Firestore: https://console.firebase.google.com/project/app-incidencias-urbanas/usage',
+                '- Firebase Hosting, si lo que falla es el sitio o la landing',
+                '',
+                'Este aviso se cierra solo cuando una revisión salga limpia.',
+              ].join('\n')
+
+              if (issue) {
+                // Un issue nuevo por día durante una caída larga entierra la
+                // información. Se comenta en el que ya está, y solo cuando el
+                // detalle cambió.
+                const { data: comentarios } = await github.rest.issues.listComments({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: issue.number, per_page: 100,
+                })
+                const ultimo = comentarios[comentarios.length - 1]
+                if (!ultimo || !ultimo.body.includes((process.env.DETALLE || '').trim())) {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner, repo: context.repo.repo,
+                    issue_number: issue.number, body: cuerpo,
+                  })
+                }
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  title: TITULO, labels: [ETIQUETA], body: cuerpo,
+                })
+              }
+              core.setFailed('Hay sistemas con problemas.')
+            } else if (issue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `Superado. La revisión del ${new Date().toISOString()} salió limpia.`,
+              })
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number, state: 'closed',
+              })
+            }

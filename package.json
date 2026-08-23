@@ -10,6 +10,7 @@
     "emulators": "firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data",
     "seed": "node scripts/seed.js",
     "backup": "node scripts/backup.js",
+    "revisar": "node scripts/revisar-sistemas.mjs",
     "desplegar": "npm install && npm run build && firebase deploy --only hosting",
     "desplegar:reglas": "firebase deploy --only firestore:rules,firestore:indexes"
   },

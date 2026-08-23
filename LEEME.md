@@ -38,6 +38,17 @@ Si alguna vez borras `node_modules`, se recuperan con `npm install`.
 
 Los otros comandos útiles están en `package.json`: `npm run build`, `npm run desplegar`, `npm run backup`, `npm run emulators`.
 
+## Cómo saber si todo está funcionando
+
+```bash
+npm run revisar
+```
+
+Revisa de una pasada la app, el portal de consulta de ticket, la PWA, la landing comercial, el bot de WhatsApp y los certificados, y deja un informe con el estado de cada uno. Termina en error solo si hay algo roto de verdad.
+
+Eso mismo corre **solo, todos los días a las 9:00 de la mañana** (`.github/workflows/revision-diaria.yml`). Si algo está mal, se abre un issue en el repositorio con la etiqueta `revision-diaria` —GitHub manda el correo— y se cierra solo cuando la revisión del día siguiente salga limpia. Es distinto del vigilante de `vigilar.yml`, que cada 30 minutos avisa de una caída inmediata: la revisión diaria mira el conjunto completo y cosas que se degradan despacio, como un certificado a punto de vencer o un despliegue que quedó atrasado.
+
+
 ## Qué hay en cada carpeta
 
 | Carpeta / archivo | Qué es |
