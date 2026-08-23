@@ -260,10 +260,25 @@ async function revisarBot() {
   }
 
   const problemas = informe?.problemas?.length ? informe.problemas.join('; ') : null
+
+  // Los números vienen anidados en "detalle" (ver diagnostico() en
+  // whatsapp-api-oficial/vigilancia.js). Se anotan aunque esté todo bien: ver
+  // día a día cuántos avisos quedaron esperando y hace cuánto que no sale uno
+  // es lo que deja notar una degradación antes de que se convierta en corte.
+  const d = informe?.detalle || {}
   const resumen = informe
-    ? `enviados ${informe.totalEnviados ?? '?'}, fallidos ${informe.totalFallidos ?? '?'}, pendientes ${
-        informe.pendientes ?? informe.pendientesAtrasados ?? '?'
-      }`
+    ? [
+        `enviados ${d.totalEnviados ?? '?'}`,
+        `fallidos ${d.totalFallidos ?? '?'}`,
+        `pendientes ${d.avisosPendientes ?? '?'}`,
+        // null = todavía no sale ningún aviso desde que arrancó el proceso.
+        // No es una falla (Render reinicia el servicio a menudo en plan gratis),
+        // pero conviene que se vea.
+        d.minutosDesdeUltimoEnvioOk === null || d.minutosDesdeUltimoEnvioOk === undefined
+          ? 'sin envíos desde el último arranque'
+          : `último envío hace ${d.minutosDesdeUltimoEnvioOk} min`,
+        `arriba hace ${d.minutosArriba ?? '?'} min`,
+      ].join(', ')
     : salud.cuerpo.slice(0, 200)
 
   if (salud.estado !== 200) {
