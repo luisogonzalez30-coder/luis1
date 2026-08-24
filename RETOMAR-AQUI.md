@@ -153,6 +153,41 @@ decidirlo; **queda como opción abierta, no como pendiente**.
 
 ---
 
+## El contexto ahora se carga solo, y la red dejó de mentir (24-ago-2026)
+
+Dos cosas que arreglan el mismo problema de fondo: cada conversación arrancaba sin saber de
+qué se estaba hablando, y cada una volvía a tropezar con el mismo muro.
+
+**`CLAUDE.md` en la raíz** (PR #10 y #11). Claude Code lo lee solo al inicio de *toda* sesión
+que se abra sobre este repositorio, en cualquier dispositivo, sin que haya que pedirlo. Fija
+el orden de lectura, advierte que `ESTADO_PROYECTO.md` no se lee entero, deja escrito que
+Licantén está en producción, que este repositorio es **solo TuMuniAquí** —los otros frentes
+viven aparte— y que lo que se queda en una rama sin fusionar es invisible para las demás
+sesiones.
+
+**La red de los entornos quedó abierta.** Estaba en `Trusted`, que bloquea el dominio de
+producción: un `curl` devolvía `000` y *parecía* el sitio caído. Ahora está en `Custom` con
+los quince dominios del proyecto, en **los dos entornos** (`Default` y `diseño`). La lista y
+los pasos quedaron en `CLAUDE.md` por si hay que rehacerlo.
+
+Con eso se desbloquea también **Integración API Chile Compras**, que llevaba dos días
+detenida esperando exactamente esto.
+
+**Verificado contra producción el 24-ago a las 16:30 UTC**, ya con la red abierta: app,
+demo, portal de consulta, PWA, landing y bot responden; el bot reporta `ok: true` sin
+problemas y 65 horas en pie; certificados con 29 días. Y lo que más importaba: **el bundle
+publicado lleva la configuración de Firebase incrustada**. Es el fallo silencioso de §39 —si
+esa variable llega vacía el sitio se publica igual, la CI queda verde y el vecino se queda
+mirando la pantalla de carga—; se comprobó por contraste, porque compilar sin `.env` produce
+`apiKey:void 0` y producción no lo tiene.
+
+**Un detalle que va a confundir**: `npm run revisar` puede seguir diciendo "la red bloquea el
+dominio" en una sesión que arrancó *antes* del cambio. `curl` sale por el proxy y `fetch` de
+Node va por otro camino, que conserva la lista con la que arrancó la sesión. En una sesión
+nueva funciona completo. No es un error del script.
+
+---
+
 ## Te toca a ti (bloqueado sin tu acción)
 
 1. ~~Desplegar las reglas~~ — ✅ hecho el 10-ago.
@@ -161,7 +196,7 @@ decidirlo; **queda como opción abierta, no como pendiente**.
 4. ~~**Crear la variable `URL_BOT`**~~ — ✅ **hecho y verificado el 21-ago**. Quedó en `https://proyectomuni.onrender.com`. Costó dos vueltas porque esta misma guía pedía crearla "con algo como `https://tumuniaqui-bot.onrender.com`", una dirección inventada como ejemplo que se copió literal; **Render contesta 404 en cualquier subdominio suyo sin dueño, así que una URL inventada se ve idéntica a un servicio caído** y el vigilante estuvo 7 corridas avisando de una caída que no existía. De ahí salieron dos cambios (PR #7): un 404 ya no se reporta como "el bot reporta problemas" sino como "no existe /salud en esa dirección", y se puede probar una dirección antes de guardarla con el campo `url_bot` en Actions → Vigilar el servicio → Run workflow, sin tocar el aviso real.
 
    **El ciclo completo quedó demostrado en producción**: la corrida 9 revisó el sitio (200) y `/salud` del bot (200, sano) y **cerró sola el aviso #6**. El vigilante corre cada 30 minutos y avisa por issue, que GitHub reenvía por correo.
-5. **Confirmar que el índice `(municipio_id, estado, categoria, fecha_creacion)` de `tickets_publicos` quedó Habilitado** en <https://console.firebase.google.com/project/app-incidencias-urbanas/firestore/indexes>. El usuario confirmó el 21-ago que quedó **Habilitado** (no se pudo verificar desde la sesión: sin credenciales de Firebase, y el proxy bloquea la consola). **Ya no es bloqueante**: `buscarActivosPorCategoria` degrada sola si el índice falta, así que la app funciona igual; sin él simplemente sigue usando la ventana del mapa y la detección de duplicados queda menos precisa. Si aparece como fallido o no existe, se recrea con `npm run desplegar:reglas` o a mano desde esa misma pantalla.
+5. **Confirmar que el índice `(municipio_id, estado, categoria, fecha_creacion)` de `tickets_publicos` quedó Habilitado** en <https://console.firebase.google.com/project/app-incidencias-urbanas/firestore/indexes>. El usuario confirmó el 21-ago que quedó **Habilitado** (no se pudo verificar desde la sesión: sin credenciales de Firebase; el bloqueo del proxy ya no aplica desde el 24-ago). **Ya no es bloqueante**: `buscarActivosPorCategoria` degrada sola si el índice falta, así que la app funciona igual; sin él simplemente sigue usando la ventana del mapa y la detección de duplicados queda menos precisa. Si aparece como fallido o no existe, se recrea con `npm run desplegar:reglas` o a mano desde esa misma pantalla.
 6. **Confirmar las 16 coordenadas de sectores que faltan**: `node scripts/configurar-sectores.mjs licanten --revisar` da un link de Google Maps por sector, menos de un minuto cada uno. Los 3 confirmados ya quedaron cargados el 11-ago (y con la coordenada del centro **corregida**, ver §43.1). Mientras las otras 16 no estén, sus incidencias se agrupan en "Fuera de los sectores definidos" y el buscador de direcciones sigue sin su fuente local, la que funciona sin internet (§37.3).
 7. **Correo de datos personales del municipio**: `node scripts/configurar-contacto-datos.mjs licanten <correo@municipalidad>`. Está vacío, así que las páginas legales mandan al vecino a la Oficina de Partes.
 8. **Revocar la cuenta `TERRENO` del bot viejo** si sigue en `usuarios_municipales`: nadie la usa y tiene permiso de escritura en producción. El bot actual usa cuenta de servicio.
