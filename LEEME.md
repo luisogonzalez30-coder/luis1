@@ -44,7 +44,17 @@ Los otros comandos útiles están en `package.json`: `npm run build`, `npm run d
 npm run revisar
 ```
 
+**En PowerShell usa esto en su lugar**, desde la carpeta del proyecto:
+
+```powershell
+node scripts\revisar-sistemas.mjs
+```
+
+Windows viene con la ejecución de scripts deshabilitada y `npm` en PowerShell es un script (`npm.ps1`), así que `npm run ...` falla con `UnauthorizedAccess` aunque todo esté bien instalado. `node` es un programa, no un script, y no lo bloquea. (La otra salida es escribir `npm.cmd run revisar`; las dos hacen lo mismo y ninguna necesita tocar la configuración de seguridad de Windows.)
+
 Revisa de una pasada la app, el portal de consulta de ticket, la PWA, la landing comercial, el bot de WhatsApp y los certificados, y deja un informe con el estado de cada uno. Termina en error solo si hay algo roto de verdad.
+
+**Sin abrir la consola**: en GitHub, pestaña **Actions** → *Revisión diaria de sistemas* → botón **Run workflow**. Corre lo mismo y deja la tabla en el resumen de la corrida.
 
 Eso mismo corre **solo, todos los días a las 9:00 de la mañana** (`.github/workflows/revision-diaria.yml`). Si algo está mal, se abre un issue en el repositorio con la etiqueta `revision-diaria` —GitHub manda el correo— y se cierra solo cuando la revisión del día siguiente salga limpia. Es distinto del vigilante de `vigilar.yml`, que cada 30 minutos avisa de una caída inmediata: la revisión diaria mira el conjunto completo y cosas que se degradan despacio, como un certificado a punto de vencer o un despliegue que quedó atrasado.
 
