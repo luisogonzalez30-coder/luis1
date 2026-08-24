@@ -188,6 +188,38 @@ nueva funciona completo. No es un error del script.
 
 ---
 
+## Qué guarda cada rama, para poder archivar las conversaciones (24-ago-2026)
+
+La barra lateral se llenó de conversaciones y conviene ordenarla. Antes de hacerlo, esto:
+
+**Archivar, no borrar.** Archivar las esconde de la lista y se puede deshacer. Borrar elimina
+la conversación y sus datos de forma **permanente**. Y ojo: **el historial de un chat no lo
+puede recuperar nadie**, tampoco Claude en otra sesión — de las demás conversaciones solo se
+ve el título, el estado y la rama. Lo que se pierde al borrar es el razonamiento, no el
+código.
+
+**El código está a salvo**: todas las sesiones de este repositorio empujaron su rama a GitHub
+y las ramas sobreviven aunque la conversación desaparezca. Se recupera cualquiera con
+`git checkout claude/<rama>`.
+
+| Rama (`claude/…`) | Qué guarda | Último commit | Estado |
+|---|---|---|---|
+| `chile-compras-api-integration-b4zcip` | Integración con la API de Mercado Público (+1.131 líneas, `docs/MERCADO-PUBLICO.md`) | 22-ago | Sin fusionar. Estaba detenida por la red, ya levantada |
+| `mercado-publico-verification-vrgedr` | Lo anterior más 2 commits: la moneda de cada orden (4.126 UF no son $4.126) y el Convenio Marco | 22-ago | Sin fusionar. **Es la que contiene lo demás**, si se retoma una sola, esta |
+| `tumuniaqui-pdf-report-c7ubr7` | El informe de producto y tecnología para publicar en **Acquire.com**, con PDF armado (`docs/acquire/`) | 22-ago | Sin fusionar |
+| `organize-project-folders-iiwdbv` | Organizador de carpetas: `scripts/organizar-claude.ps1` y `.sh` | 23-ago | Sin fusionar. Esperaba que corrieras el script que mueve los secretos |
+| `web-automation-daily-9am-g2y52n` | 10 líneas en `LEEME.md`: cómo correr la revisión desde PowerShell | 24-ago | Sin fusionar. Lo demás de esa sesión ya entró en el PR #9 |
+| `remove-unnecessary-folders-sb79yn` | **Borra `functions/`** (−3.063 líneas): Cloud Functions nunca desplegadas que duplicaban el bot | 16-ago | Sin fusionar. Conviene comprobarlo antes de fusionar algo que elimina |
+| `tienda-shopify-v3-v8des8` | Investigación de producto y ficha para Shopify (`tienda-shopify/`) | 05-ago | Sin fusionar. **No es TuMuniAquí**, ver el alcance en `CLAUDE.md` |
+| `nueva-skill-instalada-rlmxjb` | **Centinela TA**, plataforma de Transparencia Activa: 87 archivos, +10.810 líneas | 15-ago | **PR #2 abierto**. Tampoco es TuMuniAquí |
+| `retomar-aqui-md-9f2ccr` | Un retoque suelto de este mismo archivo | 21-ago | Sin fusionar, resto de una tanda ya publicada |
+
+**Las conversaciones de `cosas2` y `kpop` son distintas**: no tienen repositorio asociado, así
+que lo único que existe de ellas es el chat. Ahí borrar **sí** es pérdida total y no hay nada
+que rescatar después. Sacar lo que sirva antes de tocarlas.
+
+---
+
 ## Te toca a ti (bloqueado sin tu acción)
 
 1. ~~Desplegar las reglas~~ — ✅ hecho el 10-ago.
