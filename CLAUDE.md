@@ -16,6 +16,16 @@ práctica.
 - App: https://app-incidencias-urbanas.web.app/licanten
 - Demo: https://app-incidencias-urbanas.web.app/demo
 
+## Alcance — qué entra aquí y qué no
+
+Este repositorio es **solo TuMuniAquí**: la app, el bot de WhatsApp, la landing, los scripts
+y el material comercial con el que se vende a municipalidades (propuesta, informes, Mercado
+Público, ChileCompra). Todo eso es el mismo producto y comparte este contexto.
+
+Lo que **no** entra: los otros frentes del usuario (la API de ChatGPT, log-inspa.cl, MundoGol,
+kpop). Viven en sus propios espacios y no deben mezclarse acá — mezclarlos es lo que hacía que
+cada conversación arrancara sin saber de qué se estaba hablando.
+
 ## Antes de tocar nada — el orden de lectura
 
 1. **`RETOMAR-AQUI.md`** — siempre, entero. Es corto y dice dónde quedó el trabajo y qué
