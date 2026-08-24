@@ -72,6 +72,49 @@ El `.env` de la carpeta local del usuario tiene credenciales reales de Firebase 
 Nunca subirlas al repositorio, nunca pegarlas en un chat, nunca mandarlas a un servicio
 externo. `serviceAccountKey.json` y `backups/` viven fuera del repositorio y ahí se quedan.
 
+## Un muro conocido: no se llega al sitio desde estas sesiones
+
+La política de red de estos contenedores **bloquea el dominio de producción**
+(`app-incidencias-urbanas.web.app`): el proxy responde 403 al intentar conectarse. Un
+`curl` desde aquí devuelve código `000`, que *parece* el sitio caído y no lo es. No sacar
+conclusiones de eso ni salir a arreglar nada: comprobar el estado real mirando la última
+corrida de `vigilar.yml` en GitHub Actions, que sí alcanza el sitio.
+
+Lo mismo bloquea las APIs externas (es lo que dejó detenida la integración con Mercado
+Público). GitHub es la excepción: va por un proxy aparte y funciona igual, lo que hace
+confuso el diagnóstico —se puede leer el repositorio pero no el sitio que ese repositorio
+publica.
+
+**Cómo se levanta** (solo el usuario, desde claude.ai/code → ícono de nube sobre la caja de
+mensajes → engranaje del entorno → `Network access` → **Custom**, marcando
+`Also include default list of common package managers`; sin esa casilla se rompe npm).
+Hay **dos entornos** y las sesiones están repartidas entre ambos: `Default` y `diseño`.
+Arreglar uno solo deja el problema vivo en la mitad de las conversaciones.
+
+La lista de dominios que necesita este proyecto:
+
+```
+app-incidencias-urbanas.web.app     la app y el portal de consulta
+tumuniaqui.web.app                  la landing comercial
+proyectomuni.onrender.com           el bot de WhatsApp (/salud)
+api.mercadopublico.cl               Mercado Público
+www.mercadopublico.cl
+graph.facebook.com                  API oficial de WhatsApp (Meta)
+api.cloudinary.com                  fotos de los vecinos
+res.cloudinary.com
+nominatim.openstreetmap.org         buscador de direcciones
+server.arcgisonline.com             vista satelital
+*.googleapis.com                    Firebase, para los scripts de scripts/
+*.firebaseio.com
+fonts.gstatic.com
+unpkg.com
+cdnjs.cloudflare.com
+*.frame.claudeusercontent.com       lectura de artefactos
+```
+
+El cambio aplica solo a sesiones nuevas: las que ya están corriendo conservan la política
+con la que arrancaron.
+
 ## Vigilancia automática
 
 - `.github/workflows/vigilar.yml` — cada 30 minutos, avisa de una caída inmediata.
