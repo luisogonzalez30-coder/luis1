@@ -17,7 +17,21 @@ name: Desplegar sitio
 on:
   push:
     branches: [main]
+    # Publicar en producción tiene que significar que algo cambió de verdad.
+    # Estos archivos no entran en la compilación —Firebase sirve solo dist/, y
+    # nada en src/ importa un .md— así que republicar el sitio de un municipio
+    # en funcionamiento por una nota o una guía es riesgo sin contraparte.
+    #
+    # GitHub omite la corrida solo si TODOS los archivos del cambio calzan con
+    # esta lista: código acompañado de documentación despliega igual, y tocar
+    # este mismo workflow también, porque no es un .md.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
 
 # Si se empujan dos commits seguidos, cancela el despliegue viejo en vez de
 # encolar los dos: publicar una versión ya superada solo confunde.

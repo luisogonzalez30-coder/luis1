@@ -303,6 +303,14 @@ Entra al Pull Request: <https://github.com/luisogonzalez30-coder/luis1/pull/3>
 Y de ahí en adelante, cada cambio funciona igual: se abre un PR, miras la vista
 previa, aprietas Merge.
 
+**Salvo cuando el cambio es solo documentación.** Si un PR toca únicamente
+archivos `.md` o la carpeta `docs/`, el despliegue **no corre**: no aparece la
+vista previa y el sitio real no se republica. No está roto, es a propósito —esos
+archivos no entran en la compilación, así que republicar el sitio de un
+municipio en funcionamiento por una nota es riesgo sin nada a cambio. Basta que
+el cambio toque un archivo más, del tipo que sea, para que el despliegue vuelva
+a correr con todo.
+
 ## Si algo sale mal
 
 Entra a <https://github.com/luisogonzalez30-coder/luis1/actions> y abre la
