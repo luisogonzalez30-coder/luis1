@@ -72,6 +72,18 @@ El `.env` de la carpeta local del usuario tiene credenciales reales de Firebase 
 Nunca subirlas al repositorio, nunca pegarlas en un chat, nunca mandarlas a un servicio
 externo. `serviceAccountKey.json` y `backups/` viven fuera del repositorio y ahí se quedan.
 
+## Un muro conocido: no se llega al sitio desde estas sesiones
+
+La política de red de estos contenedores **bloquea el dominio de producción**
+(`app-incidencias-urbanas.web.app`): el proxy responde 403 al intentar conectarse. Un
+`curl` desde aquí devuelve código `000`, que *parece* el sitio caído y no lo es. No sacar
+conclusiones de eso ni salir a arreglar nada: comprobar el estado real mirando la última
+corrida de `vigilar.yml` en GitHub Actions, que sí alcanza el sitio.
+
+Lo mismo bloquea las APIs externas (es lo que dejó detenida la integración con Mercado
+Público). Levantarlo requiere que el usuario configure los dominios permitidos en el
+entorno; no se puede hacer desde dentro de la sesión.
+
 ## Vigilancia automática
 
 - `.github/workflows/vigilar.yml` — cada 30 minutos, avisa de una caída inmediata.
