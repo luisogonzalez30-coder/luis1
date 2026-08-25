@@ -91,10 +91,16 @@ merge a `main` publica en producción. Guía clic por clic, sin terminal, en
 | Secreto `FIREBASE_SERVICE_ACCOUNT` en GitHub | ✅ creado |
 | Los 8 secretos `VITE_*` en GitHub | ✅ creados |
 | Vista previa publicándose sola en el PR #3 | ✅ verificado |
-| Merge a `main` → producción | ⬜ **nunca se ha ejecutado todavía** |
+| Merge a `main` → producción | ✅ **ejecutado y verde** (24 y 25-ago) |
 
-Esa última fila importa: el flujo solo ha corrido sobre `pull_request`. **Por
-esta vía no se ha publicado nada en producción.**
+Esa última fila decía "nunca se ha ejecutado todavía" y quedó desactualizada:
+el 24-ago hubo dos publicaciones a producción por esta vía, las dos exitosas, y
+el 25-ago salió la tanda de IA (§48). El flujo ya no es teórico.
+
+Lo que sí sigue siendo cierto: **desde estas sesiones no se puede mirar el sitio
+publicado**, solo leer el código y las corridas de Actions. Que el despliegue
+diga "success" quiere decir que Firebase recibió los archivos, no que la
+pantalla se vea bien. Esa comprobación sigue siendo tuya.
 
 ### Tres diagnósticos equivocados que costaron vueltas
 
@@ -244,9 +250,13 @@ Cuatro cosas que conviene tener claras antes de encenderlo:
   propia variable. Antes de encenderla con vecinos reales hay que sumarlo a la política de
   privacidad, que además sigue esperando abogado.
 
-Verificado: **31 + 25 pruebas pasando**, el frontend compila y `npm run revisar` da todo verde
-contra producción. Lo que **no** se pudo hacer desde acá: probar contra la API real (no hay
-clave en este entorno) ni desplegar. La revisión visual sigue siendo tuya.
+Verificado: **31 + 25 pruebas pasando**, y **ya está publicado en producción** (25-ago). El
+despliegue automático corrió verde, el sitio sirve el bundle nuevo y se comprobó por contraste
+que lleva la configuración de Firebase incrustada — el fallo silencioso de §39, que publica un
+sitio muerto con la CI en verde.
+
+Lo que **no** se pudo hacer desde acá: probar contra la API real de Claude (no hay clave en
+este entorno) ni mirar la pantalla. **La revisión visual sigue siendo tuya.**
 
 ---
 
@@ -270,8 +280,12 @@ clave en este entorno) ni desplegar. La revisión visual sigue siendo tuya.
        Environment** como `ANTHROPIC_API_KEY`. Conviene poner también `IA_TOPE_USD_MES`
        (25 es un valor cómodo: en el escenario realista se gasta ~$5). Al guardar, Render
        reinicia solo y el log dice `[ia] Activa con modelo claude-opus-5`.
-    2. **Fusionar a `main`** para que salga el frontend: la sugerencia de categoría y el
-       resumen de la Cuenta Pública son cambios de la app, no del bot.
+    2. ~~Fusionar a `main`~~ — ✅ **hecho el 25-ago**. El frontend ya está publicado y
+       verificado contra producción: el bundle nuevo se está sirviendo, lleva la
+       configuración de Firebase incrustada (la comprobación del fallo silencioso de
+       §39) y trae el código de IA adentro. Como no hay clave todavía, el formulario
+       se comporta exactamente igual que antes — la sugerencia solo aparecerá cuando
+       hagas el paso 1.
     3. Probarlo tú: reportar algo eligiendo **a propósito la categoría equivocada** y ver si
        el aviso aparece en el Paso 3. Y escribirle al número algo que no sea un ticket
        ("¿cuándo arreglan la luz de mi calle?") para ver si contesta en vez de mostrar el menú.

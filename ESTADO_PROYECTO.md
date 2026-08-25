@@ -1799,7 +1799,20 @@ vieja. Ahora comprueba lo que el código de verdad hace y `probar-webhook.js` pa
 
 ### 48.9 Lo que falta para que esto se encienda
 
-Nada de esto está corriendo todavía: **falta la clave y falta desplegar**. Los pasos están en
-`RETOMAR-AQUI.md`. En resumen: crear `ANTHROPIC_API_KEY` en Render, fusionar a `main` para que
-salga el frontend, y —solo si se quiere la transcripción— resolver antes lo de la política de
-privacidad.
+**El código ya está en producción** (fusionado y publicado el 25-ago-2026), pero **la IA sigue
+apagada**: falta la clave. Mientras no exista `ANTHROPIC_API_KEY` en Render, el sitio publicado
+se comporta exactamente igual que antes.
+
+Lo que falta, entonces, es un solo paso: crear esa variable en Render → Settings →
+Environment, junto con `IA_TOPE_USD_MES`. Al guardarla Render reinicia solo y el log dice
+`[ia] Activa con modelo claude-opus-5`.
+
+La transcripción de audios queda aparte y no conviene encenderla todavía: suma un proveedor
+que recibe voz de vecinos, y eso hay que declararlo antes en la política de privacidad
+(§48.6 y §48.6.b).
+
+Verificación del despliegue, hecha el mismo día: el sitio sirve el bundle nuevo, el chunk de
+`App` trae la `apiKey` con formato real (no `void 0`) y el bucket correcto
+(`firebasestorage.app`, no `appspot.com`), y el código de IA está adentro. Es la comprobación
+por contraste que describe §39 — la que distingue un sitio publicado de un sitio publicado y
+muerto.
