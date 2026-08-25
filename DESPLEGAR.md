@@ -347,3 +347,77 @@ parado en esa carpeta.
 Solo el sitio. **Las reglas e índices de Firestore siguen siendo manuales**, a
 propósito: una regla mal desplegada puede dejar la app inaccesible o abrir datos
 de los vecinos, y eso no debería pasar sin que alguien lo mire.
+
+---
+
+# El bot de WhatsApp se publica APARTE (Render)
+
+Esto es lo que más confunde de este proyecto, y conviene tenerlo claro de una vez:
+
+| Qué | Dónde vive | Cómo se publica |
+|---|---|---|
+| El sitio del vecino, la landing | Firebase Hosting | **Solo**, al hacer merge a `main` |
+| El bot de WhatsApp y **toda la IA** | Render | **A mano**, desde el panel de Render |
+
+O sea que puedes publicar el sitio, verlo actualizado, y creer que ya está todo — mientras el
+bot sigue corriendo la versión de la semana pasada. Pasó el 25-ago-2026: el frontend con las
+funciones de IA salió solo, y el bot se quedó con el código viejo respondiendo `404` en
+`/ia/estado`.
+
+## Cómo publicar el bot, clic por clic
+
+1. Entra a **<https://dashboard.render.com>** y haz login.
+2. En la lista de servicios, toca **`proyectomuni`** (es el que responde en
+   <https://proyectomuni.onrender.com>).
+3. Arriba a la derecha, botón **`Manual Deploy`** → **`Deploy latest commit`**.
+4. Se abre la pestaña **Logs** sola. Espera 1-3 minutos, hasta que diga `Live`.
+
+Mientras despliega, el bot viejo **sigue atendiendo**: Render solo cambia al nuevo cuando el
+build termina bien. Si el build falla, se queda con el anterior y no se cae nada.
+
+## Cómo saber si quedó bien, sin entrar a Render
+
+Abre esta dirección en el navegador:
+
+**<https://proyectomuni.onrender.com/ia/estado>**
+
+- `{"activa":true}` → la IA está encendida y funcionando.
+- `{"activa":false}` → el código nuevo está publicado, pero **falta la clave** (o se alcanzó el
+  tope de gasto del mes).
+- `Cannot GET /ia/estado` (404) → **el código nuevo no está publicado**. Vuelve al paso 3.
+
+Esos tres casos son distintos y llevan a arreglos distintos. Vale la pena mirarlo antes de
+buscar el problema en otra parte.
+
+Y para ver que el servicio en general está sano: **<https://proyectomuni.onrender.com/salud>**.
+El campo `minutosArriba` dice hace cuánto arrancó — si acabas de desplegar y sigue siendo un
+número grande, el deploy no ocurrió.
+
+## Las variables de entorno de la IA
+
+En Render: servicio `proyectomuni` → **`Environment`** en el menú de la izquierda →
+**`Add Environment Variable`**. Al guardar, **Render reinicia el servicio solo**.
+
+| Variable | Valor | Para qué |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | la clave de <https://console.anthropic.com> | Enciende toda la IA. Sin esto, todo funciona como antes |
+| `IA_TOPE_USD_MES` | `25` | Tope de gasto. Al alcanzarlo la IA se apaga sola, sin caerse |
+| `IA_MAX_TURNOS` | `6` | Cuántas veces seguidas contesta el bot con IA antes de volver al menú |
+
+**Ojo con el botón `Save Changes`**: si no lo aprietas, la variable no queda guardada y el
+servicio no reinicia. La forma de comprobarlo es `minutosArriba` en `/salud`: si no bajó a
+cerca de cero, no se guardó nada.
+
+`OPENAI_API_KEY` (transcripción de notas de voz) es aparte y **conviene dejarla apagada**:
+manda la voz de los vecinos a un tercero, y eso hay que declararlo antes en la política de
+privacidad. Ver §48.6 en `ESTADO_PROYECTO.md`.
+
+## Si el deploy falla
+
+En **Logs**, busca la línea roja. Las dos causas habituales:
+
+- **`npm ci` falla** — el `package-lock.json` de `whatsapp-api-oficial/` no calza con su
+  `package.json`. Pasa si alguien agregó una dependencia sin subir el lock.
+- **`Faltan variables de entorno: ...`** — el servicio arranca y se apaga solo. El mensaje
+  nombra cuál falta. Son `FIREBASE_SERVICE_ACCOUNT`, `WHATSAPP_TOKEN` y
+  `WHATSAPP_PHONE_NUMBER_ID`; las de IA **nunca** impiden arrancar.
