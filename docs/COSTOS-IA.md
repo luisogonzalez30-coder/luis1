@@ -71,6 +71,19 @@ desde el primer reporte real, medir la precisión con datos de verdad, y recién
 evaluar si Haiku la mantiene. Cambiar de modelo es una línea en `ia.js` y es
 reversible.
 
+## Corrección a la baja, tras implementarlo (25-ago-2026)
+
+Los escenarios de arriba suponen que **cada conversación** pasa por el modelo. La
+implementación quedó más barata que eso: el bot conserva sus caminos deterministas
+—un número de ticket y "mis reportes" se siguen respondiendo con el código de
+siempre, gratis— y la IA **solo cubre lo que antes terminaba en el menú de "no te
+entendí"** (§48.5).
+
+O sea que las cifras de la tabla son un **techo**, no una estimación central. Cuánto
+más barato sale de verdad depende de qué proporción de los mensajes son consultas de
+ticket, y eso recién se va a saber con vecinos reales usándolo. Conviene medirlo con
+el gasto que queda registrado en `configuracion/ia_gasto` antes de ajustar el tope.
+
 ## El bot conversacional es la partida que hay que vigilar
 
 Su costo depende de **conversaciones, no de reportes** — un vecino puede escribir diez
