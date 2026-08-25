@@ -4,13 +4,16 @@
   "private": true,
   "description": "Notificaciones WhatsApp (Meta Cloud API oficial) para reporte-incidencias-urbanas — servicio standalone para Render.com, reemplaza a whatsapp-bot/ (Baileys, no oficial).",
   "main": "server.js",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node server.js",
     "test": "node probar-webhook.js",
     "plantillas": "node ver-plantillas.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
     "axios": "^1.7.7",
     "express": "^4.19.2",
     "firebase-admin": "^12.3.0"

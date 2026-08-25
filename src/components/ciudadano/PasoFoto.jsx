@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Camera, X, AlertTriangle, MessageCircle, WifiOff } from 'lucide-react'
+import { Camera, X, AlertTriangle, MessageCircle, WifiOff, Loader2 } from 'lucide-react'
 import { esWhatsappValido } from '../../utils/telefono'
+import SugerenciaCategoria from './SugerenciaCategoria'
 
 const MAX_FOTOS = 3
 
@@ -19,6 +20,13 @@ export default function PasoFoto({
   onCambiarContacto,
   sinConexion,
   municipioSlug,
+  // Revisión de la categoría a partir de la foto. Todo esto es opcional: si la
+  // IA está apagada llegan en null/false y el paso se ve exactamente como antes.
+  categoria,
+  sugerenciaCategoria,
+  revisandoFoto = false,
+  onAceptarSugerencia,
+  onDescartarSugerencia,
 }) {
   const previews = useMemo(() => fotos.map((f) => URL.createObjectURL(f)), [fotos])
 
@@ -90,7 +98,21 @@ export default function PasoFoto({
         ) : (
           faltaFoto && <p className="mt-2 text-xs text-red-600">Agrega al menos una foto para poder enviar tu reporte.</p>
         )}
+
+        {revisandoFoto && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-500">
+            <Loader2 size={13} className="animate-spin" />
+            Revisando la foto...
+          </p>
+        )}
       </div>
+
+      <SugerenciaCategoria
+        sugerencia={sugerenciaCategoria}
+        categoriaElegida={categoria}
+        onAceptar={onAceptarSugerencia}
+        onDescartar={onDescartarSugerencia}
+      />
 
       <hr className="border-gray-200" />
 

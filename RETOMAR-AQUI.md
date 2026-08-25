@@ -220,6 +220,36 @@ que rescatar después. Sacar lo que sirva antes de tocarlas.
 
 ---
 
+## Las cinco funciones de IA, implementadas y apagadas (25-ago-2026)
+
+Están las cinco que conversamos: **sugerencia de categoría mirando la foto**, **desempate de
+duplicados** entre categorías distintas, **bot conversacional**, **transcripción de notas de
+voz** y **resumen narrado de la Cuenta Pública**. El detalle técnico está en **§48**; el costo,
+en **`docs/COSTOS-IA.md`**.
+
+**Todo viene apagado y no rompe nada.** Sin `ANTHROPIC_API_KEY` el sistema se comporta
+exactamente como hoy: el vecino elige su categoría a mano y el bot muestra su menú de botones.
+Eso es a propósito — se puede desplegar sobre Licantén sin arriesgar nada, y encender después.
+
+Cuatro cosas que conviene tener claras antes de encenderlo:
+
+- **La IA propone, las tablas deciden.** Nunca devuelve gravedad ni departamento: solo la
+  categoría, y §7/§8 siguen derivando el resto. Un municipio puede defender una tabla ante el
+  concejo; no puede defender "el modelo decidió".
+- **No necesita Blaze ni tarjeta de Firebase.** Corre en el servicio de Render, que ya llama
+  APIs externas. Lo de la tarjeta sigue pendiente por lo de siempre (el SLA), no por esto.
+- **El costo tiene techo puesto en código**: tope de gasto mensual que apaga la IA sola, tope
+  de turnos por conversación, y límite por IP en los endpoints públicos.
+- **La transcripción de audio usa otro proveedor** (Claude no acepta audio) y por eso tiene su
+  propia variable. Antes de encenderla con vecinos reales hay que sumarlo a la política de
+  privacidad, que además sigue esperando abogado.
+
+Verificado: **31 + 25 pruebas pasando**, el frontend compila y `npm run revisar` da todo verde
+contra producción. Lo que **no** se pudo hacer desde acá: probar contra la API real (no hay
+clave en este entorno) ni desplegar. La revisión visual sigue siendo tuya.
+
+---
+
 ## Te toca a ti (bloqueado sin tu acción)
 
 1. ~~Desplegar las reglas~~ — ✅ hecho el 10-ago.
@@ -235,6 +265,19 @@ que rescatar después. Sacar lo que sirva antes de tocarlas.
 9. **Confirmar visualmente** que el PDF de la Cuenta Pública sale bien paginado — requiere login al panel del Alcalde, no tengo acceso.
 10. **Tarea programada del respaldo diario** en Windows: nunca confirmaste si la creaste (§25).
 10. **WhatsApp del Alcalde**, si algún día se repone la alerta: `node scripts/configurar-whatsapp-alcalde.mjs licanten +569XXXXXXXX`. Hoy guardar el número no sirve de nada por sí solo (§39.3).
+11. **Encender la IA, si quieres usarla** (§48). Nada de esto corre todavía:
+    1. Sacar una clave en `console.anthropic.com` y cargarla en **Render → Settings →
+       Environment** como `ANTHROPIC_API_KEY`. Conviene poner también `IA_TOPE_USD_MES`
+       (25 es un valor cómodo: en el escenario realista se gasta ~$5). Al guardar, Render
+       reinicia solo y el log dice `[ia] Activa con modelo claude-opus-5`.
+    2. **Fusionar a `main`** para que salga el frontend: la sugerencia de categoría y el
+       resumen de la Cuenta Pública son cambios de la app, no del bot.
+    3. Probarlo tú: reportar algo eligiendo **a propósito la categoría equivocada** y ver si
+       el aviso aparece en el Paso 3. Y escribirle al número algo que no sea un ticket
+       ("¿cuándo arreglan la luz de mi calle?") para ver si contesta en vez de mostrar el menú.
+    4. La transcripción de audios queda aparte (`OPENAI_API_KEY`) y **no conviene encenderla
+       todavía**: suma un proveedor nuevo que recibe datos de vecinos y eso hay que declararlo
+       en la política de privacidad primero (§48.6).
 
 ---
 

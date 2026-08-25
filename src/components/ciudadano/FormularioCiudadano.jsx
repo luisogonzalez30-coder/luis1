@@ -16,6 +16,7 @@ import {
   segundosParaPoderReportar,
 } from '../../utils/dispositivo'
 import { distanciaMetros } from '../../utils/distancia'
+import { sugerirCategoria, esElMismoProblema } from '../../services/iaService'
 import { esWhatsappValido, normalizarWhatsapp } from '../../utils/telefono'
 import Boton from '../common/Boton'
 import EncabezadoMunicipio from '../common/EncabezadoMunicipio'
@@ -52,6 +53,14 @@ export default function FormularioCiudadano({ municipio }) {
   const [duplicadoDetectado, setDuplicadoDetectado] = useState(null)
   const [votandoDuplicado, setVotandoDuplicado] = useState(false)
   const [esVotoExistente, setEsVotoExistente] = useState(false)
+
+  // Revisión de la categoría mirando la foto. Es opcional de punta a punta: si
+  // la IA está apagada esto se queda en null y el formulario no cambia en nada.
+  const [sugerenciaCategoria, setSugerenciaCategoria] = useState(null)
+  const [revisandoFoto, setRevisandoFoto] = useState(false)
+  // Para no volver a preguntar por la misma foto si el vecino navega entre
+  // pasos: cada llamada cuesta plata y la respuesta sería idéntica.
+  const fotoRevisadaRef = useRef(null)
 
   const [coordenadas, setCoordenadas] = useState(null)
   // Dirección que el vecino eligió en el buscador del Paso 1 (ver
@@ -281,11 +290,64 @@ export default function FormularioCiudadano({ municipio }) {
     setFotoDescartadaOffline(false)
     setCoordenadas(null)
     setDireccionElegida(null)
+    setSugerenciaCategoria(null)
+    setRevisandoFoto(false)
+    fotoRevisadaRef.current = null
     setEnfoqueMapa(null)
     direccionEditadaAMano.current = false
     setDireccionAutocompletada(false)
     setDuplicadoDetectado(null)
     setEsVotoExistente(false)
+  }
+
+  // Cuando el vecino sube su primera foto, se le pide a la IA que mire si la
+  // categoría que eligió calza con lo que se ve.
+  //
+  // Va en el Paso 3 y no en el 2 porque ese es el orden del formulario: la foto
+  // llega DESPUÉS de elegir la categoría. Eso resultó ser lo mejor igual — así
+  // la IA no adivina en el vacío, sino que revisa una decisión ya tomada, y
+  // solo habla cuando discrepa.
+  useEffect(() => {
+    const foto = fotos[0]
+
+    if (!foto || !categoria) {
+      setSugerenciaCategoria(null)
+      return
+    }
+
+    // Misma foto que ya se revisó: no se vuelve a preguntar.
+    if (fotoRevisadaRef.current === foto) return
+    fotoRevisadaRef.current = foto
+
+    let vigente = true
+    setRevisandoFoto(true)
+
+    sugerirCategoria({ foto, descripcion: detallesAdicionales })
+      .then((sugerencia) => {
+        // Si el vecino ya cambió de foto mientras esto respondía, se descarta:
+        // mostrar la sugerencia de una foto que ya no está sería confuso.
+        if (vigente) setSugerenciaCategoria(sugerencia)
+      })
+      .finally(() => {
+        if (vigente) setRevisandoFoto(false)
+      })
+
+    return () => {
+      vigente = false
+    }
+    // detallesAdicionales queda fuera a propósito: si estuviera, cada tecla que
+    // escribe el vecino dispararía una llamada nueva. Se usa el texto que haya
+    // al momento de subir la foto.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fotos, categoria])
+
+  function aceptarSugerenciaCategoria(nuevaCategoria) {
+    setCategoria(nuevaCategoria)
+    setSugerenciaCategoria(null)
+  }
+
+  function descartarSugerenciaCategoria() {
+    setSugerenciaCategoria(null)
   }
 
   // Elige, de una lista de tickets, el más cercano dentro del radio de duplicado.
@@ -310,9 +372,55 @@ export default function FormularioCiudadano({ municipio }) {
   // construyendo— devuelve null, y ahí sí caemos a la ventana del mapa. Peor
   // que la consulta acotada, pero es exactamente lo que había antes: se pierde
   // precisión, no funcionalidad.
+  // Candidatos cercanos que NO son de la categoría elegida. Son los que la
+  // comparación por categoría exacta deja pasar.
+  function cercanosDeOtraCategoria() {
+    return incidenciasActivas
+      .filter((t) => t.categoria !== categoria && t.coordenadas?.lat && t.coordenadas?.lng)
+      .map((t) => ({ ticket: t, distancia: distanciaMetros(coordenadas, t.coordenadas) }))
+      .filter((c) => c.distancia <= RADIO_DUPLICADO_METROS)
+      .sort((a, b) => a.distancia - b.distancia)
+  }
+
   async function buscarDuplicadoCercano() {
     const porCategoria = await buscarActivosPorCategoria(municipio?.id, categoria)
-    return masCercanoDentroDelRadio(porCategoria || incidenciasActivas)
+    const mismoNombre = masCercanoDentroDelRadio(porCategoria || incidenciasActivas)
+    if (mismoNombre) return mismoNombre
+
+    // El hueco que esto cierra: hasta acá solo se comparan reportes de la MISMA
+    // categoría, así que si un vecino reporta "Bache" y otro "Pavimento
+    // deteriorado" sobre el mismo hoyo, salen dos tickets y la cuadrilla va dos
+    // veces. Como Haversine ya filtró por cercanía, a la IA solo le llegan uno o
+    // dos finalistas — por eso esto cuesta centavos y no corre en la mayoría de
+    // los reportes.
+    const candidatos = cercanosDeOtraCategoria()
+    if (candidatos.length === 0) return null
+
+    const candidato = candidatos[0]
+    const veredicto = await esElMismoProblema({
+      nuevo: {
+        categoria,
+        descripcion: detallesAdicionales,
+        direccion: direccionTexto,
+      },
+      // Del reporte que ya existe solo van los campos PÚBLICOS. En particular
+      // NO va `detalles_adicionales`: ese campo está deliberadamente fuera de
+      // tickets_publicos porque es texto libre y puede mencionar personas (ver
+      // datosTicketPublico en ticketsPublicosService.js). Pedirlo acá habría
+      // devuelto siempre vacío, y peor, habría invitado a "arreglarlo"
+      // agregándolo — que sería filtrarle datos personales a un tercero.
+      // La comparación funciona igual con categoría, lugar y distancia.
+      existente: {
+        categoria: candidato.ticket.categoria,
+        direccion: candidato.ticket.direccion_texto || '',
+        distancia_metros: candidato.distancia,
+      },
+    })
+
+    // Sin veredicto (IA apagada, caída o en duda) se sigue como antes: se crea
+    // un reporte nuevo. Nunca se fusiona por defecto — juntar dos problemas
+    // reales en un solo ticket hace que uno de los dos no se arregle nunca.
+    return veredicto?.esElMismo ? candidato.ticket : null
   }
 
   async function manejarSiguiente() {
@@ -455,6 +563,11 @@ export default function FormularioCiudadano({ municipio }) {
                 onCambiarContacto={setContactoCiudadano}
                 sinConexion={sinConexion}
                 municipioSlug={municipio.id}
+                categoria={categoria}
+                sugerenciaCategoria={sugerenciaCategoria}
+                revisandoFoto={revisandoFoto}
+                onAceptarSugerencia={aceptarSugerenciaCategoria}
+                onDescartarSugerencia={descartarSugerenciaCategoria}
               />
             )}
           </>
