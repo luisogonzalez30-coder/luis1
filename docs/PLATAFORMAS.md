@@ -33,14 +33,16 @@ por eso **no aparecen en ninguna factura pero sí pueden caerse**:
 |---|---|---|
 | **OpenAI** | Transcribir las notas de voz de WhatsApp | **Apagada.** Claude no acepta audio, así que esta función —y solo esta— necesita otro proveedor. Antes de encenderla hay que declararlo en la política de privacidad (§48.6) |
 
-## Una dependencia que NO se usa (aunque lo parezca)
+## Google Maps: se usaba cero, se borró
 
-**Google Maps no se está usando.** `@googlemaps/js-api-loader` está en `package.json` y existe
-`src/utils/googleMapsLoader.js`, pero **ningún componente lo importa**: los mapas son Leaflet
-con tiles de OpenStreetMap y ArcGIS. La variable `VITE_GOOGLE_MAPS_API_KEY` tampoco hace nada.
+**No hay ninguna dependencia de Google Maps, y no hace falta pagar una API key.** Hasta el
+25-ago-2026 el proyecto arrastraba `@googlemaps/js-api-loader` en `package.json`, un
+`src/utils/googleMapsLoader.js` completo y la variable `VITE_GOOGLE_MAPS_API_KEY` — nada de
+eso lo llamaba ningún componente. Los mapas siempre fueron Leaflet con tiles de OpenStreetMap
+y ArcGIS, y el buscador de direcciones siempre fue Nominatim.
 
-Importa saberlo por dos razones: no hay que pagar una API key de Google Maps, y si algún día
-alguien "arregla" ese archivo puede encender un cobro sin querer. Se puede borrar.
+Se borró todo. Queda anotado porque el archivo estaba bien escrito y era creíble: alguien
+podía "terminar de conectarlo" y encender un cobro de Google que el proyecto no necesita.
 
 ## Direcciones para saber si algo está vivo
 

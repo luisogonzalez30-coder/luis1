@@ -24,7 +24,7 @@ Lo que sí sigue afuera, y conviene que siga así:
 | `serviceAccountKey.json` | Correr los scripts de `scripts/`. Da acceso total a la base de datos, saltándose cualquier restricción | Firebase Console → Configuración → Cuentas de servicio |
 | `backups/` | Nada para desarrollar; son respaldos con datos reales de vecinos | Se regeneran con `npm run backup` |
 
-Nota sobre el `.env`: no trae `VITE_GOOGLE_MAPS_API_KEY`. Hoy da igual, porque el buscador de direcciones usa Nominatim (OpenStreetMap, gratis y sin clave). Solo hará falta si se termina de conectar `src/utils/googleMapsLoader.js`, que está escrito pero todavía no lo llama nadie.
+Nota sobre el `.env`: el buscador de direcciones usa Nominatim (OpenStreetMap, gratis y sin clave), así que **no hace falta ninguna clave de mapas**. El cargador de Google Maps que estaba escrito sin usar se borró el 25-ago-2026.
 
 ## Cómo arrancar
 
