@@ -101,10 +101,10 @@ costo tenga techo real.
 
 Dos cosas que se necesitan igual, con IA o sin ella:
 
-- **Render Starter, $7/mes.** Es el pendiente #1 de `RETOMAR-AQUI.md` — hoy el bot
-  corre en plan Free, sin SLA, con un municipio dependiendo de él. La IA lo hace más
-  urgente (el plan Free duerme a los 15 minutos y la primera respuesta llega lenta),
-  pero no lo causa.
+- **Render Starter, $7/mes.** Ya está contratado — se comprobó en el panel el
+  26-ago-2026. Este documento decía "hoy el bot corre en plan Free, sin SLA" y llevaba
+  tiempo desactualizado. Se necesita con IA o sin ella: el plan Free duerme el servicio
+  a los 15 minutos y la primera respuesta llega lenta.
 - **Firebase Blaze.** No hace falta para nada de esto: la IA vive en el servicio de
   Render, que ya llama APIs externas. Blaze se necesita por el dominio propio, que es
   otro tema.
