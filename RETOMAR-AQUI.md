@@ -233,9 +233,14 @@ duplicados** entre categorías distintas, **bot conversacional**, **transcripci�
 voz** y **resumen narrado de la Cuenta Pública**. El detalle técnico está en **§48**; el costo,
 en **`docs/COSTOS-IA.md`**.
 
-**Todo viene apagado y no rompe nada.** Sin `ANTHROPIC_API_KEY` el sistema se comporta
-exactamente como hoy: el vecino elige su categoría a mano y el bot muestra su menú de botones.
-Eso es a propósito — se puede desplegar sobre Licantén sin arriesgar nada, y encender después.
+**Encendida y verificada en producción el 26-ago-2026**: `/ia/estado` responde
+`{"activa":true}` y los ocho sistemas siguen verdes. Lo que costó no fue el código: fue
+descubrir que Render venía desplegando desde una rama sin fusionar — el caso completo está
+contado en `DESPLEGAR.md`, y vale la pena leerlo antes de tocar el bot.
+
+El diseño sigue siendo el mismo: **si la clave se quita, todo vuelve solo al comportamiento
+anterior**, sin caerse. El vecino elegiría su categoría a mano y el bot mostraría su menú de
+botones, como siempre.
 
 Cuatro cosas que conviene tener claras antes de encenderlo:
 
@@ -276,10 +281,8 @@ este entorno) ni mirar la pantalla. **La revisión visual sigue siendo tuya.**
 10. **Tarea programada del respaldo diario** en Windows: nunca confirmaste si la creaste (§25).
 10. **WhatsApp del Alcalde**, si algún día se repone la alerta: `node scripts/configurar-whatsapp-alcalde.mjs licanten +569XXXXXXXX`. Hoy guardar el número no sirve de nada por sí solo (§39.3).
 11. **Encender la IA, si quieres usarla** (§48). Nada de esto corre todavía:
-    1. Sacar una clave en `console.anthropic.com` y cargarla en **Render → Settings →
-       Environment** como `ANTHROPIC_API_KEY`. Conviene poner también `IA_TOPE_USD_MES`
-       (25 es un valor cómodo: en el escenario realista se gasta ~$5). Al guardar, Render
-       reinicia solo y el log dice `[ia] Activa con modelo claude-opus-5`.
+    1. ~~Crear `ANTHROPIC_API_KEY` en Render~~ — ✅ **hecho el 26-ago**, junto con apuntar el
+       servicio a la rama `main` (ver `DESPLEGAR.md`). `/ia/estado` responde `{"activa":true}`.
     2. ~~Fusionar a `main`~~ — ✅ **hecho el 25-ago**. El frontend ya está publicado y
        verificado contra producción: el bundle nuevo se está sirviendo, lleva la
        configuración de Firebase incrustada (la comprobación del fallo silencioso de
@@ -299,7 +302,7 @@ este entorno) ni mirar la pantalla. **La revisión visual sigue siendo tuya.**
 
 Reordenado el 11-ago tras la aceptación. Antes esta lista era "lo que falta para vender"; ahora hay un municipio real usando el sistema, así que los tres primeros puntos son riesgo operativo, no comercial.
 
-1. **La tarjeta. Ahora bloquea de verdad.** El bot corre en Render **plan Free, sin SLA**, y la propuesta compromete descuento por indisponibilidad (§7.2). Firebase sigue en la cuota gratis compartida. Mientras era una demo daba lo mismo; con un municipio dependiendo del servicio a diario es el riesgo más concreto que hay. Sin tarjeta tampoco hay plan Blaze ni dominio propio.
+1. ~~**La tarjeta**~~ — ✅ **resuelto, al menos en Render**. Se comprobó el 26-ago en el panel: el servicio `ProyectoMuni` está en **plan Starter** (0,5 CPU, 512 MB), no en Free. Este documento decía "plan Free, sin SLA" y llevaba tiempo desactualizado. **Firebase sigue en Spark** (cuota gratis compartida), así que lo del plan Blaze y el dominio propio sigue pendiente — pero el riesgo más concreto, que el bot se apagara sin aviso con un municipio dependiendo, ya no está.
 2. **Las 16 coordenadas de sectores que faltan.** Solo 3 de las 19 localidades existen en el panel. Los vecinos de Duao, La Pesca, Idahue y el resto van a reportar y sus incidencias caerán todas en "Fuera de los sectores definidos" — un hueco que en demo no se notaba y con operación real sí. Menos de un minuto por sector: ver el punto 3 de "Te toca a ti".
 3. **Reponer la alerta de emergencias al Alcalde, que ahora tiene plazo.** En la reunión se dijo "en desarrollo, se activa en las próximas semanas", así que la frase ya corre. Es la función más vendedora de la propuesta (§3.3) y hoy **no existe**. Necesita un listener nuevo **y** una plantilla aprobada en Meta (con la API oficial no se puede mandar texto libre fuera de la ventana de 24 h).
 4. **Limpiar los 6 reportes de prueba de Licantén.** Ya no es cosmética: en cuanto entren los reportes reales del municipio, las estadísticas del primer mes y la primera Cuenta Pública nacen contaminadas. Varios son pruebas tuyas y se notan (uno dice *"Reja rota"* pero está categorizado **Árbol caído**; otro es de **Linares**, otra ciudad). Decidir cuáles borrar **antes** de que el municipio empiece a usarlo.

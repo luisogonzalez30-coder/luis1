@@ -9,7 +9,7 @@ acuerda de dónde vive.
 | Plataforma | Para qué | Panel | ¿Cuesta? |
 |---|---|---|---|
 | **Firebase** (Google) | La base de datos (Firestore), el login de funcionarios (Auth) y el hosting del sitio | [console.firebase.google.com](https://console.firebase.google.com/project/app-incidencias-urbanas) | **Gratis** — plan Spark |
-| **Render** | Donde corre el bot de WhatsApp y toda la IA | [dashboard.render.com](https://dashboard.render.com) | **Gratis** — plan Free, **sin SLA** ⚠️ |
+| **Render** | Donde corre el bot de WhatsApp y toda la IA | [dashboard.render.com](https://dashboard.render.com) | **Plan Starter** (pagado) 💰 |
 | **Cloudinary** | Las fotos que suben los vecinos | [console.cloudinary.com](https://console.cloudinary.com) | **Gratis** — plan free |
 | **Meta / WhatsApp Cloud API** | Los avisos y las respuestas por WhatsApp | [developers.facebook.com](https://developers.facebook.com) · [business.facebook.com](https://business.facebook.com) | **Se paga por mensaje de plantilla** 💰 |
 | **GitHub** | El código, el despliegue automático y la vigilancia cada 30 min | [github.com/luisogonzalez30-coder/luis1](https://github.com/luisogonzalez30-coder/luis1) | **Gratis** |
@@ -62,10 +62,14 @@ registros. `npm run revisar` comprueba los ocho sistemas de una pasada.
 
 ## Lo que hay que tener presente
 
-**Dos de estas plataformas están en plan gratuito con un municipio dependiendo del servicio.**
-Render Free no tiene SLA: si se apaga, no sale ningún aviso por WhatsApp y nadie se entera
-hasta que reclama un vecino. Firebase Spark comparte cuota. Es el pendiente #1 de
-`RETOMAR-AQUI.md`, y no lo resuelve ningún cambio de código — necesita una tarjeta.
+**Render ya está en plan pagado** (Starter), comprobado el 26-ago-2026 — este documento y
+`RETOMAR-AQUI.md` decían "Free, sin SLA" y estaban desactualizados. **Firebase sigue en Spark**,
+con cuota gratis compartida, y eso sí sigue pendiente: es lo que bloquea el plan Blaze y el
+dominio propio.
+
+**Ojo con dónde vive el bot**: en el panel de Render no aparece en la lista principal. Está
+dentro del proyecto `My project` → `Production` → `ProyectoMuni`. Los `centinela-ta-*` que se
+ven sueltos son de Centinela TA, otro proyecto.
 
 **Meta es el único costo que crece con el uso desde antes de la IA.** Cada reporte genera al
 menos dos mensajes de plantilla. Verificar la tarifa vigente en Chile sigue pendiente.

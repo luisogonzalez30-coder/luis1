@@ -364,16 +364,25 @@ bot sigue corriendo la versión de la semana pasada. Pasó el 25-ago-2026: el fr
 funciones de IA salió solo, y el bot se quedó con el código viejo respondiendo `404` en
 `/ia/estado`.
 
-## Cómo publicar el bot, clic por clic
+## Ya no hace falta publicarlo a mano (26-ago-2026)
 
-1. Entra a **<https://dashboard.render.com>** y haz login.
-2. En la lista de servicios, toca **`proyectomuni`** (es el que responde en
-   <https://proyectomuni.onrender.com>).
-3. Arriba a la derecha, botón **`Manual Deploy`** → **`Deploy latest commit`**.
-4. Se abre la pestaña **Logs** sola. Espera 1-3 minutos, hasta que diga `Live`.
+`Auto-Deploy` está en **On Commit**, así que el bot se actualiza solo con cada cambio que entre
+a `main`, igual que el sitio. La asimetría que describía esta sección ya no existe.
 
-Mientras despliega, el bot viejo **sigue atendiendo**: Render solo cambia al nuevo cuando el
-build termina bien. Si el build falla, se queda con el anterior y no se cae nada.
+Publicar a mano sigue sirviendo para forzar un despliegue: **`Manual Deploy`** →
+**`Deploy latest commit`**, arriba a la derecha en el servicio `ProyectoMuni`.
+
+Ojo con la otra opción del mismo menú, **`Restart service`**: reinicia el proceso pero **no
+trae código nuevo**. Es la diferencia entre reencender el computador y actualizar el programa,
+y se confunden fácil.
+
+## Dónde está el servicio (cuesta encontrarlo)
+
+En <https://dashboard.render.com> el bot **no** aparece en la lista principal. Los servicios
+que se ven ahí bajo "Ungrouped Services" son los `centinela-ta-*`, que son de **Centinela TA**,
+otro proyecto. El bot está dentro del proyecto **`My project`** → `Production` → **`ProyectoMuni`**.
+
+Su Service ID es `srv-d9qh7q942hec73eb3hl0`, y su dirección <https://proyectomuni.onrender.com>.
 
 ## Cómo saber si quedó bien, sin entrar a Render
 
@@ -392,6 +401,37 @@ buscar el problema en otra parte.
 Y para ver que el servicio en general está sano: **<https://proyectomuni.onrender.com/salud>**.
 El campo `minutosArriba` dice hace cuánto arrancó — si acabas de desplegar y sigue siendo un
 número grande, el deploy no ocurrió.
+
+## El día que Render desplegaba una rama que nadie miraba (25 y 26-ago-2026)
+
+Vale la pena contarlo entero, porque el síntoma no apuntaba a la causa en ningún momento.
+
+**Síntoma**: se fusionó la tanda de IA a `main`, el sitio se publicó solo y quedó correcto,
+pero el bot seguía respondiendo `404` en `/ia/estado`. Se creó la clave en Render, se apretó
+`Manual Deploy`, y el 404 seguía.
+
+**Causa**: en `Settings → Build`, el campo **Branch** decía
+`claude/retomar-aqui-md-9f2ccr` — una rama de trabajo del 21-ago que nunca se fusionó. A esa
+rama le faltaban **1.338 líneas** del bot, entre ellas los tres archivos de la IA. Render
+estaba haciendo su trabajo perfectamente: traía el último commit… de la rama equivocada.
+
+**Lo que despistaba**, en orden:
+
+1. `/salud` respondía `ok: true` y `/` decía `Status: OK`. El servicio estaba sano — lo que
+   estaba mal era *qué versión* corría, y ninguna de esas dos pantallas lo dice.
+2. Guardar una variable de entorno **reinicia** el servicio. Eso hizo que `minutosArriba`
+   bajara a 4 y pareciera que el deploy había funcionado. No había traído código nuevo.
+3. El servicio no aparece en la lista principal del panel, así que el primer `Deploy` se hizo
+   sobre otro proyecto (Centinela TA) sin que nadie lo notara.
+
+**El dato que sí sirve para diagnosticar**: `minutosArriba` en `/salud`. Si no baja a cerca de
+cero, no hubo despliegue **ni** reinicio. Si baja pero la ruta nueva sigue en 404, hubo
+reinicio sin código nuevo — y ahí hay que ir a mirar la rama.
+
+**Lo que esto significaba de fondo**: producción se estaba desplegando desde una rama sin
+fusionar. Nada de lo que entraba a `main` llegaba al bot, y cualquiera que hubiera seguido
+trabajando en esa rama habría publicado a producción sin que nadie lo revisara. Corregido el
+26-ago apuntando el servicio a `main`.
 
 ## Las variables de entorno de la IA
 
