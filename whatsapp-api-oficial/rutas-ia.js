@@ -105,10 +105,31 @@ function crearRouter() {
   })
 
   // Para que la app sepa si mostrar la sugerencia o no, sin tener que intentar
-  // y fallar. Devuelve solo lo que el navegador necesita saber: si está activa.
-  // El gasto y el modelo NO se publican — es una URL pública.
+  // y fallar.
+  //
+  // Devuelve tres booleanos y nada más. El gasto acumulado, el monto del tope y
+  // el modelo NO se publican — es una URL pública y sin login:
+  //
+  //   - Publicar el gasto le diría a cualquiera cuánto lleva gastado el
+  //     municipio este mes.
+  //   - Publicar el monto del tope le diría a quien quisiera dejar la IA
+  //     apagada exactamente cuánto tiene que hacerla gastar.
+  //
+  // `tope_configurado` existe porque hasta ahora la única forma de saber si el
+  // fusible de gasto estaba puesto era entrar a los registros de Render, y una
+  // comprobación que exige entrar al panel es una comprobación que no se hace.
+  // Es un booleano justamente para no publicar el monto.
+  //
+  // `tope_alcanzado` separa los dos motivos por los que `activa` puede ser
+  // false —falta la clave, o se acabó el presupuesto del mes— que se arreglan
+  // de forma distinta. Antes los dos se veían igual desde afuera.
   router.get('/estado', (_req, res) => {
-    res.json({ activa: ia.iaDisponible() })
+    const estado = ia.estadoIa()
+    res.json({
+      activa: estado.activa,
+      tope_configurado: estado.tope_usd_mes !== null,
+      tope_alcanzado: estado.tope_alcanzado,
+    })
   })
 
   // Sugerir la categoría de un reporte a partir de la foto y la descripción.

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "test": "node probar-webhook.js",
+    "test": "node probar-webhook.js && node probar-ia.js && node probar-rutas-ia.js",
     "plantillas": "node ver-plantillas.js"
   },
   "dependencies": {

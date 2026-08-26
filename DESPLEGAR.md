@@ -390,13 +390,36 @@ Abre esta dirección en el navegador:
 
 **<https://proyectomuni.onrender.com/ia/estado>**
 
-- `{"activa":true}` → la IA está encendida y funcionando.
-- `{"activa":false}` → el código nuevo está publicado, pero **falta la clave** (o se alcanzó el
-  tope de gasto del mes).
-- `Cannot GET /ia/estado` (404) → **el código nuevo no está publicado**. Vuelve al paso 3.
+Devuelve tres booleanos:
 
-Esos tres casos son distintos y llevan a arreglos distintos. Vale la pena mirarlo antes de
-buscar el problema en otra parte.
+```json
+{"activa":true,"tope_configurado":true,"tope_alcanzado":false}
+```
+
+- **`activa: true`** → la IA está encendida y funcionando.
+- **`activa: false` con `tope_alcanzado: false`** → el código nuevo está publicado, pero
+  **falta la clave**. Se arregla creando `ANTHROPIC_API_KEY` en Render.
+- **`activa: false` con `tope_alcanzado: true`** → todo está bien configurado, pero **se
+  gastó el presupuesto del mes**. No hay nada que arreglar: la IA vuelve sola el día 1 del
+  mes siguiente. Si hace falta antes, se sube `IA_TOPE_USD_MES`.
+- **`tope_configurado: false`** → la IA funciona, pero **el fusible de gasto no está
+  puesto**: falta la variable `IA_TOPE_USD_MES` en Render, y sin ella el gasto no tiene
+  techo. No es una falla, es un riesgo.
+- **`Cannot GET /ia/estado` (404)** → **el código nuevo no está publicado**. Vuelve al paso 3.
+
+Cada caso lleva a un arreglo distinto. Vale la pena mirarlo antes de buscar el problema en
+otra parte.
+
+**Por qué son booleanos y no números**: esta URL es pública y no pide login. Publicar el
+gasto acumulado le diría a cualquiera cuánto lleva gastado el municipio, y publicar el monto
+del tope le diría a quien quisiera dejar la IA apagada cuánto tiene que hacerla gastar. El
+monto exacto se ve en los registros de Render, en la línea que el bot imprime al arrancar:
+
+```
+[ia] Activa con modelo claude-opus-5. Gasto de 2026-08: US$0.0000 de US$20.
+```
+
+Si esa línea dice `(sin tope)`, la variable no quedó guardada.
 
 Y para ver que el servicio en general está sano: **<https://proyectomuni.onrender.com/salud>**.
 El campo `minutosArriba` dice hace cuánto arrancó — si acabas de desplegar y sigue siendo un
