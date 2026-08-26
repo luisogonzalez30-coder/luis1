@@ -1,9 +1,15 @@
-# Dónde quedamos — 11 de agosto de 2026
+# Dónde quedamos — 26 de agosto de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (44 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (48 secciones).
 
 La app funciona y está en producción: https://app-incidencias-urbanas.web.app/licanten
+**Y desde el 26-ago la IA está encendida.** Las secciones están en orden cronológico, así que
+lo más reciente está más abajo: busca los títulos con fecha **26-ago**.
+
+Otros dos documentos que se escribieron para no volver a calcular ni buscar lo mismo:
+`docs/COSTOS-IA.md` (cuánto cuesta la IA) y `docs/PLATAFORMAS.md` (de qué servicios depende
+todo esto, con sus paneles).
 
 ---
 
@@ -226,42 +232,109 @@ que rescatar después. Sacar lo que sirva antes de tocarlas.
 
 ---
 
-## Las cinco funciones de IA, implementadas y apagadas (25-ago-2026)
+## La IA está encendida y funcionando (26-ago-2026)
 
-Están las cinco que conversamos: **sugerencia de categoría mirando la foto**, **desempate de
-duplicados** entre categorías distintas, **bot conversacional**, **transcripción de notas de
-voz** y **resumen narrado de la Cuenta Pública**. El detalle técnico está en **§48**; el costo,
-en **`docs/COSTOS-IA.md`**.
+**`/ia/estado` responde `{"activa":true}` y los ocho sistemas están verdes.** Las cinco
+funciones corren en producción: sugerencia de categoría mirando la foto, desempate de
+duplicados entre categorías distintas, bot conversacional, transcripción de notas de voz
+(apagada aparte, ver abajo) y resumen narrado de la Cuenta Pública.
 
-**Encendida y verificada en producción el 26-ago-2026**: `/ia/estado` responde
-`{"activa":true}` y los ocho sistemas siguen verdes. Lo que costó no fue el código: fue
-descubrir que Render venía desplegando desde una rama sin fusionar — el caso completo está
-contado en `DESPLEGAR.md`, y vale la pena leerlo antes de tocar el bot.
+El detalle técnico está en **§48**. El costo, en **`docs/COSTOS-IA.md`**: en el escenario
+realista para Licantén (100 reportes/mes) son **~$5.000 al mes**, un 1% de las 12 UF del plan
+Comuna. Es pago por uso, sin suscripción.
 
-El diseño sigue siendo el mismo: **si la clave se quita, todo vuelve solo al comportamiento
-anterior**, sin caerse. El vecino elegiría su categoría a mano y el bot mostraría su menú de
-botones, como siempre.
-
-Cuatro cosas que conviene tener claras antes de encenderlo:
+### Lo que hay que entender del diseño
 
 - **La IA propone, las tablas deciden.** Nunca devuelve gravedad ni departamento: solo la
   categoría, y §7/§8 siguen derivando el resto. Un municipio puede defender una tabla ante el
-  concejo; no puede defender "el modelo decidió".
-- **No necesita Blaze ni tarjeta de Firebase.** Corre en el servicio de Render, que ya llama
-  APIs externas. Lo de la tarjeta sigue pendiente por lo de siempre (el SLA), no por esto.
-- **El costo tiene techo puesto en código**: tope de gasto mensual que apaga la IA sola, tope
-  de turnos por conversación, y límite por IP en los endpoints públicos.
-- **La transcripción de audio usa otro proveedor** (Claude no acepta audio) y por eso tiene su
-  propia variable. Antes de encenderla con vecinos reales hay que sumarlo a la política de
-  privacidad, que además sigue esperando abogado.
+  concejo; no puede defender "el modelo decidió". Además la categoría se valida contra el
+  catálogo real: una que no existe se descarta y no llega a Firestore.
+- **Si se quita la clave, todo vuelve solo al comportamiento anterior**, sin caerse. El vecino
+  elegiría su categoría a mano y el bot mostraría su menú de botones (§41.5).
+- **El costo tiene techo puesto en código**: tope de gasto mensual que apaga la IA sola
+  (persistido en `configuracion/ia_gasto`, para que sobreviva a los reinicios), tope de turnos
+  por conversación, y límite por IP en los endpoints públicos.
+- **En el bot, el orden de resolución no cambió.** Un número de ticket y "mis reportes" siguen
+  siendo deterministas y gratis; la IA solo cubre lo que antes caía en el menú de "no te
+  entendí". Por eso cuesta bastante menos de lo calculado.
 
-Verificado: **31 + 25 pruebas pasando**, y **ya está publicado en producción** (25-ago). El
-despliegue automático corrió verde, el sitio sirve el bundle nuevo y se comprobó por contraste
-que lleva la configuración de Firebase incrustada — el fallo silencioso de §39, que publica un
-sitio muerto con la CI en verde.
+### Lo único que sigue apagado, a propósito
 
-Lo que **no** se pudo hacer desde acá: probar contra la API real de Claude (no hay clave en
-este entorno) ni mirar la pantalla. **La revisión visual sigue siendo tuya.**
+**La transcripción de notas de voz.** Claude no acepta audio, así que necesita otro proveedor
+(`OPENAI_API_KEY`, variable aparte). Eso significa un tercero más recibiendo **la voz de los
+vecinos**, que es el dato más sensible de todo el sistema. Antes de encenderla hay que sumarlo
+a la política de privacidad (§35.2), que además sigue esperando revisión de abogado.
+
+### Lo que falta, y es tuyo
+
+**Probarla con los ojos.** Desde estas sesiones no se puede mirar la pantalla. Dos pruebas de
+un minuto:
+
+1. Reportar algo eligiendo **a propósito la categoría equivocada** — en el Paso 3, al subir la
+   foto, debería aparecer el aviso proponiendo la correcta.
+2. Escribirle al WhatsApp del municipio algo que **no** sea un número de ticket ("¿cuándo
+   arreglan la luz de mi calle?"). Antes salía el menú de botones; ahora debería contestar.
+
+---
+
+## Dos días que costó encender la IA, y por qué vale leerlo (25 y 26-ago-2026)
+
+El código estuvo listo el 25 y funcionaba. Lo que costó fue el despliegue, y ninguna pista
+apuntaba a la causa.
+
+**Render venía desplegando el bot desde `claude/retomar-aqui-md-9f2ccr`**, una rama de trabajo
+del 21-ago que nunca se fusionó y a la que le faltaban **1.338 líneas** del bot, incluidos los
+tres archivos de IA. Render hacía su trabajo perfecto: traía el último commit… de la rama
+equivocada.
+
+**Eso era más grave que la IA apagada**: producción se desplegaba desde una rama sin fusionar,
+así que nada de lo que entraba a `main` llegaba al bot, y cualquiera que hubiera seguido
+trabajando en esa rama habría publicado sin que nadie lo revisara. Corregido apuntando el
+servicio a `main`.
+
+**Los tres espejismos que hicieron perder tiempo** (el caso completo, en `DESPLEGAR.md`):
+
+1. `/salud` decía `ok: true` y `/` decía `Status: OK`. El servicio estaba sano — lo que estaba
+   mal era *qué versión* corría, y ninguna de esas pantallas lo dice.
+2. Guardar una variable de entorno **reinicia** el servicio. Eso hizo que el contador bajara a
+   4 minutos y pareciera que el deploy había funcionado. No había traído código nuevo.
+3. El servicio **no aparece** en la lista principal de Render: está dentro de `My project` →
+   `Production` → `ProyectoMuni`. Los `centinela-ta-*` que se ven sueltos son de otro proyecto.
+   Por eso el primer Deploy se hizo sobre el servicio equivocado.
+
+**El dato que sí sirve para diagnosticar** es `minutosArriba` en `/salud`: si no baja a cerca
+de cero, no hubo despliegue ni reinicio; si baja pero la ruta nueva sigue en 404, hubo reinicio
+sin código nuevo — y ahí hay que mirar la rama.
+
+---
+
+## Tres cosas que este documento decía y eran falsas (26-ago-2026)
+
+Se descubrieron mirando el panel de Render y el código, no de memoria. Conviene tenerlo
+presente: **este archivo se desactualiza**, y creerle sin verificar cuesta caro.
+
+| Decía | Es |
+|---|---|
+| "El bot corre en Render **plan Free, sin SLA**" — era el pendiente #1 | **Plan Starter**, pagado. Ese riesgo ya no existe. Firebase sí sigue en Spark |
+| "El merge a `main` **nunca se ha ejecutado**" | Ya había corrido en producción desde el 24-ago |
+| El bot se publica **a mano** en Render | `Auto-Deploy` está en **On Commit**: ahora que apunta a `main`, se actualiza solo |
+
+---
+
+## Lo que se limpió de paso (26-ago-2026)
+
+**Google Maps no se usaba y se borró.** El proyecto arrastraba la dependencia
+`@googlemaps/js-api-loader`, un `src/utils/googleMapsLoader.js` completo y la variable
+`VITE_GOOGLE_MAPS_API_KEY` — nada de eso lo importaba ningún componente. Los mapas siempre
+fueron Leaflet con OpenStreetMap y ArcGIS, y el buscador de direcciones siempre fue Nominatim.
+
+No hace falta pagar ninguna API key de Google Maps. Se borró en vez de solo anotarlo porque el
+archivo estaba bien escrito y era creíble: alguien podía "terminar de conectarlo" y encender un
+cobro que el proyecto no necesita.
+
+**`docs/PLATAFORMAS.md`** (nuevo) — el inventario de todas las plataformas de las que depende
+la producción, con su panel y cuáles cuestan plata. Es lo primero que se busca cuando algo se
+cae y nadie se acuerda de dónde vive.
 
 ---
 
@@ -269,7 +342,7 @@ este entorno) ni mirar la pantalla. **La revisión visual sigue siendo tuya.**
 
 1. ~~Desplegar las reglas~~ — ✅ hecho el 10-ago.
 2. ~~Desplegar el frontend~~ — ✅ hecho el 10-ago: §35 a §37 y §40 están en línea.
-3. **Revisar la vista previa del PR #3 y hacer merge**: la vista previa se publica sola en <https://github.com/luisogonzalez30-coder/luis1/pull/3> (comentario automático con la URL, vence a los 7 días). Ahí está todo lo de esta tanda sin publicar: rediseño completo, mapa de calor, PDF gerencial, compresión de fotos, páginas legales y sectores reales. **Son 25 commits y 21 archivos (+6.956 líneas) de una vez, sobre un municipio con vecinos reales usándolo**, así que revisar antes del merge no es opcional. El botón **Merge pull request** publica en producción.
+3. ~~**Revisar el PR #3 y hacer merge**~~ — ✅ **fusionado el 21-ago** (commit `7015e78`, "Publica el rediseno, el costeo y el despliegue automatico"). Este punto siguió pidiendo una acción ya hecha durante cinco días; se comprobó el 26-ago contra `main`. El rediseño, el mapa de calor, el PDF gerencial, la compresión de fotos, las páginas legales y los sectores reales están todos publicados.
 4. ~~**Crear la variable `URL_BOT`**~~ — ✅ **hecho y verificado el 21-ago**. Quedó en `https://proyectomuni.onrender.com`. Costó dos vueltas porque esta misma guía pedía crearla "con algo como `https://tumuniaqui-bot.onrender.com`", una dirección inventada como ejemplo que se copió literal; **Render contesta 404 en cualquier subdominio suyo sin dueño, así que una URL inventada se ve idéntica a un servicio caído** y el vigilante estuvo 7 corridas avisando de una caída que no existía. De ahí salieron dos cambios (PR #7): un 404 ya no se reporta como "el bot reporta problemas" sino como "no existe /salud en esa dirección", y se puede probar una dirección antes de guardarla con el campo `url_bot` en Actions → Vigilar el servicio → Run workflow, sin tocar el aviso real.
 
    **El ciclo completo quedó demostrado en producción**: la corrida 9 revisó el sitio (200) y `/salud` del bot (200, sano) y **cerró sola el aviso #6**. El vigilante corre cada 30 minutos y avisa por issue, que GitHub reenvía por correo.
@@ -279,22 +352,18 @@ este entorno) ni mirar la pantalla. **La revisión visual sigue siendo tuya.**
 8. **Revocar la cuenta `TERRENO` del bot viejo** si sigue en `usuarios_municipales`: nadie la usa y tiene permiso de escritura en producción. El bot actual usa cuenta de servicio.
 9. **Confirmar visualmente** que el PDF de la Cuenta Pública sale bien paginado — requiere login al panel del Alcalde, no tengo acceso.
 10. **Tarea programada del respaldo diario** en Windows: nunca confirmaste si la creaste (§25).
-10. **WhatsApp del Alcalde**, si algún día se repone la alerta: `node scripts/configurar-whatsapp-alcalde.mjs licanten +569XXXXXXXX`. Hoy guardar el número no sirve de nada por sí solo (§39.3).
-11. **Encender la IA, si quieres usarla** (§48). Nada de esto corre todavía:
-    1. ~~Crear `ANTHROPIC_API_KEY` en Render~~ — ✅ **hecho el 26-ago**, junto con apuntar el
-       servicio a la rama `main` (ver `DESPLEGAR.md`). `/ia/estado` responde `{"activa":true}`.
-    2. ~~Fusionar a `main`~~ — ✅ **hecho el 25-ago**. El frontend ya está publicado y
-       verificado contra producción: el bundle nuevo se está sirviendo, lleva la
-       configuración de Firebase incrustada (la comprobación del fallo silencioso de
-       §39) y trae el código de IA adentro. Como no hay clave todavía, el formulario
-       se comporta exactamente igual que antes — la sugerencia solo aparecerá cuando
-       hagas el paso 1.
-    3. Probarlo tú: reportar algo eligiendo **a propósito la categoría equivocada** y ver si
-       el aviso aparece en el Paso 3. Y escribirle al número algo que no sea un ticket
-       ("¿cuándo arreglan la luz de mi calle?") para ver si contesta en vez de mostrar el menú.
-    4. La transcripción de audios queda aparte (`OPENAI_API_KEY`) y **no conviene encenderla
-       todavía**: suma un proveedor nuevo que recibe datos de vecinos y eso hay que declararlo
-       en la política de privacidad primero (§48.6).
+11. **WhatsApp del Alcalde**, si algún día se repone la alerta: `node scripts/configurar-whatsapp-alcalde.mjs licanten +569XXXXXXXX`. Hoy guardar el número no sirve de nada por sí solo (§39.3).
+12. ~~**Encender la IA**~~ — ✅ **hecho y verificado el 26-ago**: `/ia/estado` responde
+    `{"activa":true}`. Falta lo único que no se puede hacer desde una sesión: **probarla con los
+    ojos**. Dos pruebas de un minuto:
+    1. Reportar algo eligiendo **a propósito la categoría equivocada**, y ver si en el Paso 3,
+       al subir la foto, aparece el aviso proponiendo la correcta.
+    2. Escribirle al número del municipio algo que **no** sea un ticket ("¿cuándo arreglan la
+       luz de mi calle?"), y ver si contesta en vez de mostrar el menú de botones.
+
+    La transcripción de audios sigue apagada aparte (`OPENAI_API_KEY`) y **no conviene
+    encenderla todavía**: manda la voz de los vecinos a un tercero y eso hay que declararlo
+    antes en la política de privacidad (§48.6 y §48.6.b).
 
 ---
 
@@ -305,7 +374,7 @@ Reordenado el 11-ago tras la aceptación. Antes esta lista era "lo que falta par
 1. ~~**La tarjeta**~~ — ✅ **resuelto, al menos en Render**. Se comprobó el 26-ago en el panel: el servicio `ProyectoMuni` está en **plan Starter** (0,5 CPU, 512 MB), no en Free. Este documento decía "plan Free, sin SLA" y llevaba tiempo desactualizado. **Firebase sigue en Spark** (cuota gratis compartida), así que lo del plan Blaze y el dominio propio sigue pendiente — pero el riesgo más concreto, que el bot se apagara sin aviso con un municipio dependiendo, ya no está.
 2. **Las 16 coordenadas de sectores que faltan.** Solo 3 de las 19 localidades existen en el panel. Los vecinos de Duao, La Pesca, Idahue y el resto van a reportar y sus incidencias caerán todas en "Fuera de los sectores definidos" — un hueco que en demo no se notaba y con operación real sí. Menos de un minuto por sector: ver el punto 3 de "Te toca a ti".
 3. **Reponer la alerta de emergencias al Alcalde, que ahora tiene plazo.** En la reunión se dijo "en desarrollo, se activa en las próximas semanas", así que la frase ya corre. Es la función más vendedora de la propuesta (§3.3) y hoy **no existe**. Necesita un listener nuevo **y** una plantilla aprobada en Meta (con la API oficial no se puede mandar texto libre fuera de la ventana de 24 h).
-4. **Limpiar los 6 reportes de prueba de Licantén.** Ya no es cosmética: en cuanto entren los reportes reales del municipio, las estadísticas del primer mes y la primera Cuenta Pública nacen contaminadas. Varios son pruebas tuyas y se notan (uno dice *"Reja rota"* pero está categorizado **Árbol caído**; otro es de **Linares**, otra ciudad). Decidir cuáles borrar **antes** de que el municipio empiece a usarlo.
+4. **Limpiar los 6 reportes de prueba de Licantén.** Ya no es cosmética: en cuanto entren los reportes reales del municipio, las estadísticas del primer mes y la primera Cuenta Pública nacen contaminadas. Varios son pruebas tuyas y se notan (uno dice *"Reja rota"* pero está categorizado **Árbol caído**; otro es de **Linares**, otra ciudad). Ese primer caso es justamente el que la sugerencia de categoría (§48.3) ahora previene: mirando la foto habría propuesto corregirlo antes de enviarlo. Decidir cuáles borrar **antes** de que el municipio empiece a usarlo.
 5. **El aviso de "cuadrilla asignada"** (§42). Se dijo "próxima etapa". El código está listo y apagado; falta la plantilla `ticket_asignado` en Meta y la variable en Render.
 6. **El costo por mensaje de Meta.** Cada reporte genera al menos dos mensajes de plantilla, y ahora el volumen deja de ser hipotético. Verifica la tarifa vigente de mensajes de utilidad en Chile y métela en tus números: la propuesta dice "no hay cobro por cantidad de reportes", cierto para lo que le cobras al municipio, falso para lo que te cuesta a ti.
 7. **Cómo facturas.** Ya tienes SpA. Falta inscribirte como proveedor en Mercado Público (gratis y online) — la propuesta afirma que ya lo estás, y ahora hay que emitir de verdad.
@@ -336,6 +405,12 @@ Evita "lee ESTADO_PROYECTO.md completo": son ~40 mil tokens, el equivalente a ve
 **Dos gotchas de esta máquina que van a aparecer** (§20 y §38.4): el **emulador de Firestore no arranca** acá (falla Netty al abrir un selector, con y sin sandbox), así que las reglas no se pueden probar localmente — lo que sí funciona es `npx firebase deploy --only firestore:rules --dry-run`, que las compila contra el proyecto real sin publicarlas. Y la API `firebaserules:test` de Google devuelve **403** con la cuenta de servicio del repo, que no tiene el permiso `firebaserules.rulesets.test`.
 
 **Un método que valió la pena y conviene repetir**: cuando algo "no funciona en producción", comparar el ruleset **realmente desplegado** (se baja con la Rules API usando `serviceAccountKey.json`) contra `firestore.rules`, y leer las banderas reales de `incidencias` con el Admin SDK. Así se encontró el bug de las fotos y así se comprobó que las notificaciones sí salen. Está escrito en §38.2.
+
+**La lección más cara de esta sesión, que vale para cualquier "no funciona en producción"**:
+antes de buscar el bug, comprobar **qué versión está corriendo de verdad**. Dos días se fueron
+en la IA apagada porque el servicio decía `ok: true` y parecía recién reiniciado, mientras
+servía código de otra rama. Un servicio sano no es un servicio actualizado, y ninguna pantalla
+de estado lo distingue sola — hay que mirar la rama y el commit desplegado.
 
 **Y una trampa que ya costó una vez** (§43.1): al escribir en Firestore desde un script, usar **exactamente las claves que lee el frontend**. El campo `coordenadas` es `{ lat, lng }`; un script escribió `{ latitude, longitude }` "conservando el formato", los documentos quedaron con los dos pares, y el mapa siguió dibujando el viejo. Peor: el chequeo leía `latitude ?? lat`, o sea prefería la clave recién escrita, y dio todo en verde. **Un verificador que acepta más formatos que la aplicación no verifica nada.** Lo detectó el usuario mirando la pantalla. `scripts/verificar-presentacion.mjs` ahora exige `lat`/`lng` y falla si no están.
 
