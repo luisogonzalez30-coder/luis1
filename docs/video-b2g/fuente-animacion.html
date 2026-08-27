@@ -1,0 +1,637 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+:root{
+  --azul:#1D4ED8; --azul-osc:#1E3A8A; --tinta:#18181B; --tinta2:#3F3F46;
+  --gris:#71717A; --gris2:#A1A1AA; --linea:#E4E4E7; --sup:#FAFAFA;
+  --verde:#0CA30C; --rojo:#D03B3B; --ambar:#FAB219; --wa:#25D366;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#fff;
+  font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;}
+
+.scene{position:absolute;inset:0;opacity:0;pointer-events:none;
+  transition:opacity .5s ease, transform .8s cubic-bezier(.22,.61,.36,1);
+  transform:scale(1.04);}
+.scene.on{opacity:1;transform:scale(1);}
+.scene.out{opacity:0;transform:scale(.97);}
+
+/* ---------- marca superior ---------- */
+.brandbar{position:absolute;top:60px;left:70px;display:flex;align-items:center;gap:14px;z-index:9;
+  opacity:0;transform:translateY(-12px);transition:all .6s ease;}
+.brandbar.on{opacity:1;transform:translateY(0);}
+.bmark{width:44px;height:44px;border-radius:12px;background:var(--azul);
+  display:flex;align-items:center;justify-content:center;}
+.bmark svg{width:24px;height:24px;}
+.bname{font-size:26px;font-weight:700;color:var(--tinta);letter-spacing:-.02em;line-height:1.15;}
+.bsub{font-size:14px;font-weight:500;color:var(--gris2);}
+
+/* ---------- tipografía cinética ---------- */
+.kin{overflow:hidden;}
+.kin > span{display:block;transform:translateY(105%);
+  transition:transform .75s cubic-bezier(.16,1,.3,1);}
+.kin.on > span{transform:translateY(0);}
+
+.eyebrow{font-size:22px;font-weight:700;color:var(--azul);
+  text-transform:uppercase;letter-spacing:.09em;}
+.h1{font-size:76px;font-weight:800;color:var(--tinta);line-height:1.06;letter-spacing:-.03em;}
+.h2{font-size:54px;font-weight:800;color:var(--tinta);line-height:1.12;letter-spacing:-.02em;}
+.body{font-size:28px;color:var(--tinta2);line-height:1.45;}
+
+.fade{opacity:0;transform:translateY(22px);transition:all .7s cubic-bezier(.16,1,.3,1);}
+.fade.on{opacity:1;transform:translateY(0);}
+
+/* ============ S1 · el problema ============ */
+#s1{background:var(--tinta);display:flex;flex-direction:column;justify-content:center;padding:0 80px;}
+#s1 .prob{font-size:78px;font-weight:800;color:#fff;letter-spacing:-.03em;line-height:1.2;}
+#s1 .muted{color:#52525B;}
+.problist{display:flex;flex-direction:column;gap:6px;}
+.perd{margin-top:60px;font-size:44px;font-weight:700;color:var(--rojo);
+  opacity:0;transform:translateX(-30px);transition:all .7s cubic-bezier(.16,1,.3,1);}
+.perd.on{opacity:1;transform:translateX(0);}
+/* papeles que caen */
+.paper{position:absolute;width:120px;height:150px;background:#27272A;border-radius:6px;
+  opacity:0;}
+.paper.go{animation:fall 2.6s ease-in forwards;}
+@keyframes fall{
+  0%{opacity:0;transform:translateY(-260px) rotate(0deg);}
+  12%{opacity:.85;}
+  100%{opacity:0;transform:translateY(1500px) rotate(320deg);}
+}
+
+/* ============ S2 · marca ============ */
+#s2{background:linear-gradient(150deg,#fff 0%,#fff 50%,#EFF4FF 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.biglogo{width:150px;height:150px;border-radius:40px;background:var(--azul);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:scale(.5) rotate(-14deg);
+  transition:all .9s cubic-bezier(.2,.9,.25,1.3);}
+.biglogo.on{opacity:1;transform:scale(1) rotate(0);}
+.biglogo svg{width:80px;height:80px;}
+.bigname{font-size:82px;font-weight:800;color:var(--tinta);letter-spacing:-.035em;margin-top:38px;}
+.bigsub{font-size:30px;color:var(--gris);margin-top:16px;}
+.ring{position:absolute;width:150px;height:150px;border-radius:44px;border:3px solid var(--azul);
+  opacity:0;}
+.ring.go{animation:ripple 1.5s ease-out forwards;}
+@keyframes ripple{0%{opacity:.7;transform:scale(1);}100%{opacity:0;transform:scale(2.6);}}
+
+/* ============ pantalla de celular ============ */
+.stage{position:absolute;left:50%;top:640px;margin-left:-290px;
+  width:580px;height:1150px;perspective:1600px;}
+.phone{width:100%;height:100%;background:#0C0C0E;border-radius:74px;padding:18px;
+  box-shadow:0 50px 110px rgba(24,24,27,.3), 0 0 0 2px #27272A inset;
+  transform:rotateY(0deg) rotateX(0deg);
+  animation:float 7s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0) rotateY(-3deg);}50%{transform:translateY(-22px) rotateY(3deg);}}
+.screen{width:100%;height:100%;border-radius:58px;overflow:hidden;position:relative;background:#F4F4F5;}
+.notch{position:absolute;top:16px;left:50%;margin-left:-58px;width:116px;height:30px;
+  background:#0C0C0E;border-radius:16px;z-index:6;}
+
+/* mapa */
+.map{position:absolute;inset:0;background:#EEF1F4;}
+.map svg{position:absolute;inset:0;width:100%;height:100%;}
+.road{stroke:#D4D9DF;fill:none;stroke-linecap:round;
+  stroke-dasharray:1400;stroke-dashoffset:1400;
+  transition:stroke-dashoffset 1.5s ease;}
+.road.draw{stroke-dashoffset:0;}
+.park{fill:#DCE8DC;opacity:0;transition:opacity .8s ease;}
+.park.on{opacity:1;}
+.water{fill:#CFE0EF;opacity:0;transition:opacity .8s ease;}
+.water.on{opacity:1;}
+
+.pin{position:absolute;left:50%;top:47%;width:76px;height:76px;margin-left:-38px;margin-top:-76px;
+  opacity:0;transform:translateY(-120px) scale(.7);
+  transition:all .55s cubic-bezier(.3,1.5,.5,1);z-index:4;}
+.pin.on{opacity:1;transform:translateY(0) scale(1);}
+.pulse{position:absolute;left:50%;top:47%;width:40px;height:40px;margin-left:-20px;margin-top:-20px;
+  border-radius:50%;background:var(--rojo);opacity:0;z-index:3;}
+.pulse.on{animation:pls 1.8s ease-out infinite;}
+@keyframes pls{0%{opacity:.5;transform:scale(.6);}100%{opacity:0;transform:scale(4.5);}}
+
+.finger{position:absolute;left:50%;top:47%;width:90px;height:90px;margin-left:-45px;margin-top:-45px;
+  border-radius:50%;border:4px solid rgba(29,78,216,.9);background:rgba(29,78,216,.18);
+  opacity:0;transform:scale(1.9);z-index:5;}
+.finger.tap{animation:tap .55s ease-out forwards;}
+@keyframes tap{0%{opacity:0;transform:scale(1.9);}40%{opacity:1;transform:scale(.85);}100%{opacity:0;transform:scale(1.25);}}
+
+/* tarjetas dentro del teléfono */
+.card{position:absolute;left:36px;right:36px;background:#fff;border-radius:26px;
+  padding:26px 30px;box-shadow:0 14px 40px rgba(0,0,0,.14);
+  opacity:0;transform:translateY(60px);
+  transition:all .6s cubic-bezier(.16,1,.3,1);z-index:5;}
+.card.on{opacity:1;transform:translateY(0);}
+.card.b1{bottom:230px;}
+.card.b2{bottom:70px;}
+.crow{display:flex;align-items:center;gap:20px;}
+.cthumb{width:70px;height:70px;border-radius:16px;flex-shrink:0;
+  background:linear-gradient(135deg,#1D4ED8,#7CA4F5);position:relative;overflow:hidden;}
+.cthumb::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);
+  transform:translateX(-120%);animation:shine 2.6s ease-in-out infinite;}
+@keyframes shine{0%,70%{transform:translateX(-120%);}100%{transform:translateX(120%);}}
+.ctitle{font-size:26px;font-weight:700;color:var(--tinta);}
+.cmeta{font-size:20px;color:var(--gris);margin-top:2px;}
+.chk{width:52px;height:52px;border-radius:50%;background:var(--verde);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:800;
+  transform:scale(0);transition:transform .5s cubic-bezier(.2,1.6,.4,1);}
+.chk.on{transform:scale(1);}
+
+/* barra de progreso de envío */
+.sendbar{height:8px;background:#E4E4E7;border-radius:4px;margin-top:18px;overflow:hidden;}
+.sendbar > i{display:block;height:100%;width:0;background:var(--azul);border-radius:4px;
+  transition:width 1.6s cubic-bezier(.4,0,.2,1);}
+.sendbar.go > i{width:100%;}
+
+/* señal */
+.sig{display:flex;align-items:flex-end;gap:5px;height:34px;}
+.sig i{width:9px;background:var(--gris2);border-radius:2px;transition:background .4s ease;}
+.sig i:nth-child(1){height:30%;} .sig i:nth-child(2){height:52%;}
+.sig i:nth-child(3){height:76%;} .sig i:nth-child(4){height:100%;}
+.sig.dead i{background:#D4D4D8;}
+.sig.live i{background:var(--verde);}
+
+/* whatsapp */
+.wa{position:absolute;inset:0;background:#ECE5DD;display:flex;flex-direction:column;}
+.wahead{background:#075E54;color:#fff;padding:74px 30px 26px;font-size:28px;font-weight:600;
+  display:flex;align-items:center;gap:16px;}
+.waav{width:48px;height:48px;border-radius:50%;background:#0B7A6C;display:flex;
+  align-items:center;justify-content:center;font-size:22px;}
+.wabody{flex:1;padding:30px;display:flex;flex-direction:column;justify-content:flex-end;gap:18px;}
+.bub{background:#fff;border-radius:22px;padding:24px 28px;font-size:25px;line-height:1.45;
+  max-width:86%;box-shadow:0 2px 4px rgba(0,0,0,.08);color:var(--tinta);
+  opacity:0;transform:translateY(26px) scale(.94);transform-origin:left bottom;
+  transition:all .5s cubic-bezier(.2,1.3,.4,1);}
+.bub.on{opacity:1;transform:translateY(0) scale(1);}
+.bub.me{align-self:flex-end;background:#DCF8C6;transform-origin:right bottom;}
+.bmeta{font-size:17px;color:var(--gris2);margin-top:8px;text-align:right;}
+.datechip{align-self:center;background:#D6D0C8;color:#5A554E;font-size:18px;font-weight:600;
+  padding:8px 20px;border-radius:999px;letter-spacing:.06em;
+  opacity:0;transition:opacity .5s ease;}
+.datechip.on{opacity:1;}
+.typing{display:flex;gap:8px;padding:26px 30px;background:#fff;border-radius:22px;width:fit-content;
+  opacity:0;transition:opacity .3s ease;box-shadow:0 2px 4px rgba(0,0,0,.08);}
+.typing.on{opacity:1;}
+.typing i{width:13px;height:13px;border-radius:50%;background:#B4B4BB;
+  animation:blink 1.3s ease-in-out infinite;}
+.typing i:nth-child(2){animation-delay:.18s;} .typing i:nth-child(3){animation-delay:.36s;}
+@keyframes blink{0%,60%,100%{opacity:.35;transform:translateY(0);}30%{opacity:1;transform:translateY(-5px);}}
+
+/* ============ S6 · clasificación ============ */
+#s6{background:var(--sup);display:flex;flex-direction:column;justify-content:center;padding:0 80px;}
+.flow{margin-top:64px;display:flex;flex-direction:column;gap:0;align-items:center;}
+.fnode{width:100%;background:#fff;border:2px solid var(--linea);border-radius:24px;
+  padding:32px 38px;display:flex;align-items:center;gap:26px;
+  opacity:0;transform:translateY(34px) scale(.96);
+  transition:all .6s cubic-bezier(.16,1,.3,1);}
+.fnode.on{opacity:1;transform:translateY(0) scale(1);}
+.fnode.hot{border-color:var(--azul);box-shadow:0 16px 40px rgba(29,78,216,.16);}
+.fico{width:66px;height:66px;border-radius:18px;background:#EFF4FF;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:30px;}
+.ftitle{font-size:30px;font-weight:700;color:var(--tinta);}
+.fdesc{font-size:22px;color:var(--gris);margin-top:3px;}
+.fline{width:4px;height:0;background:var(--azul);transition:height .5s ease;border-radius:2px;}
+.fline.on{height:46px;}
+.badge{margin-left:auto;padding:10px 22px;border-radius:999px;font-size:22px;font-weight:700;
+  opacity:0;transform:scale(.6);transition:all .5s cubic-bezier(.2,1.6,.4,1);}
+.badge.on{opacity:1;transform:scale(1);}
+.badge.alta{background:#FDECEC;color:var(--rojo);}
+.badge.dep{background:#EFF4FF;color:var(--azul);}
+
+/* ============ S7 · panel ============ */
+#s7{background:#fff;display:flex;flex-direction:column;justify-content:center;padding:0 70px;}
+.board{margin-top:44px;background:var(--sup);border:1px solid var(--linea);
+  border-radius:34px;padding:44px;}
+.tiles{display:flex;gap:22px;margin-bottom:26px;}
+.tile{flex:1;background:#fff;border:1px solid var(--linea);border-radius:22px;padding:30px;
+  opacity:0;transform:translateY(38px);transition:all .6s cubic-bezier(.16,1,.3,1);}
+.tile.on{opacity:1;transform:translateY(0);}
+.tnum{font-size:60px;font-weight:800;letter-spacing:-.03em;}
+.tlab{font-size:21px;color:var(--gris);margin-top:6px;line-height:1.3;}
+.panel{background:#fff;border:1px solid var(--linea);border-radius:22px;padding:32px;
+  opacity:0;transform:translateY(38px);transition:all .6s cubic-bezier(.16,1,.3,1);}
+.panel.on{opacity:1;transform:translateY(0);}
+.plab{font-size:21px;color:var(--gris);font-weight:600;letter-spacing:.03em;margin-bottom:22px;}
+.barrow{display:flex;align-items:center;gap:18px;margin-bottom:16px;}
+.bname2{width:200px;font-size:24px;color:var(--tinta2);}
+.btrack{flex:1;height:20px;background:#EFF4FF;border-radius:10px;overflow:hidden;}
+.btrack > i{display:block;height:100%;width:0;background:var(--azul);border-radius:10px;
+  transition:width 1.3s cubic-bezier(.3,.9,.3,1);}
+.money{display:flex;align-items:baseline;gap:14px;margin-top:6px;}
+.mbig{font-size:46px;font-weight:800;color:var(--tinta);letter-spacing:-.02em;}
+.msml{font-size:22px;color:var(--gris);}
+
+/* ============ S8 · frase ============ */
+#s8{background:var(--tinta);display:flex;flex-direction:column;justify-content:center;padding:0 80px;}
+#s8 .l1{font-size:62px;font-weight:800;color:#71717A;letter-spacing:-.03em;line-height:1.15;}
+#s8 .l2{font-size:76px;font-weight:800;color:#fff;letter-spacing:-.03em;line-height:1.15;margin-top:10px;}
+
+/* ============ S9 · cierre ============ */
+#s9{background:var(--azul-osc);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;padding:0 70px;}
+.clogo{width:128px;height:128px;border-radius:34px;background:var(--azul);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:scale(.6);transition:all .8s cubic-bezier(.2,1.3,.3,1);}
+.clogo.on{opacity:1;transform:scale(1);}
+.clogo svg{width:66px;height:66px;}
+.cname{font-size:66px;font-weight:800;color:#fff;letter-spacing:-.03em;margin-top:34px;}
+.ctag{font-size:29px;color:#BFD1F5;margin-top:16px;}
+.corg{font-size:23px;color:#8FA9E0;margin-top:10px;font-weight:600;}
+.cbox{margin-top:62px;background:var(--azul);border-radius:30px;padding:48px 64px;
+  box-shadow:0 26px 60px rgba(0,0,0,.28);}
+.cbox .t{font-size:42px;font-weight:800;color:#fff;line-height:1.22;}
+.cmail{margin-top:52px;font-size:31px;font-weight:600;color:#fff;letter-spacing:-.01em;}
+.cline{width:0;height:4px;background:#5B84E8;border-radius:2px;margin-top:26px;
+  transition:width .9s ease;}
+.cline.on{width:280px;}
+</style></head>
+<body>
+
+<!-- ============ S1 · el problema ============ -->
+<div class="scene" id="s1">
+  <div class="paper" id="p1" style="left:120px;top:0;"></div>
+  <div class="paper" id="p2" style="left:520px;top:0;"></div>
+  <div class="paper" id="p3" style="left:840px;top:0;"></div>
+  <div class="problist">
+    <div class="kin" id="k1"><span class="prob">Un bache.</span></div>
+    <div class="kin" id="k2"><span class="prob">Una luminaria apagada.</span></div>
+    <div class="kin" id="k3"><span class="prob">Un basural.</span></div>
+  </div>
+  <div class="perd" id="perd">Hoy ese reclamo se pierde.</div>
+</div>
+
+<!-- ============ S2 · marca ============ -->
+<div class="scene" id="s2">
+  <div class="ring" id="ring"></div>
+  <div class="biglogo" id="blogo">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8Z" fill="#fff"/><circle cx="12" cy="10" r="3" fill="#1D4ED8"/></svg>
+  </div>
+  <div class="kin" id="k4" style="margin-top:0;"><span class="bigname">TuMuniAquí</span></div>
+  <div class="fade" id="f4"><div class="bigsub">Cambia eso.</div></div>
+</div>
+
+<!-- ============ S3 · el vecino / mapa ============ -->
+<div class="scene" id="s3">
+  <div class="brandbar" id="bb3">
+    <div class="bmark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8Z" fill="#fff"/><circle cx="12" cy="10" r="3" fill="#1D4ED8"/></svg></div>
+    <div><div class="bname">TuMuniAquí</div><div class="bsub">Un producto de LOG-In Soluciones Integrales SpA</div></div>
+  </div>
+  <div style="position:absolute;top:210px;left:70px;right:70px;">
+    <div class="fade" id="e3"><div class="eyebrow">Del lado del vecino</div></div>
+    <div class="kin" id="k5" style="margin-top:16px;"><span class="h1">Reporta en<br>30 segundos.</span></div>
+    <div class="fade" id="f5" style="margin-top:24px;"><div class="body">Sin instalar ninguna aplicación.<br>Sin crear una cuenta.</div></div>
+  </div>
+
+  <div class="stage">
+    <div class="phone"><div class="screen">
+      <div class="notch"></div>
+      <div class="map">
+        <svg viewBox="0 0 580 1150" preserveAspectRatio="none">
+          <rect class="water" id="w1" x="0" y="880" width="580" height="270"/>
+          <rect class="park" id="pk1" x="60" y="240" width="180" height="150" rx="16"/>
+          <path class="road" id="r1" d="M0 300 H580" stroke-width="26"/>
+          <path class="road" id="r2" d="M0 620 H580" stroke-width="34"/>
+          <path class="road" id="r3" d="M0 850 H580" stroke-width="22"/>
+          <path class="road" id="r4" d="M170 0 V1150" stroke-width="28"/>
+          <path class="road" id="r5" d="M420 0 V1150" stroke-width="22"/>
+          <path class="road" id="r6" d="M0 60 L580 200" stroke-width="16"/>
+        </svg>
+        <div class="pulse" id="pulse"></div>
+        <div class="pin" id="pin">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 1.5C7.3 1.5 3.5 5.3 3.5 10c0 6.6 8.5 12.5 8.5 12.5s8.5-5.9 8.5-12.5c0-4.7-3.8-8.5-8.5-8.5Z" fill="#D03B3B"/><circle cx="12" cy="10" r="3.4" fill="#fff"/></svg>
+        </div>
+        <div class="finger" id="finger"></div>
+      </div>
+      <div class="card b1" id="c2">
+        <div class="crow">
+          <div class="fico" style="width:56px;height:56px;border-radius:14px;font-size:26px;">📍</div>
+          <div><div class="ctitle">Ubicación marcada</div><div class="cmeta">Calle Principal 1240</div></div>
+        </div>
+      </div>
+      <div class="card b2" id="c1">
+        <div class="crow">
+          <div class="cthumb"></div>
+          <div><div class="ctitle">Foto agregada</div><div class="cmeta">Bache en la vía pública</div></div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ S4 · offline ============ -->
+<div class="scene" id="s4">
+  <div class="brandbar on">
+    <div class="bmark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8Z" fill="#fff"/><circle cx="12" cy="10" r="3" fill="#1D4ED8"/></svg></div>
+    <div><div class="bname">TuMuniAquí</div><div class="bsub">Un producto de LOG-In Soluciones Integrales SpA</div></div>
+  </div>
+  <div style="position:absolute;top:210px;left:70px;right:70px;">
+    <div class="fade" id="e4"><div class="eyebrow">Pensado para zonas rurales</div></div>
+    <div class="kin" id="k6" style="margin-top:16px;"><span class="h1">¿Sin señal?<br>Igual funciona.</span></div>
+  </div>
+
+  <div class="stage" style="top:700px;height:1000px;">
+    <div class="phone" style="animation:none;transform:rotateY(-2deg);"><div class="screen" style="background:#fff;">
+      <div class="notch"></div>
+      <div style="position:absolute;inset:0;padding:120px 44px 44px;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:26px;font-weight:700;color:var(--tinta);" id="sigtxt">Sin conexión</div>
+          <div class="sig dead" id="sig"><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div style="margin-top:auto;background:var(--sup);border:2px solid var(--linea);
+             border-radius:26px;padding:32px;">
+          <div style="display:flex;align-items:center;gap:20px;">
+            <div class="cthumb" style="width:64px;height:64px;"></div>
+            <div style="flex:1;">
+              <div class="ctitle">Reporte guardado</div>
+              <div class="cmeta" id="offmeta">Se enviará al recuperar señal</div>
+            </div>
+            <div class="chk" id="offchk">✓</div>
+          </div>
+          <div class="sendbar" id="sendbar"><i></i></div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ S5 · whatsapp ============ -->
+<div class="scene" id="s5">
+  <div class="brandbar on">
+    <div class="bmark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8Z" fill="#fff"/><circle cx="12" cy="10" r="3" fill="#1D4ED8"/></svg></div>
+    <div><div class="bname">TuMuniAquí</div><div class="bsub">Un producto de LOG-In Soluciones Integrales SpA</div></div>
+  </div>
+  <div style="position:absolute;top:210px;left:70px;right:70px;">
+    <div class="fade" id="e5"><div class="eyebrow">Sin que nadie mueva un dedo</div></div>
+    <div class="kin" id="k7" style="margin-top:16px;"><span class="h1">El aviso sale<br>automático.</span></div>
+  </div>
+
+  <div class="stage" style="top:680px;height:1050px;">
+    <div class="phone"><div class="screen">
+      <div class="wa">
+        <div class="wahead"><div class="waav">🏛️</div><div>Municipio</div></div>
+        <div class="wabody">
+          <div class="datechip" id="dchip">HOY</div>
+          <div class="bub me" id="wb0">Reporté un bache en Calle Principal.
+            <div class="bmeta">09:40 ✓✓</div></div>
+          <div class="typing" id="typ"><i></i><i></i><i></i></div>
+          <div class="bub" id="wb1">✅ Recibimos tu reporte <b>N° 001482</b>.<br>Te avisaremos cuando quede resuelto.
+            <div class="bmeta">09:41</div></div>
+          <div class="bub" id="wb2">🛠️ Tu reporte <b>N° 001482</b> fue resuelto.<br>¡Gracias por avisarnos!
+            <div class="bmeta">14:08</div></div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ S6 · clasificación ============ -->
+<div class="scene" id="s6">
+  <div class="brandbar on">
+    <div class="bmark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8Z" fill="#fff"/><circle cx="12" cy="10" r="3" fill="#1D4ED8"/></svg></div>
+    <div><div class="bname">TuMuniAquí</div><div class="bsub">Un producto de LOG-In Soluciones Integrales SpA</div></div>
+  </div>
+  <div>
+    <div class="fade" id="e6"><div class="eyebrow">Puertas adentro</div></div>
+    <div class="kin" id="k8" style="margin-top:16px;"><span class="h2">El sistema lo clasifica<br>y lo deriva solo.</span></div>
+  </div>
+  <div class="flow">
+    <div class="fnode" id="fn1">
+      <div class="fico">📥</div>
+      <div><div class="ftitle">Entra el reporte</div><div class="fdesc">Con foto, ubicación y descripción</div></div>
+    </div>
+    <div class="fline" id="fl1"></div>
+    <div class="fnode" id="fn2">
+      <div class="fico">⚖️</div>
+      <div><div class="ftitle">Se calcula la gravedad</div><div class="fdesc">Triage automático, sin criterio a mano</div></div>
+      <div class="badge alta" id="bg1">Alta</div>
+    </div>
+    <div class="fline" id="fl2"></div>
+    <div class="fnode" id="fn3">
+      <div class="fico">🏗️</div>
+      <div><div class="ftitle">Llega al departamento</div><div class="fdesc">Uno de siete, según la categoría</div></div>
+      <div class="badge dep" id="bg2">Obras</div>
+    </div>
+  </div>
+  <div class="fade" id="f6" style="margin-top:56px;">
+    <div style="background:var(--tinta);border-radius:26px;padding:38px 44px;display:flex;
+         align-items:center;gap:26px;">
+      <div style="font-size:38px;">⏱️</div>
+      <div style="font-size:27px;color:#E4E4E7;line-height:1.4;">
+        Nadie tiene que leer el reclamo y reenviarlo a mano.<br>
+        <b style="color:#fff;">Llega derivado, en segundos.</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ S7 · panel ============ -->
+<div class="scene" id="s7">
+  <div class="brandbar on">
+    <div class="bmark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8Z" fill="#fff"/><circle cx="12" cy="10" r="3" fill="#1D4ED8"/></svg></div>
+    <div><div class="bname">TuMuniAquí</div><div class="bsub">Un producto de LOG-In Soluciones Integrales SpA</div></div>
+  </div>
+  <div class="fade" id="e7"><div class="eyebrow">El panel del alcalde</div></div>
+  <div class="kin" id="k9" style="margin-top:16px;"><span class="h2">Todo lo que pasa<br>en su comuna, hoy.</span></div>
+
+  <div class="board">
+    <div class="tiles">
+      <div class="tile" id="t1"><div class="tnum" id="n1" style="color:var(--tinta);">0</div><div class="tlab">reportes<br>pendientes</div></div>
+      <div class="tile" id="t2"><div class="tnum" id="n2" style="color:var(--verde);">0%</div><div class="tlab">resueltos<br>este mes</div></div>
+      <div class="tile" id="t3"><div class="tnum" id="n3" style="color:var(--rojo);">0</div><div class="tlab">emergencias<br>activas</div></div>
+    </div>
+    <div class="panel" id="pn1" style="margin-bottom:22px;">
+      <div class="plab">SECTORES CON MÁS REPORTES</div>
+      <div class="barrow"><div class="bname2">Sector Centro</div><div class="btrack"><i id="bar1"></i></div></div>
+      <div class="barrow"><div class="bname2">Sector Costa</div><div class="btrack"><i id="bar2"></i></div></div>
+      <div class="barrow" style="margin-bottom:0;"><div class="bname2">Sector Rural</div><div class="btrack"><i id="bar3"></i></div></div>
+    </div>
+    <div class="panel" id="pn2">
+      <div class="plab">PRESUPUESTO DEL MES</div>
+      <div class="money"><div class="mbig" id="mny">$0</div><div class="msml">de $1.500.000 estimado</div></div>
+      <div class="btrack" style="margin-top:18px;"><i id="bar4"></i></div>
+    </div>
+    <div style="display:flex;gap:22px;margin-top:22px;">
+      <div class="panel" id="pn3" style="flex:1;display:flex;align-items:center;gap:18px;padding:26px;">
+        <div class="fico" style="width:56px;height:56px;border-radius:14px;font-size:26px;">📄</div>
+        <div style="font-size:22px;color:var(--tinta2);line-height:1.35;">
+          <b>Cuenta Pública</b><br>generada en un clic</div>
+      </div>
+      <div class="panel" id="pn4" style="flex:1;display:flex;align-items:center;gap:18px;padding:26px;">
+        <div class="fico" style="width:56px;height:56px;border-radius:14px;font-size:26px;">🗺️</div>
+        <div style="font-size:22px;color:var(--tinta2);line-height:1.35;">
+          <b>Mapa de calor</b><br>y mes contra mes</div>
+      </div>
+    </div>
+  </div>
+  <div class="fade" id="disc7" style="margin-top:20px;">
+    <div style="font-size:19px;color:var(--gris2);font-style:italic;">Representación ilustrativa del panel — no es una captura de pantalla real.</div>
+  </div>
+</div>
+
+<!-- ============ S8 · frase ============ -->
+<div class="scene" id="s8">
+  <div class="kin" id="k10"><span class="l1">No es una aplicación<br>para vecinos.</span></div>
+  <div class="kin" id="k11" style="margin-top:18px;"><span class="l2">Es su panel<br>de control.</span></div>
+</div>
+
+<!-- ============ S9 · cierre ============ -->
+<div class="scene" id="s9">
+  <div class="clogo" id="clg">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8Z" fill="#fff"/><circle cx="12" cy="10" r="3" fill="#1E3A8A"/></svg>
+  </div>
+  <div class="kin" id="k12"><span class="cname">TuMuniAquí</span></div>
+  <div class="fade" id="f9a"><div class="ctag">Plataforma de reportes ciudadanos para municipios</div></div>
+  <div class="fade" id="f9b"><div class="corg">Un producto de LOG-In Soluciones Integrales SpA</div></div>
+  <div class="fade" id="f9c"><div class="cbox"><div class="t">Solicite una demostración<br>para su municipio</div></div></div>
+  <div class="fade" id="f9d"><div class="cmail">contacto.luisgonzaleznunez@log-in.cl</div></div>
+  <div class="cline" id="cln"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const on  = (id,c='on') => { const e=$(id); if(e) e.classList.add(c); };
+const off = (id,c='on') => { const e=$(id); if(e) e.classList.remove(c); };
+const T = [];
+const at = (ms, fn) => T.push(setTimeout(fn, ms));
+
+function showScene(id, ms){
+  at(ms, ()=>{ const e=$(id); e.classList.remove('out'); e.classList.add('on'); });
+}
+function hideScene(id, ms){
+  at(ms, ()=>{ const e=$(id); e.classList.remove('on'); e.classList.add('out'); });
+}
+function count(id, to, ms, dur, pre='', suf=''){
+  at(ms, ()=>{
+    const el=$(id), t0=performance.now();
+    const ease = p => 1-Math.pow(1-p,3);
+    (function step(now){
+      const p=Math.min(1,(now-t0)/dur), v=Math.round(ease(p)*to);
+      el.textContent = pre + v.toLocaleString('es-CL') + suf;
+      if(p<1) requestAnimationFrame(step);
+    })(performance.now());
+  });
+}
+function width(id, w, ms){ at(ms, ()=>{ $(id).style.width = w; }); }
+
+/* ============================================================
+   LÍNEA DE TIEMPO  —  se ajusta a la duración de la locución
+   ============================================================ */
+/* Cada escena entra ~600 ms antes de que la locución la nombre,
+   para que la imagen llegue primero y la voz la confirme. */
+const TL = {
+  s1:0,     s2:14800, s3:17700, s4:31800,
+  s5:39700, s6:51700, s7:61400, s8:72000, s9:77400, end:86000
+};
+
+/* ---- S1 · problema ---- */
+showScene('s1', TL.s1);
+at(TL.s1+4200,  ()=>on('k1'));   // "…un bache…"
+at(TL.s1+5600,  ()=>on('k2'));   // "…o una luminaria apagada…"
+at(TL.s1+7000,  ()=>on('k3'));
+at(TL.s1+7800,  ()=>on('p1','go'));
+at(TL.s1+8600,  ()=>on('p2','go'));
+at(TL.s1+9400,  ()=>on('p3','go'));
+at(TL.s1+11500, ()=>on('perd')); // "Y ese reclamo, muchas veces, se pierde."
+hideScene('s1', TL.s2-500);
+
+/* ---- S2 · marca ---- */
+showScene('s2', TL.s2);
+at(TL.s2+250,  ()=>on('blogo'));
+at(TL.s2+700,  ()=>on('ring','go'));
+at(TL.s2+900,  ()=>on('k4'));
+at(TL.s2+1500, ()=>on('f4'));
+hideScene('s2', TL.s3-500);
+
+/* ---- S3 · vecino / mapa ---- */
+showScene('s3', TL.s3);
+at(TL.s3+200,  ()=>on('bb3'));
+at(TL.s3+400,  ()=>{ ['r1','r2','r3','r4','r5','r6'].forEach((r,i)=>
+                     setTimeout(()=>on(r,'draw'), i*130)); });
+at(TL.s3+600,  ()=>{ on('pk1'); on('w1'); });
+at(TL.s3+500,  ()=>on('e3'));
+at(TL.s3+900,  ()=>on('k5'));
+at(TL.s3+2600, ()=>on('finger','tap'));            // "marca el lugar en el mapa"
+at(TL.s3+3000, ()=>{ on('pin'); on('pulse'); });
+at(TL.s3+4400, ()=>on('c2'));
+at(TL.s3+6300, ()=>on('c1'));                      // "y toma una foto"
+at(TL.s3+8800, ()=>on('f5'));                      // "sin instalar… sin crear cuenta"
+hideScene('s3', TL.s4-500);
+
+/* ---- S4 · offline ---- */
+showScene('s4', TL.s4);
+at(TL.s4+400,  ()=>on('e4'));
+at(TL.s4+800,  ()=>on('k6'));
+at(TL.s4+4300, ()=>{ $('sig').classList.remove('dead'); $('sig').classList.add('live');
+                     $('sigtxt').textContent='Conexión recuperada'; });  // "cuando vuelve la conexión"
+at(TL.s4+4700, ()=>{ on('sendbar','go'); $('offmeta').textContent='Enviando al municipio…'; });
+at(TL.s4+6400, ()=>{ on('offchk'); $('offmeta').textContent='Enviado correctamente'; });
+hideScene('s4', TL.s5-500);
+
+/* ---- S5 · whatsapp ---- */
+showScene('s5', TL.s5);
+at(TL.s5+400,  ()=>on('e5'));
+at(TL.s5+700,  ()=>on('k7'));
+at(TL.s5+1100, ()=>on('dchip'));
+at(TL.s5+1500, ()=>on('wb0'));
+at(TL.s5+2400, ()=>on('typ'));
+at(TL.s5+3900, ()=>{ off('typ'); on('wb1'); });
+at(TL.s5+6400, ()=>on('typ'));
+at(TL.s5+7800, ()=>{ off('typ'); on('wb2'); });
+hideScene('s5', TL.s6-500);
+
+/* ---- S6 · clasificación ---- */
+showScene('s6', TL.s6);
+at(TL.s6+300,  ()=>on('e6'));
+at(TL.s6+600,  ()=>on('k8'));
+at(TL.s6+1400, ()=>on('fn1'));
+at(TL.s6+2400, ()=>on('fl1'));
+at(TL.s6+2900, ()=>{ on('fn2'); $('fn2').classList.add('hot'); });  // "calcula la gravedad"
+at(TL.s6+3900, ()=>on('bg1'));
+at(TL.s6+5200, ()=>on('fl2'));
+at(TL.s6+5800, ()=>on('fn3'));                                     // "lo deriva al departamento"
+at(TL.s6+6800, ()=>on('bg2'));
+at(TL.s6+8000, ()=>on('f6'));
+hideScene('s6', TL.s7-500);
+
+/* ---- S7 · panel ---- */
+showScene('s7', TL.s7);
+at(TL.s7+300,  ()=>on('e7'));
+at(TL.s7+600,  ()=>on('k9'));
+/* "Cuántos reportes hay pendientes." */
+at(TL.s7+2900, ()=>on('t1'));
+at(TL.s7+3150, ()=>on('t2'));
+at(TL.s7+3400, ()=>on('t3'));
+count('n1', 23, TL.s7+3100, 1300);
+count('n2', 78, TL.s7+3350, 1300, '', '%');
+count('n3',  2, TL.s7+3600, 900);
+/* "Qué sectores concentran los problemas." */
+at(TL.s7+5300, ()=>on('pn1'));
+width('bar1','88%', TL.s7+5700);
+width('bar2','56%', TL.s7+5950);
+width('bar3','34%', TL.s7+6200);
+/* "Y cuánto se está gastando de verdad." */
+at(TL.s7+7800, ()=>on('pn2'));
+count('mny', 1240000, TL.s7+8200, 1500, '$');
+width('bar4','82%', TL.s7+8200);
+at(TL.s7+9600, ()=>on('pn3'));
+at(TL.s7+9850, ()=>on('pn4'));
+at(TL.s7+10200,()=>on('disc7'));
+hideScene('s7', TL.s8-500);
+
+/* ---- S8 · frase ---- */
+showScene('s8', TL.s8);
+at(TL.s8+700,  ()=>on('k10'));   // "No es una aplicación para vecinos."
+at(TL.s8+3200, ()=>on('k11'));   // "Es su panel de control."
+hideScene('s8', TL.s9-500);
+
+/* ---- S9 · cierre ---- */
+showScene('s9', TL.s9);
+at(TL.s9+300,  ()=>on('clg'));
+at(TL.s9+900,  ()=>on('k12'));   // "Tu Muni Aquí."
+at(TL.s9+1600, ()=>on('f9a'));
+at(TL.s9+2400, ()=>on('f9b'));   // "Un producto de Log In Soluciones Integrales."
+at(TL.s9+3300, ()=>on('f9c'));
+at(TL.s9+4100, ()=>on('f9d'));
+at(TL.s9+4700, ()=>on('cln'));
+</script>
+</body></html>

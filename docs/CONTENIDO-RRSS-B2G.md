@@ -57,32 +57,40 @@ sobre fondo simple (o tú hablando si te acostumbras a cámara — es opcional).
 Es literalmente el Minuto 0-3 de la pauta de reunión, que ya está probado.
 Sirve como gancho para LinkedIn y como primer segundo de cualquier reel.
 
-### 2. La demo — el momento que convence en la reunión presencial
-**Formato**: video vertical, 36 seg.
+### 2. La demo narrada — el recorrido completo del producto
+**Formato**: video vertical 1080x1920, 84 seg, **con locución**.
 
-**Ya armado**: `docs/video-b2g/demo-tumuniaqui.mp4` (1080x1920, sin audio). Es una
-animación de motion graphics con la misma estética del carrusel — no una captura real de
-pantalla (mismo motivo que `slide3.png`: desde estas sesiones no se puede abrir el sitio
-en producción). Si más adelante grabas la pantalla real siguiendo este mismo guion, este
-archivo sirve de referencia de ritmo y tiempos.
+**Ya armado**: `docs/video-b2g/demo-tumuniaqui-v2.mp4`. Nueve escenas animadas que siguen
+la narración: el problema de hoy, la marca, el mapa con el pin, el modo sin señal,
+WhatsApp respondiendo, la derivación automática, el panel del alcalde con los números
+subiendo, el remate y el cierre con el contacto.
 
-Guion, tal como quedó grabado:
-1. (0-3s) Marca: "TuMuniAquí — Así se ve, de principio a fin."
-2. (3-11s) Mapa con un pin que cae y una foto que se agrega. Texto: "Marca el lugar,
-   describe el problema y toma una foto — sin instalar nada, sin crear una cuenta."
-3. (11-19s) WhatsApp: llega el aviso con el número de ticket. Texto: "Nadie en la
-   municipalidad tuvo que hacer nada: el aviso sale solo, al entrar el reporte y al
-   resolverse."
-4. (19-31s) Panel (maqueta ilustrativa, con el mismo aviso de `slide3.png`): los números
-   suben en cámara. Texto: "No es una app para vecinos. Es su panel de control."
-5. (31-36s) Cierre: marca + LOG-In Soluciones Integrales SpA + CTA de demostración +
-   `contacto.luisgonzaleznunez@log-in.cl`.
+Es una animación, no una captura real de pantalla (mismo motivo que `slide3.png`: desde
+estas sesiones no se puede abrir el sitio en producción). El panel lleva su aviso de
+"representación ilustrativa" a la vista.
 
-Queda sin música ni voz a propósito — agrégala en CapCut si quieres, o súbelo mudo:
-en LinkedIn y Facebook la mayoría de los videos se reproducen sin sonido de todas formas.
-Si prefieres reemplazar la animación por pantalla real, esto es exactamente lo que ya
-filmas en cada reunión presencial (Minuto 3-8 de `PAUTA-REUNION-ALCALDE.md`) — la
-diferencia es que grabado una vez sirve para todos los alcaldes que todavía no visitas.
+#### Cómo está hecho, por si hay que rehacerlo
+
+| Archivo | Qué es |
+|---|---|
+| `fuente-animacion.html` | La animación completa. Se abre en el navegador y corre sola. |
+| `hacer_voz.py` | Genera la locución y **mide cuánto dura cada frase**. |
+| `tiempos.json` | El resultado de esa medición: en qué segundo empieza a hablar cada escena. |
+
+El orden importa: **primero se genera la voz, después se calza la animación a esos
+tiempos**, no al revés. `hacer_voz.py` corta el guion en un bloque por escena, los baja
+uno a uno y devuelve el segundo exacto en que arranca cada uno; esos números van a la
+constante `TL` del HTML, y cada escena entra unos 600 ms antes de que la voz la nombre —
+así la imagen llega primero y la voz la confirma. Después se graba con Playwright y se
+monta el audio con ffmpeg.
+
+**Sobre la voz**: es la síntesis en español de Google (vía `translate.googleapis.com`,
+que es de los dominios ya habilitados en la política de red). Es español latino neutro,
+**no chilena** — el servicio de voces con acento pedía suscripción de pago que la cuenta
+no tiene, y HuggingFace, que es de donde se bajan los modelos de voz locales, está
+bloqueado por el proxy. Si el acento chileno importa para vender, lo que suena mejor y
+sale gratis es que grabes tú el guion con el celular sobre esta misma animación: el texto
+está en `hacer_voz.py`, en la lista `BLOQUES`.
 
 ### 3. El caso real — "ya lo usa un municipio"
 **Formato**: carrusel de LinkedIn/Facebook (7 imágenes) o video de 20 seg.
