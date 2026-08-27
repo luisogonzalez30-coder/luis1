@@ -79,6 +79,14 @@ que todavía no has visitado.
 ### 3. El caso real — "Licantén ya lo usa"
 **Formato**: carrusel de LinkedIn/Facebook (4-5 imágenes) o video de 20 seg.
 
+**Ya armado**: `docs/carrusel-b2g/slide1.png` a `slide5.png`, 1080x1080, listo para subir
+directo. Antes de publicarlo: en `slide5.png` reemplaza `[tu correo]` y `[tu teléfono]`
+por tus datos reales (quedaron como placeholder a propósito). Y `slide2.png` es una
+maqueta ilustrativa del panel, no una captura real — lo dice el pie de foto chico, pero
+si prefieres una captura de pantalla real del panel, tendrías que tomarla tú mismo desde
+el tenant demo (desde estas sesiones no se puede abrir el sitio en producción, es el muro
+de red descrito en `CLAUDE.md`).
+
 Esto es lo más fuerte que tienes y todavía no lo usas: **tienes un cliente real,
 no un prototipo**. El contenido:
 
