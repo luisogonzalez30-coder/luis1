@@ -76,29 +76,31 @@ Esto es exactamente lo que ya filmas en cada reunión presencial (Minuto 3-8).
 La diferencia es que aquí queda grabado una vez y sirve para todos los alcaldes
 que todavía no has visitado.
 
-### 3. El caso real — "Licantén ya lo usa"
-**Formato**: carrusel de LinkedIn/Facebook (4-5 imágenes) o video de 20 seg.
+### 3. El caso real — "ya lo usa un municipio"
+**Formato**: carrusel de LinkedIn/Facebook (6 imágenes) o video de 20 seg.
 
-**Ya armado**: `docs/carrusel-b2g/slide1.png` a `slide5.png`, 1080x1080, listo para subir
-directo. Antes de publicarlo: en `slide5.png` reemplaza `[tu correo]` y `[tu teléfono]`
-por tus datos reales (quedaron como placeholder a propósito). Y `slide2.png` es una
-maqueta ilustrativa del panel, no una captura real — lo dice el pie de foto chico, pero
-si prefieres una captura de pantalla real del panel, tendrías que tomarla tú mismo desde
-el tenant demo (desde estas sesiones no se puede abrir el sitio en producción, es el muro
-de red descrito en `CLAUDE.md`).
+**Ya armado**: `docs/carrusel-b2g/slide1.png` a `slide6.png`, 1080x1080, listo para subir
+directo, con la paleta real del código (`src/utils/tema.js` / `src/index.css`: azul
+`#1D4ED8`/`#1E3A8A`, grises zinc, colores de estado), sin nombrar la municipalidad
+cliente y sin ofrecer nada gratis. `slide2.png` es una maqueta ilustrativa del panel, no
+una captura real — lo dice el pie de foto chico; si prefieres una captura real, te toca
+tomarla tú desde el tenant demo (desde estas sesiones no se puede abrir el sitio en
+producción, es el muro de red descrito en `CLAUDE.md`).
 
 Esto es lo más fuerte que tienes y todavía no lo usas: **tienes un cliente real,
-no un prototipo**. El contenido:
+no un prototipo** — sin necesidad de nombrarlo para que pese. El contenido:
 
-- Imagen 1: "Licantén (Región del Maule) puso esto en producción en agosto de
-  2026."
-- Imagen 2: captura del panel del Alcalde (demo, por volumen) con los tres
-  números — pendiente, dónde, cuánto cuesta.
-- Imagen 3: "El vecino reporta en 30 segundos y recibe WhatsApp automático
-  cuando entra su reporte y cuando se resuelve."
-- Imagen 4: "Se contrata por Compra Ágil (bajo 100 UTM), sin licitación. 60
-  días de garantía con devolución íntegra."
-- Imagen 5 (cierre): tu contacto.
+1. Portada: "Ya está funcionando en un municipio real" (Región del Maule, sin nombrar la
+   comuna) + marca TuMuniAquí + "Un producto de LOG-In Soluciones Integrales SpA".
+2. Panel del alcalde (maqueta ilustrativa): pendientes, % resuelto, emergencias, por
+   asignar, sectores con más reportes, presupuesto, Cuenta Pública en un clic.
+3. Las cinco funciones de IA ya en producción, con el costo real aproximado
+   (~$5.000/mes para 100 reportes, pago por uso).
+4. El flujo del vecino en 3 pasos + el WhatsApp automático.
+5. Los cuatro argumentos de compra pública: Compra Ágil, garantía de 60 días, sin cobro
+   por volumen, IA sin suscripción aparte.
+6. Cierre: marca + LOG-In Soluciones Integrales SpA + CTA de demostración (no de piloto
+   gratuito) + `contacto.luisgonzaleznunez@log-in.cl`.
 
 **Ojo con lo que no puedes decir todavía** (misma tabla de
 `PAUTA-REUNION-ALCALDE.md`, sección "NO prometer"): no muestres ni insinúes la
@@ -107,7 +109,10 @@ implementados en producción. Lo que sí puedes prometer con nombre y fecha son
 los dos avisos por WhatsApp al vecino (entra el reporte / se resuelve), porque
 están funcionando y verificados.
 
-### 4. El testimonio — pídeselo al Alcalde de Licantén
+**Tampoco ofrezcas piloto gratuito ni "sin costo" en el contenido público** — la
+llamada a la acción es pedir una demostración, no regalar el uso.
+
+### 4. El testimonio — pídeselo al alcalde del municipio cliente
 **Formato**: 15-20 seg, grabado por él con su propio celular (igual que el
 punto 7 de `KIT-DIFUSION.md`, pero apuntado a otros alcaldes, no a sus vecinos).
 
@@ -120,7 +125,9 @@ plantilla:
 > que contármelo."
 
 Un audio de WhatsApp de 30 segundos también sirve como cita para un post de
-LinkedIn ("Así lo describe el Alcalde de Licantén: …"), sin necesidad de video.
+LinkedIn ("Así lo describe el alcalde de nuestro primer municipio cliente: …"),
+sin necesidad de video ni de nombrar la comuna — a menos que el municipio autorice
+expresamente aparecer identificado.
 
 ## Dónde publicar
 
