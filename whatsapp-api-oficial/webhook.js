@@ -17,6 +17,8 @@ const crypto = require('crypto')
 const express = require('express')
 const { enviarTexto, enviarBotones, explicarError } = require('./whatsapp')
 const { etiquetaCategoria } = require('./categorias')
+const ia = require('./ia')
+const { transcripcionDisponible, transcribirAudioDeWhatsapp } = require('./transcripcion')
 
 const PORTAL_URL_ESTADO = process.env.PORTAL_URL_ESTADO || 'https://app-incidencias-urbanas.web.app/estado'
 // A dónde se manda al vecino que quiere reportar algo nuevo. Va por variable de
@@ -366,6 +368,171 @@ async function responderOpcion(db, numero, opcion) {
   }
 }
 
+// --- Conversación con IA ---
+//
+// Esto NO reemplaza nada de lo que ya funcionaba. El orden de resolución sigue
+// siendo el mismo y los caminos deterministas van primero:
+//
+//   1. ¿escribió un número de ticket?      -> respuesta directa de siempre
+//   2. ¿pidió "mis reportes"?              -> su lista, como siempre
+//   3. cualquier otra cosa                 -> ANTES: menú de botones
+//                                             AHORA: la IA, y si falla, el menú
+//
+// O sea que la IA solo cubre el hueco que antes terminaba en "no te entendí".
+// Eso tiene dos consecuencias buenas: el comportamiento ya probado no cambia, y
+// el costo es mucho menor que si cada mensaje pasara por el modelo.
+
+// Historial por número, en memoria. Se pierde al reiniciar el servicio y está
+// bien: es para que la conversación tenga sentido dentro de un rato, no un
+// registro de nada. Nunca se guarda en Firestore — son conversaciones de
+// vecinos y no hay ninguna razón para conservarlas.
+const HISTORIAL_TTL_MS = 30 * 60 * 1000
+const conversaciones = new Map()
+
+function obtenerConversacion(numero) {
+  const ahora = Date.now()
+  const previa = conversaciones.get(numero)
+
+  if (previa && ahora - previa.ultimoMensaje < HISTORIAL_TTL_MS) {
+    previa.ultimoMensaje = ahora
+    return previa
+  }
+
+  const nueva = { turnos: [], usosIa: 0, ultimoMensaje: ahora }
+  conversaciones.set(numero, nueva)
+  return nueva
+}
+
+// Limpieza periódica: sin esto el Map crece para siempre en un proceso que vive
+// semanas.
+setInterval(() => {
+  const limite = Date.now() - HISTORIAL_TTL_MS
+  for (const [numero, conversacion] of conversaciones) {
+    if (conversacion.ultimoMensaje < limite) conversaciones.delete(numero)
+  }
+}, HISTORIAL_TTL_MS).unref()
+
+// Las herramientas que la IA puede pedir. Las EJECUTA este archivo, no ia.js:
+// toda la lectura de datos del vecino sigue pasando por las mismas funciones de
+// siempre (buscarReportesDelNumero, tickets_publicos), así que la IA no abre
+// ningún camino nuevo a los datos — solo decide cuándo usar los que ya existen.
+function herramientasPara(db, numero) {
+  return [
+    {
+      definicion: {
+        name: 'buscar_ticket',
+        description:
+          'Busca un reporte por su número de ticket de 6 dígitos y devuelve su estado actual. ' +
+          'Úsala cuando el vecino mencione un número de reporte.',
+        strict: true,
+        input_schema: {
+          type: 'object',
+          properties: {
+            numero_ticket: { type: 'string', description: 'Los 6 dígitos, sin espacios' },
+          },
+          required: ['numero_ticket'],
+          additionalProperties: false,
+        },
+      },
+      ejecutar: async ({ numero_ticket }) => {
+        const limpio = String(numero_ticket || '').replace(/\D/g, '')
+        if (!/^\d{6}$/.test(limpio)) return 'Ese no es un número de ticket válido: son 6 dígitos.'
+
+        const snap = await db.collection('tickets_publicos').doc(limpio).get()
+        if (!snap.exists) return `No existe ningún reporte con el número ${limpio}.`
+
+        const t = snap.data()
+        return JSON.stringify({
+          numero: limpio,
+          estado: t.estado || 'Pendiente',
+          categoria: etiquetaCategoria(t.categoria),
+          recibido: formatearFecha(t.fecha_creacion),
+          resuelto: formatearFecha(t.fecha_cierre),
+          lugar: t.direccion_texto || null,
+          vecinos_que_reportaron_lo_mismo: t.upvotes || 1,
+        })
+      },
+    },
+    {
+      definicion: {
+        name: 'listar_mis_reportes',
+        description:
+          'Devuelve los reportes hechos desde el número de WhatsApp con el que escribe el vecino. ' +
+          'Úsala cuando pida ver sus reportes o diga que perdió su número de ticket.',
+        strict: true,
+        input_schema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+      },
+      ejecutar: async () => {
+        const reportes = await buscarReportesDelNumero(db, numero)
+        if (reportes.length === 0) {
+          return 'Este número no tiene reportes. Puede haber reportado desde otro celular, o sin dejar su WhatsApp.'
+        }
+        return JSON.stringify(
+          reportes.slice(0, MAX_REPORTES_LISTADOS).map((r) => ({
+            numero: r.numero_ticket,
+            estado: r.estado || 'Pendiente',
+            categoria: etiquetaCategoria(r.categoria),
+            fecha: formatearFecha(r.fecha_creacion),
+            lugar: r.direccion_texto || null,
+          }))
+        )
+      },
+    },
+    {
+      definicion: {
+        name: 'enlace_para_reportar',
+        description:
+          'Devuelve el enlace del formulario para hacer un reporte nuevo. Úsala cuando el vecino ' +
+          'quiera reportar algo que todavía no ha reportado.',
+        strict: true,
+        input_schema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+      },
+      ejecutar: async () => PORTAL_URL_REPORTAR,
+    },
+  ]
+}
+
+// Devuelve true si contestó, false si hay que caer al menú de botones.
+async function responderConIa(db, numero, texto) {
+  if (!ia.iaDisponible()) return false
+
+  const conversacion = obtenerConversacion(numero)
+
+  // Tope de turnos: pasado ese punto la conversación vuelve al menú, que es
+  // gratis y resuelve lo que el vecino necesita el 90% de las veces. Es el
+  // techo de costo del que habla docs/COSTOS-IA.md.
+  if (conversacion.usosIa >= ia.MAX_TURNOS) {
+    console.log(`[webhook] ${numero}: llegó al tope de ${ia.MAX_TURNOS} turnos con IA, vuelve al menú.`)
+    return false
+  }
+
+  conversacion.turnos.push({ rol: 'user', texto })
+  // Se recorta el historial para que la entrada no crezca sin control: cada
+  // turno viejo se vuelve a pagar en cada llamada.
+  if (conversacion.turnos.length > ia.MAX_TURNOS * 2) {
+    conversacion.turnos = conversacion.turnos.slice(-ia.MAX_TURNOS * 2)
+  }
+
+  const respuesta = await ia.responderConversacion({
+    historial: conversacion.turnos,
+    herramientas: herramientasPara(db, numero),
+  })
+
+  if (!respuesta) {
+    // La IA no pudo: se saca el turno del historial para no dejarlo colgando
+    // sin respuesta, y el vecino recibe el menú de siempre.
+    conversacion.turnos.pop()
+    return false
+  }
+
+  conversacion.turnos.push({ rol: 'assistant', texto: respuesta })
+  conversacion.usosIa += 1
+
+  await enviarTexto({ para: numero, texto: respuesta })
+  console.log(`[webhook] ${numero}: respondido con IA (turno ${conversacion.usosIa} de ${ia.MAX_TURNOS}).`)
+  return true
+}
+
 async function responderConsulta(db, numero, texto) {
   if (excedeLimite(numero)) {
     console.warn(`[webhook] ${numero}: superó ${MAX_CONSULTAS} consultas por minuto, se ignora.`)
@@ -379,8 +546,16 @@ async function responderConsulta(db, numero, texto) {
     // vecino escribió un número, quiere ESE reporte.
     if (pideSusReportes(texto)) return responderMisReportes(db, numero)
 
-    // Cualquier otra cosa —un saludo, un error de tipeo, un "gracias"— termina
-    // en el menú. Es la red que hace que ningún mensaje quede sin respuesta.
+    // Cualquier otra cosa —un saludo, una pregunta, un error de tipeo— se
+    // intenta con la IA. Si no está configurada, si falla o si la conversación
+    // llegó a su tope de turnos, cae al menú de botones: sigue siendo la red
+    // que hace que ningún mensaje quede sin respuesta.
+    try {
+      if (await responderConIa(db, numero, texto)) return
+    } catch (error) {
+      console.warn(`[webhook] ${numero}: falló la respuesta con IA, se muestra el menú.\n    ${explicarError(error)}`)
+    }
+
     return mostrarMenu(numero)
   }
 
@@ -433,8 +608,24 @@ async function procesarCuerpo(db, cuerpo) {
           continue
         }
 
-        // Audio, foto o sticker: no hay nada que leer, pero tampoco se lo deja
-        // sin respuesta — se le muestra el menú para que pueda seguir tocando.
+        // Una nota de voz. En un pueblo la gente manda audios, no textos: un
+        // adulto mayor que no escribe bien igual puede describir su problema
+        // hablando, y hasta ahora ese mensaje se perdía. Si la transcripción
+        // no está configurada o falla, se cae al menú como siempre.
+        if (mensaje.type === 'audio' && transcripcionDisponible()) {
+          const mediaId = mensaje.audio?.id
+          const transcrito = mediaId ? await transcribirAudioDeWhatsapp(mediaId) : null
+
+          if (transcrito) {
+            console.log(`[webhook] ${mensaje.from}: mandó un audio, se transcribió y se procesa como texto.`)
+            await responderConsulta(db, mensaje.from, transcrito)
+            continue
+          }
+        }
+
+        // Foto, sticker, o un audio que no se pudo transcribir: no hay nada que
+        // leer, pero tampoco se lo deja sin respuesta — se le muestra el menú
+        // para que pueda seguir tocando.
         if (mensaje.type !== 'text') {
           await mostrarMenu(mensaje.from)
           continue
@@ -508,4 +699,6 @@ module.exports = {
   armarListaDeReportes,
   MENU_OPCIONES,
   TEXTO_SIN_REPORTES,
+  responderConIa,
+  herramientasPara,
 }

@@ -1,0 +1,75 @@
+# Las plataformas que mantienen viva TuMuniAquí
+
+Inventario hecho el 25-ago-2026 **leyendo el código**, no de memoria. Si agregas o sacas un
+servicio, actualiza esta lista: es lo primero que se busca cuando algo se cae y nadie se
+acuerda de dónde vive.
+
+## Las que sostienen el servicio a diario
+
+| Plataforma | Para qué | Panel | ¿Cuesta? |
+|---|---|---|---|
+| **Firebase** (Google) | La base de datos (Firestore), el login de funcionarios (Auth) y el hosting del sitio | [console.firebase.google.com](https://console.firebase.google.com/project/app-incidencias-urbanas) | **Gratis** — plan Spark |
+| **Render** | Donde corre el bot de WhatsApp y toda la IA | [dashboard.render.com](https://dashboard.render.com) | **Plan Starter** (pagado) 💰 |
+| **Cloudinary** | Las fotos que suben los vecinos | [console.cloudinary.com](https://console.cloudinary.com) | **Gratis** — plan free |
+| **Meta / WhatsApp Cloud API** | Los avisos y las respuestas por WhatsApp | [developers.facebook.com](https://developers.facebook.com) · [business.facebook.com](https://business.facebook.com) | **Se paga por mensaje de plantilla** 💰 |
+| **GitHub** | El código, el despliegue automático y la vigilancia cada 30 min | [github.com/luisogonzalez30-coder/luis1](https://github.com/luisogonzalez30-coder/luis1) | **Gratis** |
+| **Anthropic** | Las funciones de IA (§48) | [console.anthropic.com](https://console.anthropic.com) | **Pago por uso** 💰 — ver `COSTOS-IA.md` |
+
+## Las que se usan sin tener cuenta
+
+Ninguna requiere registro ni pago. Son servicios públicos que la app consume directamente, y
+por eso **no aparecen en ninguna factura pero sí pueden caerse**:
+
+| Servicio | Para qué | Dónde se usa |
+|---|---|---|
+| **OpenStreetMap** — tiles | El mapa que ve el vecino y el funcionario | `MapaSeleccionUbicacion.jsx`, `MapaIncidencias.jsx` |
+| **Nominatim** (OpenStreetMap) | Buscar una dirección y convertirla en un punto | `geocodificacionService.js` (§37) |
+| **ArcGIS Online** (Esri) | La vista satelital del mapa | `MapaSeleccionUbicacion.jsx` (§47) |
+| **unpkg**, **cdnjs**, **Google Fonts** | Íconos del mapa y tipografías | Leaflet y la landing |
+
+## Apagada a propósito
+
+| Plataforma | Para qué | Estado |
+|---|---|---|
+| **OpenAI** | Transcribir las notas de voz de WhatsApp | **Apagada.** Claude no acepta audio, así que esta función —y solo esta— necesita otro proveedor. Antes de encenderla hay que declararlo en la política de privacidad (§48.6) |
+
+## Google Maps: se usaba cero, se borró
+
+**No hay ninguna dependencia de Google Maps, y no hace falta pagar una API key.** Hasta el
+25-ago-2026 el proyecto arrastraba `@googlemaps/js-api-loader` en `package.json`, un
+`src/utils/googleMapsLoader.js` completo y la variable `VITE_GOOGLE_MAPS_API_KEY` — nada de
+eso lo llamaba ningún componente. Los mapas siempre fueron Leaflet con tiles de OpenStreetMap
+y ArcGIS, y el buscador de direcciones siempre fue Nominatim.
+
+Se borró todo. Queda anotado porque el archivo estaba bien escrito y era creíble: alguien
+podía "terminar de conectarlo" y encender un cobro de Google que el proyecto no necesita.
+
+## Direcciones para saber si algo está vivo
+
+| Qué mirar | Link |
+|---|---|
+| La app del vecino | <https://app-incidencias-urbanas.web.app/licanten> |
+| Consulta de ticket, sin login | <https://app-incidencias-urbanas.web.app/licanten/estado> |
+| Demo para presentaciones | <https://app-incidencias-urbanas.web.app/demo> |
+| Login de funcionarios y Alcalde | <https://app-incidencias-urbanas.web.app/login> |
+| Landing comercial | <https://tumuniaqui.web.app> |
+| Salud del bot | <https://proyectomuni.onrender.com/salud> |
+| Estado de la IA | <https://proyectomuni.onrender.com/ia/estado> |
+| Las revisiones automáticas | [Actions del repositorio](https://github.com/luisogonzalez30-coder/luis1/actions) |
+
+Desde una sesión de Claude Code **no se puede mirar la pantalla**, solo leer código y
+registros. `npm run revisar` comprueba los ocho sistemas de una pasada.
+
+## Lo que hay que tener presente
+
+**Render ya está en plan pagado** (Starter), comprobado el 26-ago-2026 — este documento y
+`RETOMAR-AQUI.md` decían "Free, sin SLA" y estaban desactualizados. **Firebase sigue en Spark**,
+con cuota gratis compartida, y eso sí sigue pendiente: es lo que bloquea el plan Blaze y el
+dominio propio.
+
+**Ojo con dónde vive el bot**: en el panel de Render no aparece en la lista principal. Está
+dentro del proyecto `My project` → `Production` → `ProyectoMuni`. Los `centinela-ta-*` que se
+ven sueltos son de Centinela TA, otro proyecto.
+
+**Meta es el único costo que crece con el uso desde antes de la IA.** Cada reporte genera al
+menos dos mensajes de plantilla. Verificar la tarifa vigente en Chile sigue pendiente.

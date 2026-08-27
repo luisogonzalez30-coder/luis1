@@ -21,6 +21,8 @@ const axios = require('axios')
 const { enviarTemplate, explicarError, formatearParaGraphApi } = require('./whatsapp')
 const { etiquetaCategoria } = require('./categorias')
 const { crearRouter: crearRouterWebhook } = require('./webhook')
+const { crearRouter: crearRouterIa } = require('./rutas-ia')
+const ia = require('./ia')
 const vigilancia = require('./vigilancia')
 const { diagnostico } = vigilancia
 
@@ -299,6 +301,22 @@ if (WHATSAPP_VERIFY_TOKEN && WHATSAPP_APP_SECRET) {
   )
 }
 
+// --- Rutas de IA para la app web ---
+// Se montan siempre. Sin ANTHROPIC_API_KEY responden { sugerencia: null } y la
+// app sigue funcionando como antes — es mejor que el formulario reciba una
+// respuesta clara de "no hay sugerencia" a que la llamada falle con un 404 y
+// haya que distinguir ese caso de un servicio caído.
+app.use('/ia', crearRouterIa())
+if (process.env.ANTHROPIC_API_KEY) {
+  console.log('[server] Rutas de IA activas en /ia (clasificar, duplicado, resumen).')
+} else {
+  console.log(
+    '[server] Rutas de IA montadas pero SIN CLAVE: /ia responde "sin sugerencia" y todo\n' +
+      '         degrada al comportamiento anterior. Para encenderlas, define ANTHROPIC_API_KEY\n' +
+      '         en Render -> Settings -> Environment (ver docs/COSTOS-IA.md para el costo).'
+  )
+}
+
 app.listen(PORT, () => console.log(`[server] Escuchando en el puerto ${PORT}.`))
 
 // --- Auto-ping: evita que Render duerma el servicio ---
@@ -326,6 +344,10 @@ if (RENDER_EXTERNAL_URL) {
 } else {
   console.log('[server] RENDER_EXTERNAL_URL no está definida — auto-ping desactivado (¿corriendo local?).')
 }
+
+// Carga el gasto de IA acumulado del mes desde Firestore. Sin esto el tope de
+// gasto se reiniciaría en cada deploy de Render, o sea que no sería un tope.
+ia.iniciar(db).catch((error) => console.warn(`[server] No se pudo iniciar la contabilidad de IA: ${error.message}`))
 
 escucharNuevosTickets()
 escucharTicketsResueltos()

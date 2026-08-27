@@ -1625,8 +1625,212 @@ Ahora hay un botón **"Escribirle a {nombre}"** que abre WhatsApp con el mensaje
 
 Pedido del usuario, con un motivo concreto: en zona rural la vista de calles no muestra nada —caminos sin nombre, potreros, sin veredas— y el funcionario necesita reconocer el lugar antes de mandar una cuadrilla. Se agregó el toggle **"Ver satelital / Ver calles"** abajo a la derecha, en la **misma posición** que en el mapa del vecino para que quien use las dos vistas no tenga que buscarlo. Es la misma capa Esri World Imagery ya usada en `MapaSeleccionUbicacion.jsx`, gratis y sin API key. Las dos definiciones de capas quedaron con una advertencia cruzada: si se cambia una, cambiar la otra.
 
+## 48. Las cinco funciones de IA (25-ago-2026)
 
-## 48. El tope de Compra Ágil se mide CON IVA — precios corregidos (19-ago-2026)
+Se implementaron las cinco funciones de IA que se discutieron: sugerencia de categoría
+mirando la foto, desempate semántico de duplicados, bot conversacional, transcripción de
+notas de voz y resumen narrado de la Cuenta Pública.
+
+**Todo viene apagado.** Sin `ANTHROPIC_API_KEY` el sistema se comporta exactamente como
+antes. Esto no es una precaución de estilo: es la propiedad que hace que se pueda desplegar
+sobre un municipio con vecinos reales sin arriesgar nada. El costo está calculado aparte, en
+**`docs/COSTOS-IA.md`**.
+
+### 48.1 Dónde vive la IA, y por qué ahí
+
+Todo corre en **el servicio de Render** (`whatsapp-api-oficial/`), no en la app.
+
+La razón es que la clave de API no puede viajar al navegador: el bundle lo descarga
+cualquiera que abra el sitio. Es el mismo razonamiento que dejó las credenciales de Meta en
+Render. Entonces el formulario del vecino le pide la clasificación al servicio por HTTP, y el
+servicio es el único que tiene la clave.
+
+Efecto secundario que conviene saber: **la IA no necesita Blaze**. Firebase sigue en Spark; lo
+que se agregó no toca esa restricción.
+
+| Archivo | Qué hace |
+|---|---|
+| `whatsapp-api-oficial/ia.js` | Cliente de Claude: las cuatro funciones, la contabilidad de gasto y el tope |
+| `whatsapp-api-oficial/rutas-ia.js` | Los endpoints `/ia/*` que consume la app, con CORS y límite por IP |
+| `whatsapp-api-oficial/transcripcion.js` | Notas de voz. **Otro proveedor** — ver §48.6 |
+| `whatsapp-api-oficial/probar-ia.js` | 25 pruebas con un modelo simulado, sin gastar |
+| `src/services/iaService.js` | Cliente del frontend. Nunca lanza: si algo falla, devuelve null |
+| `src/components/ciudadano/SugerenciaCategoria.jsx` | El aviso que propone corregir la categoría |
+| `src/components/dashboard/ResumenNarrado.jsx` | El botón de resumen en la Cuenta Pública |
+
+### 48.2 La regla que ordena todo: la IA propone, las tablas deciden
+
+`calcularGravedad` y `calcularDepartamento` (§7 y §8) derivan la gravedad, el color del pin y
+el departamento **a partir de la categoría**. La IA nunca devuelve ninguna de esas tres cosas:
+solo la categoría, y el resto sigue saliendo de las tablas fijas de siempre.
+
+Eso importa por una razón que no es técnica. Un municipio puede defender una tabla —"los
+socavones son gravedad alta, siempre"— ante un concejo o ante un vecino que reclama. No puede
+defender "el modelo decidió". Las tablas siguen siendo la autoridad; la IA solo ayuda a entrar
+por la puerta correcta.
+
+Y hay una segunda defensa, en código: **lo que devuelve el modelo se valida contra el catálogo
+real**. Una categoría que no existe entre las 58 se descarta y no llega a Firestore. Está
+probado en `probar-ia.js` con un modelo que devuelve `Ovni_aterrizado`.
+
+### 48.3 La sugerencia de categoría va en el Paso 3, no en el 2
+
+El wizard es ubicación → categoría → foto (§11), así que la foto llega **después** de que el
+vecino ya eligió. En vez de reordenar el formulario, la sugerencia se puso donde llega la foto
+y **revisa una decisión ya tomada**.
+
+Resultó mejor que la idea original: la IA no adivina en el vacío, y **solo habla cuando
+discrepa**. Si coincide con lo que el vecino eligió no se muestra nada — un aviso que aparece
+siempre se vuelve invisible.
+
+Tres cosas que hacen que un error del modelo no cueste nada:
+
+- **La categoría no cambia sola nunca.** Si el vecino no toca el botón, se manda lo que él
+  eligió. Un error de la IA cuesta un aviso ignorado, no un reporte mal ruteado.
+- **Con confianza baja no se muestra.** El modelo mismo está diciendo que no está seguro.
+- **Una foto se revisa una sola vez.** Navegar entre pasos no vuelve a pagar la llamada.
+
+El caso real que esto arregla está en la lista de pendientes de `RETOMAR-AQUI.md`: uno de los
+reportes de prueba de Licantén dice *"Reja rota"* y quedó categorizado como **Árbol caído**,
+que lo manda al departamento equivocado.
+
+### 48.4 Duplicados: lo que la comparación por categoría dejaba pasar
+
+§16 compara **misma categoría** dentro de 50 m. O sea que "Bache" y "Pavimento deteriorado"
+sobre el mismo hoyo son dos tickets, y la cuadrilla va dos veces.
+
+Ahora, cuando la búsqueda por categoría no encuentra nada, se buscan los cercanos de **otra**
+categoría y se le pregunta a la IA si es el mismo problema físico. Como Haversine ya filtró,
+al modelo le llegan uno o dos finalistas: por eso cuesta centavos y no corre en la mayoría de
+los reportes.
+
+**Ante la duda, no fusiona** — está escrito en el prompt y probado. Juntar dos problemas
+reales en un solo ticket hace que uno de los dos no se arregle nunca, y ese error es mucho más
+caro que un duplicado.
+
+### 48.5 El bot: la IA solo cubre el hueco que antes caía al menú
+
+El orden de resolución del webhook **no cambió**. Los caminos deterministas siguen primero:
+
+1. ¿escribió un número de ticket? → la respuesta directa de siempre
+2. ¿pidió "mis reportes"? → su lista, como siempre
+3. cualquier otra cosa → **antes**: el menú de botones. **Ahora**: la IA, y si falla, el menú.
+
+Dos consecuencias buenas: el comportamiento ya probado en producción no se toca, y el costo es
+mucho menor que si cada mensaje pasara por el modelo.
+
+Las herramientas (`buscar_ticket`, `listar_mis_reportes`, `enlace_para_reportar`) las **ejecuta
+el webhook**, no `ia.js`, y por dentro llaman a las mismas funciones de siempre. La IA no abre
+ningún camino nuevo a los datos: solo decide cuándo usar los que ya existían.
+
+El historial vive **en memoria y con vencimiento de 30 minutos**. Nunca se guarda en Firestore:
+son conversaciones de vecinos y no hay ninguna razón para conservarlas.
+
+Lo que el prompt le prohíbe explícitamente: inventar el estado de un reporte, dar una fecha de
+reparación, o prometer cuándo se arregla algo. Si alguien describe una emergencia en curso, lo
+primero de la respuesta es el 133.
+
+### 48.6 La transcripción de audio es la única pieza con otro proveedor
+
+La API de Claude acepta imágenes y documentos, **no audio**. Así que esta función —y solo
+esta— necesita un servicio de transcripción aparte.
+
+Eso tiene una consecuencia que no es técnica: **un tercero más recibiendo datos de vecinos**.
+Por eso viene apagada por su propia variable (`OPENAI_API_KEY`), separada de la de Claude:
+encender el resto de la IA no enciende esto. Antes de usarla con gente real hay que agregar ese
+proveedor a la política de privacidad (§35.2), que además sigue esperando revisión de abogado.
+
+Para qué vale la pena igual: en un pueblo la gente manda audios, no textos. Un adulto mayor que
+no escribe bien puede describir un problema hablando, y hasta ahora ese mensaje se perdía —
+un audio solo mostraba el menú.
+
+### 48.6.b Qué datos salen del sistema, exactamente
+
+Esto hay que tenerlo escrito porque es lo que un abogado va a preguntar, y porque la política
+de privacidad (§35.2) tiene que decirlo antes de encender nada con vecinos reales.
+
+**Lo que sale hacia Anthropic:**
+
+- La **foto** del reporte y el texto que el vecino escribió en "cuéntanos qué pasa", al pedir
+  la sugerencia de categoría. El prompt le pide explícitamente que no describa personas ni
+  patentes, pero la foto va entera: la advertencia de no fotografiar personas que ya está en
+  `PasoFoto.jsx` se vuelve más importante, no menos.
+- Para el duplicado: **solo campos públicos** — categoría, `direccion_texto` y la distancia.
+  `detalles_adicionales` del reporte existente **no** se manda, y no por descuido: ese campo
+  está deliberadamente fuera de `tickets_publicos` porque puede mencionar personas.
+- Del bot: lo que el vecino escribe, y de sus reportes solo lo que ya le mostraríamos por
+  WhatsApp de todos modos (número, estado, categoría, fecha, lugar).
+- **Nunca**: nombre, RUT ni teléfono. El número desde el que escribe el vecino se usa para
+  buscar sus reportes dentro de Firestore, pero no viaja al modelo.
+- De la Cuenta Pública: solo cifras agregadas. Ningún dato de una persona.
+
+**Lo que sale hacia el proveedor de transcripción**, si se enciende: el audio completo, tal
+como lo mandó el vecino. Es el más sensible de todos —una nota de voz puede contener
+cualquier cosa, incluida la voz misma, que es un dato biométrico— y por eso esa función tiene
+su propia variable y viene apagada.
+
+### 48.7 El costo tiene techo, y el techo está en código
+
+El bot conversacional es la partida que peor escala: su costo depende de **conversaciones**, no
+de reportes, y alguien puede escribir diez veces sin generar ningún reporte. Tres topes, todos
+puestos desde el día uno:
+
+- **`IA_MAX_TURNOS`** (6): pasado ese punto la conversación vuelve al menú, que es gratis.
+- **`IA_TOPE_USD_MES`**: al alcanzarlo, `iaDisponible()` empieza a decir que no y **todo
+  degrada solo**, sin caerse. El gasto se guarda en `configuracion/ia_gasto` en Firestore, no
+  solo en memoria: Render reinicia seguido, y un contador que se reinicia con el proceso no es
+  un tope, es un adorno.
+- **Límite por IP** en `/ia/*` (20 por minuto), más CORS cerrado a los dominios de la app. Un
+  endpoint público que gasta dinero es un blanco, y este no tiene login porque el vecino nunca
+  se autentica (§16).
+
+La estimación de gasto usa la tarifa del modelo configurado; si se cambia por uno que no esté
+en la tabla, se asume la de Opus 5 — **sobreestimar es el error seguro**, hace que el tope
+corte antes y no después.
+
+### 48.8 Cómo se probó, sin gastar un peso
+
+`whatsapp-api-oficial/probar-ia.js` reemplaza el cliente de Anthropic por uno que devuelve
+respuestas armadas a mano con la misma forma que la API real (bloques `tool_use`,
+`stop_reason`, `usage`). Con eso se prueba el ciclo completo, incluido el de herramientas, sin
+red y sin clave. **25 pruebas, todas pasando.**
+
+Lo que más importaba comprobar no es que la IA acierte, sino que **cuando no está, todo siga
+igual**: las cinco funciones devuelven null sin lanzar, y el formulario y el bot no cambian.
+
+De paso se arregló una prueba de `probar-webhook.js` que **llevaba fallando desde §41.5**:
+afirmaba que el bot NO debía repetir la ayuda dos veces seguidas, que es justamente el tope de
+"una ayuda por hora" que esa sección quitó a propósito. La prueba se quedó afirmando la regla
+vieja. Ahora comprueba lo que el código de verdad hace y `probar-webhook.js` pasa 31 de 31.
+
+### 48.9 Lo que falta para que esto se encienda
+
+**Escrito el 25-ago, cuando la IA seguía apagada; ya no es el estado actual — ver el aviso
+al final de esta sección.** El código ya estaba en producción (fusionado y publicado el
+25-ago-2026), pero **la IA seguía apagada**: faltaba la clave. Mientras no existiera
+`ANTHROPIC_API_KEY` en Render, el sitio publicado se comportaba exactamente igual que antes.
+
+Lo que faltaba, entonces, era un solo paso: crear esa variable en Render → Settings →
+Environment, junto con `IA_TOPE_USD_MES`. Al guardarla Render reinicia solo y el log dice
+`[ia] Activa con modelo claude-opus-5`.
+
+La transcripción de audios queda aparte y no conviene encenderla todavía: suma un proveedor
+que recibe voz de vecinos, y eso hay que declararlo antes en la política de privacidad
+(§48.6 y §48.6.b).
+
+Verificación del despliegue, hecha el mismo día: el sitio sirve el bundle nuevo, el chunk de
+`App` trae la `apiKey` con formato real (no `void 0`) y el bucket correcto
+(`firebasestorage.app`, no `appspot.com`), y el código de IA está adentro. Es la comprobación
+por contraste que describe §39 — la que distingue un sitio publicado de un sitio publicado y
+muerto.
+
+> ✅ **Encendida el 26-ago-2026.** `ANTHROPIC_API_KEY` ya está configurada en Render y
+> `/ia/estado` responde `{"activa":true}`. El detalle de qué costó encenderla (Render
+> desplegaba desde una rama de trabajo sin fusionar, no desde `main`) está en
+> `RETOMAR-AQUI.md`, sección "Dos días que costó encender la IA". Lo único que sigue
+> apagado a propósito es la transcripción de audio (§48.6).
+
+## 49. El tope de Compra Ágil se mide CON IVA — precios corregidos (19-ago-2026)
 
 **El error.** Toda la sección 35.1 y las primeras versiones de la propuesta comparaban el **valor neto** contra las 100 UTM de Compra Ágil. Está mal: el tope se mide sobre el **monto total de la contratación**, con IVA y todos los costos asociados incluidos. La norma vigente son los **artículos 97 y 98 del DS 661/2024 de Hacienda** (reglamento nuevo de la Ley 19.886 tras la reforma de la Ley 21.634), no el antiguo artículo 10 bis del DS 250 ni "la Ley 21.634" a secas — citar el DS 661 frente a un asesor jurídico municipal. Fuente: `Masterclass-Compra-Agil-Proveedor.pdf`, ChileCompra, agosto 2025.
 
@@ -1642,7 +1846,7 @@ No solo se pasaba el primer año: **la renovación del año 2 tampoco cabía**. 
 
 **Los topes reales, con IVA:** máximo absoluto para caber en Compra Ágil, **147,4 UF**; mensualidad máxima para que 12 meses quepan, **12,28 UF**.
 
-### 48.1 Precios vigentes desde el 19-ago-2026
+### 49.1 Precios vigentes desde el 19-ago-2026
 
 | Plan | Población | Activación | Mensual | Anual | UTM del año c/IVA |
 |---|---|---:|---:|---:|---:|
@@ -1660,7 +1864,7 @@ Referencias usadas: UF $40.857,96 (19-ago-2026), UTM $71.649 (ago-2026). **Solo 
 
 **Al cotizar otro municipio:** recalcular el equivalente en UTM **con IVA**. Un plan que en neto se ve holgado puede estar 16 UTM sobre el tope.
 
-### 48.2 Dónde quedó reflejado
+### 49.2 Dónde quedó reflejado
 
 - **`docs/Propuesta-TuMuniAqui-Licanten.pdf` §7 — la fuente de verdad.** Se actualizó primero y es el documento que se envía. Para leerlo desde la terminal: `pdftotext -layout docs/Propuesta-TuMuniAqui-Licanten.pdf`.
 - `docs/PROPUESTA-COMERCIAL-NOTAS.md` §6 — el hallazgo y el razonamiento (interno, no se envía).

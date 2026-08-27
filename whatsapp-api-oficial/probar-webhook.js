@@ -178,17 +178,23 @@ async function main() {
   await esperar(60)
   afirmar(enviados.length === 1 && /No encontré/.test(enviados[0].texto), 'avisa que no lo encontró', enviados[0]?.texto)
 
-  console.log('\n── Mensaje sin ticket -> ayuda, una sola vez\n')
+  console.log('\n── Mensaje sin ticket -> siempre hay respuesta\n')
+  // Esta prueba afirmaba lo contrario hasta el 25-ago-2026: que la segunda vez
+  // seguida NO se respondiera, por un tope de "una ayuda por hora" que existió
+  // al principio. §41.5 lo quitó a propósito —el menú ES la respuesta a "no te
+  // entendí", y callarse deja al vecino creyendo que el bot está muerto— pero
+  // la prueba se quedó afirmando la regla vieja y llevaba fallando desde
+  // entonces. Ahora comprueba lo que el código de verdad hace.
   enviados.length = 0
   cuerpo = mensajeEntrante('hola buenas tardes', { from: '56911112222' })
   await pedir(servidor, { cuerpo, firma: firmar(cuerpo) })
   await esperar(60)
-  afirmar(enviados.length === 1 && /número de ticket/.test(enviados[0].texto), 'primera vez -> manda la ayuda')
+  afirmar(enviados.length === 1 && /número de ticket/.test(enviados[0].texto), 'primera vez -> responde')
 
   cuerpo = mensajeEntrante('sigue ahí?', { from: '56911112222' })
   await pedir(servidor, { cuerpo, firma: firmar(cuerpo) })
   await esperar(60)
-  afirmar(enviados.length === 1, 'segunda vez seguida -> NO repite la ayuda', enviados.length)
+  afirmar(enviados.length === 2, 'segunda vez seguida -> TAMBIÉN responde, nunca se queda callado', enviados.length)
 
   console.log('\n── Reintentos de Meta (mismo id de mensaje)\n')
   enviados.length = 0

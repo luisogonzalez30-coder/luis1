@@ -303,6 +303,14 @@ Entra al Pull Request: <https://github.com/luisogonzalez30-coder/luis1/pull/3>
 Y de ahí en adelante, cada cambio funciona igual: se abre un PR, miras la vista
 previa, aprietas Merge.
 
+**Salvo cuando el cambio es solo documentación.** Si un PR toca únicamente
+archivos `.md` o la carpeta `docs/`, el despliegue **no corre**: no aparece la
+vista previa y el sitio real no se republica. No está roto, es a propósito —esos
+archivos no entran en la compilación, así que republicar el sitio de un
+municipio en funcionamiento por una nota es riesgo sin nada a cambio. Basta que
+el cambio toque un archivo más, del tipo que sea, para que el despliegue vuelva
+a correr con todo.
+
 ## Si algo sale mal
 
 Entra a <https://github.com/luisogonzalez30-coder/luis1/actions> y abre la
@@ -339,3 +347,140 @@ parado en esa carpeta.
 Solo el sitio. **Las reglas e índices de Firestore siguen siendo manuales**, a
 propósito: una regla mal desplegada puede dejar la app inaccesible o abrir datos
 de los vecinos, y eso no debería pasar sin que alguien lo mire.
+
+---
+
+# El bot de WhatsApp se publica APARTE (Render)
+
+Esto es lo que más confunde de este proyecto, y conviene tenerlo claro de una vez:
+
+| Qué | Dónde vive | Cómo se publica |
+|---|---|---|
+| El sitio del vecino, la landing | Firebase Hosting | **Solo**, al hacer merge a `main` |
+| El bot de WhatsApp y **toda la IA** | Render | **A mano**, desde el panel de Render |
+
+O sea que puedes publicar el sitio, verlo actualizado, y creer que ya está todo — mientras el
+bot sigue corriendo la versión de la semana pasada. Pasó el 25-ago-2026: el frontend con las
+funciones de IA salió solo, y el bot se quedó con el código viejo respondiendo `404` en
+`/ia/estado`.
+
+## Ya no hace falta publicarlo a mano (26-ago-2026)
+
+`Auto-Deploy` está en **On Commit**, así que el bot se actualiza solo con cada cambio que entre
+a `main`, igual que el sitio. La asimetría que describía esta sección ya no existe.
+
+Publicar a mano sigue sirviendo para forzar un despliegue: **`Manual Deploy`** →
+**`Deploy latest commit`**, arriba a la derecha en el servicio `ProyectoMuni`.
+
+Ojo con la otra opción del mismo menú, **`Restart service`**: reinicia el proceso pero **no
+trae código nuevo**. Es la diferencia entre reencender el computador y actualizar el programa,
+y se confunden fácil.
+
+## Dónde está el servicio (cuesta encontrarlo)
+
+En <https://dashboard.render.com> el bot **no** aparece en la lista principal. Los servicios
+que se ven ahí bajo "Ungrouped Services" son los `centinela-ta-*`, que son de **Centinela TA**,
+otro proyecto. El bot está dentro del proyecto **`My project`** → `Production` → **`ProyectoMuni`**.
+
+Su Service ID es `srv-d9qh7q942hec73eb3hl0`, y su dirección <https://proyectomuni.onrender.com>.
+
+## Cómo saber si quedó bien, sin entrar a Render
+
+Abre esta dirección en el navegador:
+
+**<https://proyectomuni.onrender.com/ia/estado>**
+
+Devuelve tres booleanos:
+
+```json
+{"activa":true,"tope_configurado":true,"tope_alcanzado":false}
+```
+
+- **`activa: true`** → la IA está encendida y funcionando.
+- **`activa: false` con `tope_alcanzado: false`** → el código nuevo está publicado, pero
+  **falta la clave**. Se arregla creando `ANTHROPIC_API_KEY` en Render.
+- **`activa: false` con `tope_alcanzado: true`** → todo está bien configurado, pero **se
+  gastó el presupuesto del mes**. No hay nada que arreglar: la IA vuelve sola el día 1 del
+  mes siguiente. Si hace falta antes, se sube `IA_TOPE_USD_MES`.
+- **`tope_configurado: false`** → la IA funciona, pero **el fusible de gasto no está
+  puesto**: falta la variable `IA_TOPE_USD_MES` en Render, y sin ella el gasto no tiene
+  techo. No es una falla, es un riesgo.
+- **`Cannot GET /ia/estado` (404)** → **el código nuevo no está publicado**. Vuelve al paso 3.
+
+Cada caso lleva a un arreglo distinto. Vale la pena mirarlo antes de buscar el problema en
+otra parte.
+
+**Por qué son booleanos y no números**: esta URL es pública y no pide login. Publicar el
+gasto acumulado le diría a cualquiera cuánto lleva gastado el municipio, y publicar el monto
+del tope le diría a quien quisiera dejar la IA apagada cuánto tiene que hacerla gastar. El
+monto exacto se ve en los registros de Render, en la línea que el bot imprime al arrancar:
+
+```
+[ia] Activa con modelo claude-opus-5. Gasto de 2026-08: US$0.0000 de US$20.
+```
+
+Si esa línea dice `(sin tope)`, la variable no quedó guardada.
+
+Y para ver que el servicio en general está sano: **<https://proyectomuni.onrender.com/salud>**.
+El campo `minutosArriba` dice hace cuánto arrancó — si acabas de desplegar y sigue siendo un
+número grande, el deploy no ocurrió.
+
+## El día que Render desplegaba una rama que nadie miraba (25 y 26-ago-2026)
+
+Vale la pena contarlo entero, porque el síntoma no apuntaba a la causa en ningún momento.
+
+**Síntoma**: se fusionó la tanda de IA a `main`, el sitio se publicó solo y quedó correcto,
+pero el bot seguía respondiendo `404` en `/ia/estado`. Se creó la clave en Render, se apretó
+`Manual Deploy`, y el 404 seguía.
+
+**Causa**: en `Settings → Build`, el campo **Branch** decía
+`claude/retomar-aqui-md-9f2ccr` — una rama de trabajo del 21-ago que nunca se fusionó. A esa
+rama le faltaban **1.338 líneas** del bot, entre ellas los tres archivos de la IA. Render
+estaba haciendo su trabajo perfectamente: traía el último commit… de la rama equivocada.
+
+**Lo que despistaba**, en orden:
+
+1. `/salud` respondía `ok: true` y `/` decía `Status: OK`. El servicio estaba sano — lo que
+   estaba mal era *qué versión* corría, y ninguna de esas dos pantallas lo dice.
+2. Guardar una variable de entorno **reinicia** el servicio. Eso hizo que `minutosArriba`
+   bajara a 4 y pareciera que el deploy había funcionado. No había traído código nuevo.
+3. El servicio no aparece en la lista principal del panel, así que el primer `Deploy` se hizo
+   sobre otro proyecto (Centinela TA) sin que nadie lo notara.
+
+**El dato que sí sirve para diagnosticar**: `minutosArriba` en `/salud`. Si no baja a cerca de
+cero, no hubo despliegue **ni** reinicio. Si baja pero la ruta nueva sigue en 404, hubo
+reinicio sin código nuevo — y ahí hay que ir a mirar la rama.
+
+**Lo que esto significaba de fondo**: producción se estaba desplegando desde una rama sin
+fusionar. Nada de lo que entraba a `main` llegaba al bot, y cualquiera que hubiera seguido
+trabajando en esa rama habría publicado a producción sin que nadie lo revisara. Corregido el
+26-ago apuntando el servicio a `main`.
+
+## Las variables de entorno de la IA
+
+En Render: servicio `proyectomuni` → **`Environment`** en el menú de la izquierda →
+**`Add Environment Variable`**. Al guardar, **Render reinicia el servicio solo**.
+
+| Variable | Valor | Para qué |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | la clave de <https://console.anthropic.com> | Enciende toda la IA. Sin esto, todo funciona como antes |
+| `IA_TOPE_USD_MES` | `25` | Tope de gasto. Al alcanzarlo la IA se apaga sola, sin caerse |
+| `IA_MAX_TURNOS` | `6` | Cuántas veces seguidas contesta el bot con IA antes de volver al menú |
+
+**Ojo con el botón `Save Changes`**: si no lo aprietas, la variable no queda guardada y el
+servicio no reinicia. La forma de comprobarlo es `minutosArriba` en `/salud`: si no bajó a
+cerca de cero, no se guardó nada.
+
+`OPENAI_API_KEY` (transcripción de notas de voz) es aparte y **conviene dejarla apagada**:
+manda la voz de los vecinos a un tercero, y eso hay que declararlo antes en la política de
+privacidad. Ver §48.6 en `ESTADO_PROYECTO.md`.
+
+## Si el deploy falla
+
+En **Logs**, busca la línea roja. Las dos causas habituales:
+
+- **`npm ci` falla** — el `package-lock.json` de `whatsapp-api-oficial/` no calza con su
+  `package.json`. Pasa si alguien agregó una dependencia sin subir el lock.
+- **`Faltan variables de entorno: ...`** — el servicio arranca y se apaga solo. El mensaje
+  nombra cuál falta. Son `FIREBASE_SERVICE_ACCOUNT`, `WHATSAPP_TOKEN` y
+  `WHATSAPP_PHONE_NUMBER_ID`; las de IA **nunca** impiden arrancar.

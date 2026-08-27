@@ -24,7 +24,7 @@ Lo que sí sigue afuera, y conviene que siga así:
 | `serviceAccountKey.json` | Correr los scripts de `scripts/`. Da acceso total a la base de datos, saltándose cualquier restricción | Firebase Console → Configuración → Cuentas de servicio |
 | `backups/` | Nada para desarrollar; son respaldos con datos reales de vecinos | Se regeneran con `npm run backup` |
 
-Nota sobre el `.env`: no trae `VITE_GOOGLE_MAPS_API_KEY`. Hoy da igual, porque el buscador de direcciones usa Nominatim (OpenStreetMap, gratis y sin clave). Solo hará falta si se termina de conectar `src/utils/googleMapsLoader.js`, que está escrito pero todavía no lo llama nadie.
+Nota sobre el `.env`: el buscador de direcciones usa Nominatim (OpenStreetMap, gratis y sin clave), así que **no hace falta ninguna clave de mapas**. El cargador de Google Maps que estaba escrito sin usar se borró el 25-ago-2026.
 
 ## Cómo arrancar
 
@@ -37,6 +37,17 @@ npm run dev
 Si alguna vez borras `node_modules`, se recuperan con `npm install`.
 
 Los otros comandos útiles están en `package.json`: `npm run build`, `npm run desplegar`, `npm run backup`, `npm run emulators`.
+
+## Cómo saber si todo está funcionando
+
+```bash
+npm run revisar
+```
+
+Revisa de una pasada la app, el portal de consulta de ticket, la PWA, la landing comercial, el bot de WhatsApp y los certificados, y deja un informe con el estado de cada uno. Termina en error solo si hay algo roto de verdad.
+
+Eso mismo corre **solo, todos los días a las 9:00 de la mañana** (`.github/workflows/revision-diaria.yml`). Si algo está mal, se abre un issue en el repositorio con la etiqueta `revision-diaria` —GitHub manda el correo— y se cierra solo cuando la revisión del día siguiente salga limpia. Es distinto del vigilante de `vigilar.yml`, que cada 30 minutos avisa de una caída inmediata: la revisión diaria mira el conjunto completo y cosas que se degradan despacio, como un certificado a punto de vencer o un despliegue que quedó atrasado.
+
 
 ## Qué hay en cada carpeta
 

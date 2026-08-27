@@ -9,6 +9,7 @@ import { etiquetaCategoria } from '../utils/categorias'
 import { COLOR_POR_GRAVEDAD } from '../utils/gravedad'
 import { promedioHoras } from '../utils/tiempo'
 import Spinner from '../components/common/Spinner'
+import ResumenNarrado from '../components/dashboard/ResumenNarrado'
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
@@ -288,6 +289,14 @@ export default function CuentaPublicaPage() {
                   etiqueta="Apoyo vecinal"
                   valor={formatoNumero.format(resumen.apoyos)}
                   detalle="Vecinos que se sumaron a un reporte de otro"
+                />
+              </div>
+
+              <div className="mt-4">
+                <ResumenNarrado
+                  datos={resumen}
+                  periodo={periodo.etiqueta}
+                  nombreMunicipio={municipio?.nombre}
                 />
               </div>
             </Seccion>
