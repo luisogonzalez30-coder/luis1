@@ -5,6 +5,7 @@ import {
   doc,
   getDocs,
   increment,
+  limit as limitar,
   onSnapshot,
   orderBy,
   query,
@@ -247,6 +248,29 @@ export async function crearIncidencia({
 
 // Suscripción en tiempo real a incidencias de UNA municipalidad, opcionalmente
 // filtradas por estado. Devuelve la función de "unsubscribe" para el cleanup de un
+// Techo de la ventana que cargan los paneles municipales.
+//
+// Bug real, mismo patrón que el corregido el 02-ago-2026 en tickets_publicos
+// (ESTADO_PROYECTO.md §26) pero que quedó sin arreglar en esta colección: esta
+// suscripción no tenía limit(), así que cada vez que un funcionario abría su
+// panel se descargaba el histórico COMPLETO del municipio. Con 1.000
+// incidencias acumuladas son 1.000 lecturas por apertura: cuatro funcionarios
+// abriendo el panel ocho veces al día se comen 32.000 de las 50.000 lecturas
+// diarias del plan Spark, antes de que entre un solo vecino.
+//
+// 500 es holgado para operar —lo que un municipio chico acumula en meses— y
+// deja margen de sobra bajo la cuota. Cuando la ventana se llena, lo que deja
+// de ser cierto son los totales "de siempre": por eso se exporta la constante y
+// quien muestre un acumulado tiene que decir que está acotado (ver
+// reporteGerencial.js y PanelIndicadores.jsx), en vez de presentar una cifra
+// parcial como si fuera el histórico completo. Mismo criterio que §26 aplicó en
+// la página de transparencia.
+//
+// Los dos índices que esto necesita YA existen en firestore.indexes.json
+// —(municipio_id, fecha_creacion DESC) y (municipio_id, estado, fecha_creacion
+// DESC)—, así que este cambio no requiere desplegar índices.
+export const MAX_INCIDENCIAS_PANEL = 500
+
 // useEffect. Si no se indica municipioId, no se corre ninguna query (evita que un bug
 // de llamada filtre datos de todas las municipalidades a la vez).
 export function suscribirIncidencias(callback, estado = null, municipioId = null) {
@@ -259,7 +283,12 @@ export function suscribirIncidencias(callback, estado = null, municipioId = null
     ? [where('municipio_id', '==', municipioId), where('estado', '==', estado)]
     : [where('municipio_id', '==', municipioId)]
 
-  const q = query(incidenciasRef, ...condiciones, orderBy('fecha_creacion', 'desc'))
+  const q = query(
+    incidenciasRef,
+    ...condiciones,
+    orderBy('fecha_creacion', 'desc'),
+    limitar(MAX_INCIDENCIAS_PANEL)
+  )
 
   return onSnapshot(
     q,

@@ -30,6 +30,14 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
   const [form, setForm] = useState(FORMULARIO_VACIO)
   const [materiales, setMateriales] = useState([MATERIAL_VACIO])
   const [justificacion, setJustificacion] = useState('')
+  // "No aplica": hay trabajos donde el costo no se puede estimar de antemano
+  // —una filtración que hay que abrir para saber qué se rompió, un árbol caído
+  // que no se sabe si necesita camión— y obligar a inventar una cifra es peor
+  // que no tenerla: ese número inventado después se promedia con los reales y
+  // ensucia toda la comparación histórica. Con esto se asigna la cuadrilla
+  // igual y el presupuesto queda explícitamente sin estimar.
+  const [sinPresupuesto, setSinPresupuesto] = useState(false)
+  const [motivoSinPresupuesto, setMotivoSinPresupuesto] = useState('')
 
   useEffect(() => {
     const unsubscribe = suscribirTrabajadores(setTrabajadores, municipioId, departamento)
@@ -61,18 +69,27 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
   // aunque el gasto real termine siendo absurdo — el presupuesto inflado se
   // vuelve la nueva "normalidad" contra la que se compara. No bloquea (puede
   // ser un caso legítimamente más grande o complejo), pero exige decir por qué.
+  // Sin cifra que comparar no hay desviación posible: se pasan ceros para que
+  // evaluarDesviacion devuelva false en vez de exigir una justificación que no
+  // tendría sentido pedir.
   const { requiereRevision, horasDesviadas, costoDesviado } = evaluarDesviacion({
-    horasEstimadas: promedioCategoria?.horas || 0,
-    costoAprox: promedioCategoria?.costo || 0,
-    horasReales: Number(form.horas_estimadas) || 0,
-    costoTotal,
+    horasEstimadas: sinPresupuesto ? 0 : promedioCategoria?.horas || 0,
+    costoAprox: sinPresupuesto ? 0 : promedioCategoria?.costo || 0,
+    horasReales: sinPresupuesto ? 0 : Number(form.horas_estimadas) || 0,
+    costoTotal: sinPresupuesto ? 0 : costoTotal,
   })
 
-  const esValido =
-    seleccionados.length > 0 &&
-    Number(form.horas_estimadas) > 0 &&
-    !materialesIncompletos &&
-    (!requiereRevision || justificacion.trim().length > 0)
+  // Con "no aplica" lo único que sigue siendo obligatorio es la cuadrilla: es
+  // lo que de verdad hace falta para que el trabajo salga a terreno. Las horas
+  // quedan opcionales porque un trabajo de alcance desconocido tampoco tiene
+  // duración conocida, y exigirlas devolvería el mismo problema del número
+  // inventado.
+  const esValido = sinPresupuesto
+    ? seleccionados.length > 0
+    : seleccionados.length > 0 &&
+      Number(form.horas_estimadas) > 0 &&
+      !materialesIncompletos &&
+      (!requiereRevision || justificacion.trim().length > 0)
 
   function alternarSeleccion(id) {
     setSeleccionados((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]))
@@ -100,12 +117,22 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
         nombre: t.nombre,
         tarifa_hora: t.tarifa_hora || 0,
       })),
-      horas_estimadas: Number(form.horas_estimadas),
-      materiales_estimados: materialesValidos.map((m) => ({ descripcion: m.descripcion.trim(), costo: Number(m.costo) })),
-      costo_materiales_estimado: costoMateriales,
-      costo_aprox: costoTotal,
-      requiere_revision: requiereRevision,
-      justificacion: justificacion.trim() || null,
+      horas_estimadas: Number(form.horas_estimadas) || 0,
+      // Con "no aplica" los montos van en null, no en 0. Un 0 significa "este
+      // trabajo no cuesta nada", que es una afirmación falsa y además se
+      // promediaría como tal; null significa "no se estimó", que es la verdad.
+      // evaluarDesviacion y firestore.rules ya tratan la ausencia de cifra como
+      // "no hay contra qué comparar" (ambos exigen costo_aprox > 0), así que no
+      // hace falta tocar nada más.
+      presupuesto_no_aplica: sinPresupuesto,
+      materiales_estimados: sinPresupuesto
+        ? []
+        : materialesValidos.map((m) => ({ descripcion: m.descripcion.trim(), costo: Number(m.costo) })),
+      costo_materiales_estimado: sinPresupuesto ? null : costoMateriales,
+      costo_aprox: sinPresupuesto ? null : costoTotal,
+      requiere_revision: sinPresupuesto ? false : requiereRevision,
+      justificacion: sinPresupuesto ? null : justificacion.trim() || null,
+      motivo_sin_presupuesto: sinPresupuesto ? motivoSinPresupuesto.trim() || null : null,
     })
   }
 
@@ -149,7 +176,32 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
           </div>
         )}
 
-        <label className="mb-1 block text-sm font-medium text-gray-700">Horas estimadas</label>
+        <label className="toque mb-3 flex items-start gap-2 rounded-xl bg-gray-50 p-3 text-sm ring-1 ring-gray-200">
+          <input
+            type="checkbox"
+            checked={sinPresupuesto}
+            onChange={(e) => setSinPresupuesto(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            <span className="font-medium text-gray-800">N/A — no se puede estimar el costo</span>
+            <span className="mt-0.5 block text-xs text-gray-500">
+              Para cuando todavía no se sabe el alcance del trabajo. La cuadrilla se asigna igual y el
+              presupuesto queda sin estimar, en vez de anotar una cifra inventada.
+            </span>
+          </span>
+        </label>
+
+        {sinPresupuesto && (
+          <div className="mb-3 rounded-lg bg-blue-50 p-2 text-xs text-blue-800">
+            Este trabajo no va a entrar en las comparaciones de costo ni en el promedio de la categoría.
+            El gasto real se registra igual al cerrarlo.
+          </div>
+        )}
+
+        <label className="mb-1 block text-sm font-medium text-gray-700">
+          Horas estimadas {sinPresupuesto && <span className="font-normal text-gray-400">(opcional)</span>}
+        </label>
         <input
           type="number"
           min="1"
@@ -158,12 +210,14 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
           className="mb-3 w-full rounded-lg border border-gray-300 p-2.5"
         />
 
-        {costoManoObra > 0 && (
+        {!sinPresupuesto && costoManoObra > 0 && (
           <p className="mb-3 rounded-lg bg-blue-50 p-2 text-xs text-blue-800">
             Costo de mano de obra (calculado): <strong>{formatoCLP.format(costoManoObra)}</strong>
           </p>
         )}
 
+        {!sinPresupuesto && (
+        <>
         <label className="mb-1 block text-sm font-medium text-gray-700">Materiales estimados</label>
         <p className="mb-2 text-xs text-gray-400">
           Uno por línea. Si ya se usó antes en otro trabajo, aparece su último precio real como referencia.
@@ -226,6 +280,23 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
         <div className="mb-4 rounded-lg bg-gray-50 p-2 text-xs text-gray-700">
           Costo aproximado total: <strong>{formatoCLP.format(costoTotal)}</strong> (mano de obra + materiales)
         </div>
+        </>
+        )}
+
+        {sinPresupuesto && (
+          <>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Por qué no se puede estimar <span className="font-normal text-gray-400">(opcional)</span>
+            </label>
+            <textarea
+              value={motivoSinPresupuesto}
+              onChange={(e) => setMotivoSinPresupuesto(e.target.value)}
+              rows={2}
+              className="mb-4 w-full rounded-lg border border-gray-300 p-2 text-sm"
+              placeholder="Ej: hay que abrir el pavimento para saber qué se rompió"
+            />
+          </>
+        )}
 
         {requiereRevision && (
           <div className="mb-4 rounded-lg bg-orange-50 p-3 text-xs text-orange-800">

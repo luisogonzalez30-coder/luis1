@@ -1,0 +1,212 @@
+# Vigila que TuMuniAquí siga funcionando, y avisa si no.
+#
+# Existe por el corte del 9-ago-2026 (ESTADO_PROYECTO.md §39.5): se editaron
+# las plantillas de WhatsApp, Meta las dejó "En revisión" y falló el 100% de los
+# envíos durante ~19 horas. Cuatro reportes quedaron sin aviso, uno de un vecino
+# real, y NADIE SE ENTERÓ hasta revisarlo a mano al día siguiente. El servicio
+# estaba "arriba" todo ese rato.
+#
+# Cómo avisa: abriendo un issue en este repositorio. Suena rebuscado comparado
+# con un correo, pero es lo único que no necesita credenciales nuevas — GitHub
+# ya manda el correo al dueño del repo cuando se abre un issue. Un servicio de
+# alertas aparte significaría otra cuenta, otra clave que guardar y otra cosa
+# que se puede caer sin que nadie lo note.
+#
+# Qué NO hace: no vigila la cuota de Firestore directamente (leerla necesita la
+# API de Cloud Monitoring y facturación activa). Se detecta indirecto: si la
+# cuota se agota, los listeners del bot empiezan a fallar y eso sí lo reporta
+# /salud.
+
+name: Vigilar el servicio
+
+on:
+  schedule:
+    # Cada 30 minutos. Con ~48 corridas diarias de menos de un minuto queda muy
+    # por debajo de los 2.000 minutos mensuales gratis de Actions.
+    - cron: '*/30 * * * *'
+  # Para poder probarlo sin esperar al próximo cuarto de hora.
+  workflow_dispatch:
+    inputs:
+      url_bot:
+        description: >-
+          Dirección del bot a revisar solo en esta corrida, para probar una URL
+          antes de guardarla en la variable URL_BOT. Vacío = usar URL_BOT.
+        required: false
+        default: ''
+
+# Si una corrida se atrasa, no encolar la siguiente encima: el estado de ahora
+# es lo único que importa, no el de hace media hora.
+concurrency:
+  group: vigilar
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  vigilar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Revisar el sitio y el bot
+        id: revisar
+        env:
+          URL_SITIO: https://app-incidencias-urbanas.web.app/licanten
+          # Se configura en Settings -> Secrets and variables -> Actions ->
+          # pestaña "Variables" (NO "Secrets": la URL del bot no es secreta y
+          # como variable se puede leer en los registros, que es justo lo que
+          # se necesita cuando algo falla).
+          URL_BOT: ${{ inputs.url_bot || vars.URL_BOT }}
+          # Vacío salvo en una prueba manual con dirección a mano. Sirve para no
+          # tocar el aviso real con el resultado de una prueba.
+          URL_BOT_PRUEBA: ${{ inputs.url_bot }}
+        shell: bash
+        run: |
+          fallas=""
+
+          # --- El sitio de los vecinos ---
+          # curl ya imprime 000 cuando no logra conectar, asi que un "|| echo 000"
+          # de mas producia el codigo duplicado "000000" en el aviso.
+          codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$URL_SITIO") || true
+          if [ "$codigo" != "200" ]; then
+            fallas="${fallas}- El sitio no responde (HTTP $codigo en $URL_SITIO)"$'\n'
+          fi
+
+          # --- El bot de WhatsApp ---
+          if [ -z "$URL_BOT" ]; then
+            echo "::warning::Falta la variable URL_BOT; no se revisó el bot de WhatsApp."
+            echo "Solo se revisó el sitio. Para vigilar tambien el bot, crea la variable" >> "$GITHUB_STEP_SUMMARY"
+            echo "URL_BOT con la direccion del servicio en Render (sin barra al final)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            # --max-time generoso: Render en plan Free puede tardar en despertar,
+            # y confundir "estaba dormido" con "está caído" genera falsas alarmas.
+            cuerpo=$(curl -s --max-time 45 -w '\n%{http_code}' "$URL_BOT/salud") || true
+            estado=$(echo "$cuerpo" | tail -n1)
+            [ -z "$estado" ] && estado="000"
+            informe=$(echo "$cuerpo" | sed '$d')
+
+            if [ "$estado" = "000" ]; then
+              fallas="${fallas}- El bot de WhatsApp no responde (sin conexión a $URL_BOT)"$'\n'
+            elif [ "$estado" = "404" ]; then
+              # Un 404 no es el bot diciendo que está enfermo: es que en esa
+              # dirección no hay ningún /salud. O URL_BOT apunta a un servicio que
+              # no existe —Render contesta 404 en cualquier subdominio suyo sin
+              # dueño, así que una URL inventada se ve igual que un servicio caído—
+              # o el servicio existe pero corre una versión anterior a este
+              # endpoint. Los dos se arreglan en la configuración, no en el bot.
+              # Distinguirlo importa: el mensaje genérico mandaba a revisar los
+              # registros de Render y las plantillas de Meta, que es donde
+              # justamente no está el problema.
+              fallas="${fallas}- No existe /salud en $URL_BOT (HTTP 404). Revisa que la variable URL_BOT tenga la dirección real del servicio en Render, y que ese servicio esté desplegado con la versión que incluye /salud."$'\n'
+            elif [ "$estado" != "200" ]; then
+              detalle=$(echo "$informe" | grep -o '"problemas":\[[^]]*\]' || echo "$informe")
+              fallas="${fallas}- El bot reporta problemas (HTTP $estado): $detalle"$'\n'
+            fi
+          fi
+
+          if [ -n "$fallas" ]; then
+            {
+              echo "hay=si"
+              echo "detalle<<FIN"
+              echo "$fallas"
+              echo "FIN"
+            } >> "$GITHUB_OUTPUT"
+            echo "::warning::Se detectaron problemas."
+            echo "$fallas"
+            # En una prueba manual no se toca el aviso real (ver el "if" del paso
+            # siguiente), así que si el resultado no se refleja aquí la corrida
+            # sale verde con la prueba fallida y no sirve de nada.
+            if [ -n "$URL_BOT_PRUEBA" ]; then
+              echo "::error::La prueba manual de $URL_BOT encontró problemas."
+              exit 1
+            fi
+          else
+            echo "hay=no" >> "$GITHUB_OUTPUT"
+            echo "Todo en orden."
+          fi
+
+      # Se omite en las pruebas manuales con dirección a mano: el aviso refleja el
+      # estado de lo que está configurado de verdad, y cerrarlo porque una URL de
+      # prueba respondió bien apagaría la alarma sin haber arreglado nada.
+      - name: Avisar o dar por superado
+        if: inputs.url_bot == ''
+        uses: actions/github-script@v7
+        env:
+          HAY_FALLAS: ${{ steps.revisar.outputs.hay }}
+          DETALLE: ${{ steps.revisar.outputs.detalle }}
+        with:
+          script: |
+            const ETIQUETA = 'servicio-caido'
+            const TITULO = 'El servicio no está respondiendo bien'
+            const hayFallas = process.env.HAY_FALLAS === 'si'
+
+            // Se busca el issue abierto en vez de guardar estado en algún lado:
+            // el propio issue ES el estado. Así no hay nada que se pueda
+            // desincronizar entre corridas.
+            // Filtrar por una etiqueta que todavía no existe puede fallar en vez
+            // de devolver lista vacía, y eso dejaría al vigilante sin poder avisar
+            // justamente la primera vez que hace falta.
+            let issue = null
+            try {
+              const { data: abiertos } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                labels: ETIQUETA,
+              })
+              issue = abiertos[0] || null
+            } catch (error) {
+              core.warning(`No se pudo buscar avisos abiertos (${error.message}); se asume que no hay.`)
+            }
+
+            if (hayFallas) {
+              const cuerpo = [
+                'La revisión automática encontró esto:',
+                '',
+                process.env.DETALLE,
+                '',
+                `Comprobado: ${new Date().toISOString()}`,
+                '',
+                'Dónde mirar:',
+                '- Registros del bot en Render',
+                '- Estado de las plantillas en Meta (una edición las deja "En revisión" y corta los envíos)',
+                '- Uso de Firestore: https://console.firebase.google.com/project/app-incidencias-urbanas/usage',
+                '',
+                'Este aviso se cierra solo cuando la siguiente revisión salga bien.',
+              ].join('\n')
+
+              if (issue) {
+                // Un issue nuevo por cada revisión fallida serían 48 al día
+                // durante una caída larga. Se comenta en el que ya está, y solo
+                // cuando el detalle cambió: repetir lo mismo cada media hora
+                // entierra la información útil.
+                const { data: comentarios } = await github.rest.issues.listComments({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: issue.number, per_page: 100,
+                })
+                const ultimo = comentarios[comentarios.length - 1]
+                if (!ultimo || !ultimo.body.includes(process.env.DETALLE.trim())) {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner, repo: context.repo.repo,
+                    issue_number: issue.number, body: cuerpo,
+                  })
+                }
+                core.setFailed('El servicio sigue con problemas.')
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  title: TITULO, labels: [ETIQUETA], body: cuerpo,
+                })
+                core.setFailed('El servicio tiene problemas; se abrió un aviso.')
+              }
+            } else if (issue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `Superado. La revisión de ${new Date().toISOString()} salió bien.`,
+              })
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number, state: 'closed',
+              })
+            }

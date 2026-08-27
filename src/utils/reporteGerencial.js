@@ -1,5 +1,6 @@
 import { esDelMesActual, horasDesde, promedioHoras } from './tiempo'
 import { etiquetaCategoria } from './categorias'
+import { MAX_INCIDENCIAS_PANEL } from '../services/incidenciasService'
 
 // Cuántos reportes lista la tabla. Un PDF de 40 páginas no lo lee nadie; el
 // histórico completo ya se exporta a CSV desde el mismo panel.
@@ -83,6 +84,7 @@ export async function generarReporteGerencial({ incidencias, municipio, generado
   const margen = 16
 
   const r = calcularResumenGerencial(incidencias)
+  const ventanaLlena = incidencias.length >= MAX_INCIDENCIAS_PANEL
   const ahora = new Date()
 
   // --- Encabezado institucional ---------------------------------------------
@@ -161,7 +163,15 @@ export async function generarReporteGerencial({ incidencias, municipio, generado
       ['Emergencias activas (gravedad Alta sin resolver)', `${r.emergencias}`],
       ['Reportes atrasados (más de 4 h sin cuadrilla)', `${r.atrasados}`],
       ['Resueltos en el mes en curso', `${r.resueltasMes}`],
-      ['Resueltos desde que existe la plataforma', `${r.resueltas} de ${r.total}`],
+      // El panel carga una ventana acotada, no el histórico completo (ver
+      // MAX_INCIDENCIAS_PANEL). Mientras la ventana no se llena, "desde que
+      // existe la plataforma" es literalmente cierto. Cuando se llena deja de
+      // serlo, y este documento lo lleva el Alcalde a una reunión: presentar
+      // una cifra parcial como si fuera el total es exactamente el tipo de
+      // error que destruye la credibilidad del resto del informe.
+      ventanaLlena
+        ? [`Resueltos en los últimos ${r.total} reportes`, `${r.resueltas} de ${r.total}`]
+        : ['Resueltos desde que existe la plataforma', `${r.resueltas} de ${r.total}`],
     ],
     margin: { left: margen, right: margen },
   })

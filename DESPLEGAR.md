@@ -197,6 +197,44 @@ y eso solo puedes hacerlo tú porque requiere tu cuenta de Google.
    selecciona todo el contenido (`Ctrl+E`, o `Ctrl+A`) y cópialo (`Ctrl+C`).
    Es desde la primera `{` hasta la última `}`.
 
+### Si la cuenta quedó sin roles
+
+En la pantalla de creación, el paso **"Otorgar a esta cuenta de servicio acceso
+al proyecto"** es opcional y se salta con un clic en **LISTO**. Si pasó eso, el
+despliegue falla con un 403 y este mensaje en el registro:
+
+```
+This account is missing the following required permissions
+on project app-incidencias-urbanas:
+
+  firebase.projects.get
+  firebasehosting.sites.update
+```
+
+Ojo con el diagnóstico: eso **no** significa que el secreto esté mal. Al
+contrario — para llegar a ese error la credencial tuvo que leerse y
+autenticarse contra Google. Cuando el secreto falta, el error es otro
+(`Input required and not supplied: firebaseServiceAccount`, en 0 segundos).
+
+Se arregla sin rehacer la cuenta ni el secreto:
+
+1. Abre <https://console.cloud.google.com/iam-admin/iam?project=app-incidencias-urbanas>.
+   Fíjate que dice **IAM**, no "Cuentas de servicio": es otra pantalla.
+2. Botón **+ CONCEDER ACCESO**.
+3. En **Principales nuevas**, pega el correo de la cuenta:
+   `github-desplegador@app-incidencias-urbanas.iam.gserviceaccount.com`
+
+   > El correo exacto está en la columna **Correo electrónico** de
+   > <https://console.cloud.google.com/iam-admin/serviceaccounts?project=app-incidencias-urbanas>.
+
+4. En **Asignar roles**, agrega los dos, uno con **+ AGREGAR OTRO ROL**:
+   `Firebase Hosting Admin` y `Cloud Run Viewer`.
+5. **GUARDAR**, y espera uno o dos minutos: Google tarda en propagar los
+   permisos, así que un reintento inmediato puede volver a dar 403.
+
+Una cuenta sin ningún rol **no aparece en la lista de IAM**. Si no la ves ahí,
+eso confirma el diagnóstico en vez de contradecirlo.
+
 ## Paso 2 — Pegarlo en GitHub (navegador)
 
 1. Abre <https://github.com/luisogonzalez30-coder/luis1/settings/secrets/actions>
@@ -205,12 +243,24 @@ y eso solo puedes hacerlo tú porque requiere tu cuenta de Google.
    **Secret**: pega (`Ctrl+V`) lo que copiaste del `.json`.
 4. **Add secret**.
 
-## Paso 3 — Los seis valores de configuración
+## Paso 3 — Los valores de configuración
+
+> **Un build verde NO prueba que estos secretos existan.** Durante un tiempo
+> esta guía decía que el paso 3 ya estaba hecho, porque el paso **Compilar**
+> pasaba en verde. Es un razonamiento falso: Vite no falla cuando falta un
+> `VITE_*`, lo reemplaza por `undefined` y compila igual. El sitio se publica
+> y queda muerto — `firebase.js` lanza `auth/invalid-api-key` al cargar el
+> módulo, React nunca llega a montarse, y el vecino ve la pantalla de carga
+> girando para siempre. Pasó de verdad en el primer despliegue automático.
+>
+> Ahora el flujo lo comprueba antes de compilar (paso **"Comprobar la
+> configuración antes de compilar"**) y falla nombrando los que falten, sin
+> imprimir nunca su valor.
 
 Estos se incrustan cuando se compila el sitio. Están en tu archivo `.env`.
 
 **Para abrirlo sin terminal**: entra a la carpeta
-`C:\Users\Administrador\Escritorio\kpop\reporte-incidencias`, busca el
+`C:\Users\Administrador\Desktop\kpop\reporte-incidencias`, busca el
 archivo llamado **`.env`** (así, empezando con punto), clic derecho → **Abrir
 con** → **Bloc de notas**.
 
@@ -243,7 +293,7 @@ Dos ya están escritos acá y uno lo sabemos, así que son **cinco** que copiar.
 
 ## Paso 4 — Publicar, sin escribir un comando
 
-Entra al Pull Request: <https://github.com/luisogonzalez30-coder/luis1/pull/1>
+Entra al Pull Request: <https://github.com/luisogonzalez30-coder/luis1/pull/3>
 
 - En un par de minutos aparece un comentario automático con una **URL de vista
   previa**. Ábrela y revisa que todo esté bien.
@@ -279,7 +329,7 @@ también acepta). Cuando pregunte si quiere crear sus propios archivos de flujo,
 responde que **no**. Igual quedan pendientes los secretos del paso 3.
 
 **Cómo abrir PowerShell en la carpeta correcta**: entra a
-`C:\Users\Administrador\Escritorio\kpop\reporte-incidencias` en el
+`C:\Users\Administrador\Desktop\kpop\reporte-incidencias` en el
 Explorador, haz clic en la **barra de direcciones** de arriba (donde dice la
 ruta), borra lo que hay, escribe `powershell` y presiona **Enter**. Se abre ya
 parado en esa carpeta.
