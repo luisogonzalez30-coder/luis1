@@ -960,6 +960,12 @@ Documento listo para enviar a la Municipalidad de Licantén, escrito para ser re
 
 **La decisión que ordena todo el pricing es el tope de Compra Ágil.** La Ley 21.634 lo subió a **100 UTM** (dic-2024). Bajo ese monto un municipio contrata directo por Mercado Público, sin licitación; sobre él necesita una licitación pública, que son meses de proceso y competencia con proveedores grandes. Por eso el plan base se calibró para caber con holgura:
 
+> 🔴 **Esta tabla quedó obsoleta el 19-ago-2026 — ver §48.** Las UTM de abajo están
+> calculadas sobre el **valor neto**, y el tope de Compra Ágil se mide **con IVA incluido**.
+> Con ese error, ni Comuna Mayor ni el primer año de Licantén cabían donde este documento
+> decía que cabían. Se deja como registro de lo que se pensó el 03-ago-2026; **los precios
+> vigentes son los de §48**.
+
 | Plan | Población | Puesta en marcha | Mensual | Primer año |
 |---|---|---|---|---|
 | Comuna | ≤ 10.000 | UF 20 | UF 8 | UF 116 ≈ **66 UTM** ✅ |
@@ -1618,3 +1624,45 @@ Ahora hay un botón **"Escribirle a {nombre}"** que abre WhatsApp con el mensaje
 ### 47.3 Vista satelital en el mapa del panel
 
 Pedido del usuario, con un motivo concreto: en zona rural la vista de calles no muestra nada —caminos sin nombre, potreros, sin veredas— y el funcionario necesita reconocer el lugar antes de mandar una cuadrilla. Se agregó el toggle **"Ver satelital / Ver calles"** abajo a la derecha, en la **misma posición** que en el mapa del vecino para que quien use las dos vistas no tenga que buscarlo. Es la misma capa Esri World Imagery ya usada en `MapaSeleccionUbicacion.jsx`, gratis y sin API key. Las dos definiciones de capas quedaron con una advertencia cruzada: si se cambia una, cambiar la otra.
+
+
+## 48. El tope de Compra Ágil se mide CON IVA — precios corregidos (19-ago-2026)
+
+**El error.** Toda la sección 35.1 y las primeras versiones de la propuesta comparaban el **valor neto** contra las 100 UTM de Compra Ágil. Está mal: el tope se mide sobre el **monto total de la contratación**, con IVA y todos los costos asociados incluidos. La norma vigente son los **artículos 97 y 98 del DS 661/2024 de Hacienda** (reglamento nuevo de la Ley 19.886 tras la reforma de la Ley 21.634), no el antiguo artículo 10 bis del DS 250 ni "la Ley 21.634" a secas — citar el DS 661 frente a un asesor jurídico municipal. Fuente: `Masterclass-Compra-Agil-Proveedor.pdf`, ChileCompra, agosto 2025.
+
+**Lo que se rompía** con la tarifa de ese momento (activación UF 44 + mensual UF 13):
+
+| Concepto | UF | UTM neto | UTM c/IVA |
+|---|---:|---:|---:|
+| Pack promocional | 171 | 97,5 ✅ | **116,0 ❌** |
+| Suscripción anual sola | 156 | 88,9 ✅ | **105,9 ❌** |
+| Primer año a valor de lista | 200 | 114,0 ❌ | **135,7 ❌** |
+
+No solo se pasaba el primer año: **la renovación del año 2 tampoco cabía**. Ese era el error más caro, porque obligaba al municipio a cambiar de procedimiento al año siguiente.
+
+**Los topes reales, con IVA:** máximo absoluto para caber en Compra Ágil, **147,4 UF**; mensualidad máxima para que 12 meses quepan, **12,28 UF**.
+
+### 48.1 Precios vigentes desde el 19-ago-2026
+
+| Plan | Población | Activación | Mensual | Anual | UTM del año c/IVA |
+|---|---|---:|---:|---:|---:|
+| Comuna | ≤ 10.000 | UF 44 | UF 12 | UF 144 | **97,7** ✅ |
+| Comuna Mayor | 10.001–50.000 | UF 53 | UF 20 | UF 240 | 162,9 ❌ |
+| Ciudad | > 50.000 | UF 99 | UF 33 | UF 396 | 268,7 ❌ |
+
+Referencias usadas: UF $40.857,96 (19-ago-2026), UTM $71.649 (ago-2026). **Solo el Plan Comuna cabe entero en Compra Ágil**; los mayores requieren trato directo fundado o licitación.
+
+**Pack Comuna Completo:** contratando la activación y los 12 meses juntos, la activación va incluida sin costo, así que el primer año queda en **UF 144 en lugar de UF 188** — 97,7 UTM con IVA, con 2,3 UTM de holgura. El mismo número sirve para cada renovación, así que el municipio nunca cambia de vía de compra. Se garantiza contractualmente un tope de **98 UTM** a la fecha de la orden de compra, para que la variación diaria de la UF no lo empuje sobre el límite.
+
+**Facturación a elección del municipio** (commit `4e33ccc`): una sola factura anual anticipada, o **doce cuotas iguales de UF 12** contra servicio prestado. Mismo contrato, misma orden de compra y mismo total. Facturar en cuotas **no** fracciona la contratación: el contrato es de ejecución diferida en el tiempo y lo que se compara con el tope es el total del contrato, no la cuota. Lo prohibido es lo contrario — emitir varias órdenes de compra sucesivas por el mismo servicio continuo.
+
+**Costo de la corrección:** 27 UF el primer año y 12 UF al año de forma recurrente.
+
+**Al cotizar otro municipio:** recalcular el equivalente en UTM **con IVA**. Un plan que en neto se ve holgado puede estar 16 UTM sobre el tope.
+
+### 48.2 Dónde quedó reflejado
+
+- **`docs/Propuesta-TuMuniAqui-Licanten.pdf` §7 — la fuente de verdad.** Se actualizó primero y es el documento que se envía. Para leerlo desde la terminal: `pdftotext -layout docs/Propuesta-TuMuniAqui-Licanten.pdf`.
+- `docs/PROPUESTA-COMERCIAL-NOTAS.md` §6 — el hallazgo y el razonamiento (interno, no se envía).
+- `docs/PROPUESTA-COMERCIAL.md` §6 — **sincronizado el 26-ago-2026**. Hasta esa fecha arrastró la tabla vieja; si cotizaste leyendo ese archivo entre el 19 y el 26 de agosto, revisa el monto.
+- `landing/public/index.html` — **sincronizada y publicada el 26-ago-2026** en https://tumuniaqui.web.app: los tres planes de la sección `id="precio"`, la nota al pie (antes ofrecía "11 meses en vez de 12", descuento que ya no existe) y la FAQ *"¿Cómo se contrata?"*, que decía "hasta 50.000 habitantes" y ahora dice hasta 10.000, citando el DS 661/2024.

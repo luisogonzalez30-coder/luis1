@@ -141,42 +141,90 @@ automático andando, y política de privacidad y términos de servicio publicado
 
 ## 6. Precio
 
-Valores en UF, para que el contrato no se desactualice con la inflación. **No incluyen IVA.**
-*Referencia al [fecha]: UF = $[40.845]. UTM del mes = $[71.649].*
+Valores en UF, para que el contrato no se desactualice con la inflación. **Las cifras en UF
+son netas; las columnas de total y de UTM incluyen el IVA de 19%.**
+
+> **Por qué las UTM de esta sección van con IVA.** El tope de Compra Ágil se mide sobre el
+> monto total de la contratación, con impuestos y despachos incluidos, no sobre el valor
+> neto. Por eso todas las equivalencias en UTM de esta sección están calculadas con IVA: son
+> directamente comparables con el tope de 100 UTM, sin que nadie tenga que rehacer el cálculo.
+
+*Valores de referencia usados en este documento: UF = $40.857,96 al 19 de agosto de 2026 y
+UTM de agosto de 2026 = $71.649. Los montos en pesos están redondeados al millar y son
+referenciales: prevalecen los valores en UF.*
 
 ### 6.1 Plan que corresponde a Licantén
 
 Licantén tiene aproximadamente 6.900 habitantes, por lo que le corresponde el **Plan Comuna**.
 
-| Concepto | UF | Referencia en pesos |
-|---|---:|---:|
-| Puesta en marcha (pago único) | **20** | $817.000 |
-| Suscripción mensual | **8** | $327.000 |
-| **Total primer año** | **116** | **$4.738.000** |
-| Renovación anual (años siguientes) | 96 | $3.921.000 |
+| Concepto | UF neto | Neto | Total con IVA | UTM c/IVA |
+|---|---:|---:|---:|---:|
+| Activación y puesta en marcha (pago único) | 44 | $1.798.000 | $2.139.000 | 29,9 UTM |
+| Suscripción mensual | 12 | $490.000 | $583.000 | 8,1 UTM |
+| **Suscripción anual (12 meses)** | **144** | **$5.884.000** | **$7.001.000** | **97,7 UTM** |
+| Primer año a valor de lista (activación + 12 meses) | 188 | $7.681.000 | $9.141.000 | 127,6 UTM |
 
-> **Esto se puede comprar por Compra Ágil.** El total del primer año equivale a
-> aproximadamente **66 UTM**, cómodamente bajo el tope de 100 UTM que la Ley 21.634 fijó
-> para ese mecanismo. Es decir: **no requiere licitación pública**. Ver sección 9.
+**Pack Comuna Completo — la forma recomendada de contratar.** Contratando la activación y
+los 12 meses juntos, en una sola orden de compra, la activación va **incluida sin costo**: el
+primer año completo queda en **UF 144 en lugar de UF 188**, un ahorro de UF 44 ($2.139.000
+con IVA) para el municipio.
+
+> **Todo el primer año en una sola Compra Ágil.** El pack está fijado a propósito para quedar
+> bajo el tope de 100 UTM **medido con IVA incluido**, que es como lo mide la Dirección de
+> Compras: hoy el total facturado equivale a **97,7 UTM**. La Municipalidad contrata el año
+> completo con una sola orden de compra, sin licitación, sin acto administrativo y sin
+> dividir la contratación en partes. **La renovación también cabe**: del segundo año en
+> adelante se renueva por UF 144, esas mismas 97,7 UTM, así que el municipio no queda
+> obligado a cambiar de procedimiento al año siguiente. Ver sección 9.
+
+**Tope garantizado.** La UF varía a diario y la UTM es fija dentro del mes. Para que esa
+variación no empuje el pack sobre el tope, se garantiza contractualmente que el monto total
+facturado, con IVA incluido, **no superará las 98 UTM** vigentes a la fecha de emisión de la
+orden de compra: si el equivalente en UF quedara por encima, se factura ese tope.
+
+**Si en cambio se contrata por separado.** La suscripción anual cabe sola (97,7 UTM con IVA)
+y la activación también cabe sola (29,9 UTM con IVA, es un servicio distinto y de una sola
+vez). Lo que **no** cabe es sumar ambas a valor de lista en una misma orden: 127,6 UTM
+superan el tope. Para eso existe el Pack Comuna Completo.
 
 ### 6.2 Tabla completa de planes
 
-| Plan | Población | Puesta en marcha | Mensual | Total primer año |
-|---|---|---:|---:|---:|
-| **Comuna** | hasta 10.000 hab. | UF 20 | UF 8 | UF 116 (≈66 UTM) |
-| **Comuna Mayor** | 10.001 a 50.000 hab. | UF 24 | UF 12 | UF 168 (≈96 UTM) |
-| **Ciudad** | más de 50.000 hab. | UF 45 | UF 20 | UF 285 (≈162 UTM) |
+| Plan | Población | Activación | Mensual | Anual | UTM del año c/IVA |
+|---|---|---:|---:|---:|---:|
+| **Comuna** | hasta 10.000 hab. | UF 44 | UF 12 | UF 144 | 97,7 UTM |
+| **Comuna Mayor** | 10.001 a 50.000 hab. | UF 53 | UF 20 | UF 240 | 162,9 UTM |
+| **Ciudad** | más de 50.000 hab. | UF 99 | UF 33 | UF 396 | 268,7 UTM |
 
-Los planes Comuna y Comuna Mayor caben bajo el tope de Compra Ágil. El plan Ciudad lo
-supera y requiere licitación pública o trato directo fundado.
+**Solo el Plan Comuna cabe entero en Compra Ágil.** Los planes mayores superan el tope de
+100 UTM y requieren trato directo fundado o licitación pública.
 
-### 6.3 Descuento por pago anual anticipado
+### 6.3 Cómo se factura el pack: lo elige la Municipalidad
 
-Si la suscripción del año se paga por adelantado en una sola orden de compra, se cobran
-**11 meses en lugar de 12**. Para Licantén eso deja el primer año en **UF 108
-(≈$4.411.000)**.
+El precio, el contrato y la orden de compra son exactamente los mismos en las dos
+modalidades. Lo único que cambia es **cuándo se emite la factura**, para que el municipio
+acomode el gasto a su flujo presupuestario.
 
-### 6.4 Sin costos ocultos
+| Modalidad de facturación | Cómo funciona | Monto con IVA |
+|---|---|---:|
+| **Anual anticipada** | Una sola factura al emitirse la orden de compra | $7.001.000 por una vez |
+| **Mensual** | Doce facturas iguales, una por cada mes de servicio prestado | $583.000 al mes |
+
+> **Facturar en cuotas no fracciona la contratación.** El contrato es uno solo, de ejecución
+> diferida en el tiempo, respaldado por una sola orden de compra por el total del año. El
+> monto que se compara con el tope de 100 UTM es el del contrato completo —97,7 UTM—, no la
+> cuota de cada mes, y ese total no cambia por repartir la facturación. Lo que el reglamento
+> prohíbe es justamente lo contrario: emitir varias órdenes de compra sucesivas por el mismo
+> servicio continuo para que cada una quede bajo el tope. Aquí hay una sola orden, por el año
+> completo.
+
+### 6.4 Qué ocurre el segundo año
+
+La renovación es solamente la suscripción anual: **UF 144**, o sea $5.884.000 netos,
+$7.001.000 con IVA, equivalentes a **97,7 UTM**. Al quedar bajo las 100 UTM, cada renovación
+se sigue contratando por Compra Ágil, con una sola orden de compra y sin licitación. **No hay
+recargo por renovar y no se vuelve a cobrar activación.**
+
+### 6.5 Sin costos ocultos
 
 El precio incluye el alojamiento, las bases de datos, los respaldos, las actualizaciones y
 todas las funciones nuevas que se publiquen durante la vigencia del contrato. **No hay
@@ -263,11 +311,13 @@ Este punto es el que revisa el asesor jurídico municipal, así que va explícit
 
 Tres vías posibles, en orden de conveniencia para el municipio:
 
-1. **Compra Ágil (recomendada).** El monto del primer año está bajo las 100 UTM que la
-   Ley 21.634 fijó como tope para este mecanismo, así que la Municipalidad puede
-   contratar directamente a través de Mercado Público, sin licitación. Es el camino más
-   rápido: se publica la solicitud de cotización, se reciben ofertas y se emite la orden
-   de compra.
+1. **Compra Ágil (recomendada).** El tope de este mecanismo es de 100 UTM por
+   contratación, **con impuestos incluidos** (artículos 97 y 98 del Decreto 661 de 2024 del
+   Ministerio de Hacienda, reglamento de la Ley 19.886 tras la reforma de la Ley 21.634). El
+   Pack Comuna Completo deja el primer año en 97,7 UTM con IVA y cada renovación anual en la
+   misma cifra, así que la Municipalidad puede contratar directamente a través de Mercado
+   Público, sin licitación, el primer año y los siguientes. Es el camino más rápido: se
+   publica la solicitud de cotización, se reciben ofertas y se emite la orden de compra.
 2. **Trato directo fundado**, conforme al artículo 8 de la Ley 19.886 y su reglamento, si
    el municipio estima que corresponde por las características del servicio.
 3. **Licitación pública**, si el municipio prefiere ese camino o si el contrato es
@@ -284,7 +334,7 @@ las tres vías.
 |---|---|
 | **Duración** | 12 meses, renovable automáticamente por períodos iguales. |
 | **Término anticipado** | Cualquiera de las partes, con aviso escrito de 60 días corridos. Sin multa. |
-| **Facturación** | Mensual, o anual anticipada con el descuento de la sección 6.3. Factura electrónica. |
+| **Facturación** | A elección de la Municipalidad: una sola factura anual anticipada, o doce cuotas iguales de UF 12 contra servicio prestado. Mismo total en ambos casos (sección 6.3). Factura electrónica. |
 | **Pago** | 30 días desde la recepción conforme de la factura. |
 | **Reajuste** | Ninguno durante la vigencia: el precio está en UF y ya se reajusta solo. |
 | **Propiedad del software** | La Municipalidad recibe una licencia de uso por la vigencia del contrato. El código fuente y la propiedad intelectual son del proveedor. |
@@ -320,4 +370,4 @@ Mercado Público.
 
 *Documento preparado para la Ilustre Municipalidad de Licantén. Los valores en pesos son
 referenciales, calculados con la UF y la UTM vigentes a la fecha indicada en la sección 6;
-prevalecen los valores en UF.*
+prevalecen los valores en UF. Las equivalencias en UTM incluyen el IVA.*
