@@ -77,29 +77,37 @@ La diferencia es que aquí queda grabado una vez y sirve para todos los alcaldes
 que todavía no has visitado.
 
 ### 3. El caso real — "ya lo usa un municipio"
-**Formato**: carrusel de LinkedIn/Facebook (6 imágenes) o video de 20 seg.
+**Formato**: carrusel de LinkedIn/Facebook (7 imágenes) o video de 20 seg.
 
-**Ya armado**: `docs/carrusel-b2g/slide1.png` a `slide6.png`, 1080x1080, listo para subir
+**Ya armado**: `docs/carrusel-b2g/slide1.png` a `slide7.png`, 1080x1080, listo para subir
 directo, con la paleta real del código (`src/utils/tema.js` / `src/index.css`: azul
 `#1D4ED8`/`#1E3A8A`, grises zinc, colores de estado), sin nombrar la municipalidad
-cliente y sin ofrecer nada gratis. `slide2.png` es una maqueta ilustrativa del panel, no
-una captura real — lo dice el pie de foto chico; si prefieres una captura real, te toca
-tomarla tú desde el tenant demo (desde estas sesiones no se puede abrir el sitio en
-producción, es el muro de red descrito en `CLAUDE.md`).
+cliente y sin ofrecer nada gratis. `slide3.png` (panel del alcalde) es una maqueta
+ilustrativa, no una captura real — lo dice el pie de foto chico; si prefieres una
+captura real, te toca tomarla tú desde el tenant demo (desde estas sesiones no se puede
+abrir el sitio en producción, es el muro de red descrito en `CLAUDE.md`).
 
 Esto es lo más fuerte que tienes y todavía no lo usas: **tienes un cliente real,
 no un prototipo** — sin necesidad de nombrarlo para que pese. El contenido:
 
 1. Portada: "Ya está funcionando en un municipio real" (Región del Maule, sin nombrar la
    comuna) + marca TuMuniAquí + "Un producto de LOG-In Soluciones Integrales SpA".
-2. Panel del alcalde (maqueta ilustrativa): pendientes, % resuelto, emergencias, por
+2. **Qué es TuMuniAquí, en una frase**: los tres pasos del sistema completo (el vecino
+   reporta → se clasifica solo por gravedad y departamento → el municipio gestiona y
+   responde por WhatsApp). Esta es la slide que faltaba — sin ella el resto asume que
+   quien mira ya sabe qué es el producto.
+3. Panel del alcalde (maqueta ilustrativa): pendientes, % resuelto, emergencias, por
    asignar, sectores con más reportes, presupuesto, Cuenta Pública en un clic.
-3. Las cinco funciones de IA ya en producción, con el costo real aproximado
-   (~$5.000/mes para 100 reportes, pago por uso).
-4. El flujo del vecino en 3 pasos + el WhatsApp automático.
-5. Los cuatro argumentos de compra pública: Compra Ágil, garantía de 60 días, sin cobro
+4. Las cinco funciones de IA **ya listas para usar** (no "en producción" — ese lenguaje
+   es interno, para el alcalde lo que importa es que ya está disponible hoy), con el
+   costo real aproximado (~$5.000/mes para 100 reportes, pago por uso).
+5. El flujo del vecino en 3 pasos + el WhatsApp automático + **modo sin conexión**: el
+   reporte se guarda en el celular si no hay señal y se envía solo al recuperarla
+   (`src/utils/colaOffline.js`, §10 de `ESTADO_PROYECTO.md` — la foto no se conserva sin
+   conexión, eso no se promete en el texto).
+6. Los cuatro argumentos de compra pública: Compra Ágil, garantía de 60 días, sin cobro
    por volumen, IA sin suscripción aparte.
-6. Cierre: marca + LOG-In Soluciones Integrales SpA + CTA de demostración (no de piloto
+7. Cierre: marca + LOG-In Soluciones Integrales SpA + CTA de demostración (no de piloto
    gratuito) + `contacto.luisgonzaleznunez@log-in.cl`.
 
 **Ojo con lo que no puedes decir todavía** (misma tabla de
