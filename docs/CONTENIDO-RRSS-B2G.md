@@ -57,24 +57,32 @@ sobre fondo simple (o tú hablando si te acostumbras a cámara — es opcional).
 Es literalmente el Minuto 0-3 de la pauta de reunión, que ya está probado.
 Sirve como gancho para LinkedIn y como primer segundo de cualquier reel.
 
-### 2. La demo — el momento que convenció al Alcalde real
-**Formato**: video vertical, 30-40 seg, pantalla capturada (split o corte entre
-dos capturas: el formulario y WhatsApp).
+### 2. La demo — el momento que convence en la reunión presencial
+**Formato**: video vertical, 36 seg.
 
-Guion:
-1. (0-8s) Pantalla del formulario ciudadano, dedo marcando un punto en el mapa
-   y tomando "una foto" (usa una tuya, no de un vecino real). Texto: "30
-   segundos. Sin instalar nada, sin crear cuenta."
-2. (8-15s) Corte a WhatsApp: llega el mensaje con el número de ticket. Texto:
-   "Y esto le llega solo, sin que nadie en la municipalidad haga nada."
-3. (15-30s) Corte al panel (demo): aparece el reporte con la foto. Texto: "Y
-   esto es lo que ve el alcalde. No es una app para vecinos — es su panel de
-   control."
-4. Cierre con logo/texto: "TuMuniAquí — [tu contacto o dirección]"
+**Ya armado**: `docs/video-b2g/demo-tumuniaqui.mp4` (1080x1920, sin audio). Es una
+animación de motion graphics con la misma estética del carrusel — no una captura real de
+pantalla (mismo motivo que `slide3.png`: desde estas sesiones no se puede abrir el sitio
+en producción). Si más adelante grabas la pantalla real siguiendo este mismo guion, este
+archivo sirve de referencia de ritmo y tiempos.
 
-Esto es exactamente lo que ya filmas en cada reunión presencial (Minuto 3-8).
-La diferencia es que aquí queda grabado una vez y sirve para todos los alcaldes
-que todavía no has visitado.
+Guion, tal como quedó grabado:
+1. (0-3s) Marca: "TuMuniAquí — Así se ve, de principio a fin."
+2. (3-11s) Mapa con un pin que cae y una foto que se agrega. Texto: "Marca el lugar,
+   describe el problema y toma una foto — sin instalar nada, sin crear una cuenta."
+3. (11-19s) WhatsApp: llega el aviso con el número de ticket. Texto: "Nadie en la
+   municipalidad tuvo que hacer nada: el aviso sale solo, al entrar el reporte y al
+   resolverse."
+4. (19-31s) Panel (maqueta ilustrativa, con el mismo aviso de `slide3.png`): los números
+   suben en cámara. Texto: "No es una app para vecinos. Es su panel de control."
+5. (31-36s) Cierre: marca + LOG-In Soluciones Integrales SpA + CTA de demostración +
+   `contacto.luisgonzaleznunez@log-in.cl`.
+
+Queda sin música ni voz a propósito — agrégala en CapCut si quieres, o súbelo mudo:
+en LinkedIn y Facebook la mayoría de los videos se reproducen sin sonido de todas formas.
+Si prefieres reemplazar la animación por pantalla real, esto es exactamente lo que ya
+filmas en cada reunión presencial (Minuto 3-8 de `PAUTA-REUNION-ALCALDE.md`) — la
+diferencia es que grabado una vez sirve para todos los alcaldes que todavía no visitas.
 
 ### 3. El caso real — "ya lo usa un municipio"
 **Formato**: carrusel de LinkedIn/Facebook (7 imágenes) o video de 20 seg.
