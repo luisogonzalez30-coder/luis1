@@ -338,6 +338,43 @@ cae y nadie se acuerda de dónde vive.
 
 ---
 
+## Radar de Licitaciones: un SaaS nuevo, en `radar-licitaciones/` (30-ago-2026)
+
+**No es TuMuniAquí.** Es un producto distinto —alertas de Mercado Público para
+pymes proveedoras del Estado— y está acá solo porque en este repositorio vive el
+conocimiento verificado de la API de ChileCompra. **Conviene moverlo a su propio
+repositorio antes de que crezca**; por ahora está aislado en su carpeta y no toca
+nada del resto.
+
+Lo que hay: el esquema completo de PostgreSQL/Supabase (4 tablas + 2 de apoyo,
+`pg_trgm`, índices GIN, RLS), el motor de cruce, la ingesta en dos fases y la
+estructura de Next.js. Todo el detalle en `radar-licitaciones/README.md`.
+
+**Se probó contra un PostgreSQL 16 real**, no solo leyendo el código, y de ahí
+salieron tres bugs que no se veían: el match difuso no disparaba nunca
+(`similarity` en vez de `word_similarity`), el índice de trigramas no se
+alcanzaba porque el filtro estaba fuera del escaneo (1.776 ms contra 157 ms), y
+el filtro por región usaba un campo distinto al que mostraba la pantalla. Las
+pruebas quedaron en `radar-licitaciones/pruebas/` y se vuelven a correr solas.
+
+**Dos hallazgos que cambian lo que se puede prometer, y conviene leer antes de
+escribir la landing:**
+
+1. **Por la API no se puede alertar de Compra Ágil abierta.** Aparece cuando ya
+   se emitió la orden de compra, o sea cuando ya la ganó otro. Sirve como
+   inteligencia comercial, no como aviso al que responder.
+2. **La API no expone fechas de pago**, así que el "semáforo de riesgo
+   financiero" no se puede calcular solo con ella. El esquema lo asume: arranca
+   en gris y guarda de qué fuente salió cada dato. Un verde por omisión sería
+   inventarle solvencia a un organismo.
+
+**Lo que falta y es tuyo**: conseguir un ticket de la API y correr
+`npm run ingesta:dia` una vez. Todo el mapeo de campos está escrito contra la
+forma documentada de la respuesta, con fixtures a mano — los nombres exactos de
+la ficha hay que confirmarlos contra una respuesta de verdad.
+
+---
+
 ## Te toca a ti (bloqueado sin tu acción)
 
 1. ~~Desplegar las reglas~~ — ✅ hecho el 10-ago.

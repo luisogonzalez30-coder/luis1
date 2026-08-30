@@ -1,0 +1,32 @@
+{
+  "name": "radar-licitaciones",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "SaaS de alertas de Mercado Público para pymes chilenas",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "ingesta:dia": "node --experimental-strip-types --env-file=.env ingesta/ingestar-dia.ts",
+    "ingesta:fichas": "node --experimental-strip-types --env-file=.env ingesta/enriquecer-fichas.ts",
+    "prueba": "node --experimental-strip-types pruebas/fechas.test.ts && node --experimental-strip-types pruebas/mapear.test.ts",
+    "tipos": "supabase gen types typescript --local > lib/tipos.ts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.0"
+  },
+  "engines": { "node": ">=22.6" }
+}
