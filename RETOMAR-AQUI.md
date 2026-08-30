@@ -338,7 +338,7 @@ cae y nadie se acuerda de dónde vive.
 
 ---
 
-## Radar de Licitaciones: un SaaS nuevo, en `radar-licitaciones/` (30-ago-2026)
+## Un SaaS nuevo, en la carpeta `SAAS/` (30-ago-2026)
 
 **No es TuMuniAquí.** Es un producto distinto —alertas de Mercado Público para
 pymes proveedoras del Estado— y está acá solo porque en este repositorio vive el
@@ -346,16 +346,21 @@ conocimiento verificado de la API de ChileCompra. **Conviene moverlo a su propio
 repositorio antes de que crezca**; por ahora está aislado en su carpeta y no toca
 nada del resto.
 
+La carpeta tiene su **propio `SAAS/CLAUDE.md`**, que Claude carga solo al trabajar ahí dentro:
+así una sesión del SaaS no arranca creyendo que hay un municipio en producción, y una sesión de
+TuMuniAquí sabe que esa carpeta no es suya. La regla va en las dos direcciones y quedó también en
+el `CLAUDE.md` de la raíz.
+
 Lo que hay: el esquema completo de PostgreSQL/Supabase (4 tablas + 2 de apoyo,
 `pg_trgm`, índices GIN, RLS), el motor de cruce, la ingesta en dos fases y la
-estructura de Next.js. Todo el detalle en `radar-licitaciones/README.md`.
+estructura de Next.js. Todo el detalle en `SAAS/README.md`.
 
 **Se probó contra un PostgreSQL 16 real**, no solo leyendo el código, y de ahí
 salieron tres bugs que no se veían: el match difuso no disparaba nunca
 (`similarity` en vez de `word_similarity`), el índice de trigramas no se
 alcanzaba porque el filtro estaba fuera del escaneo (1.776 ms contra 157 ms), y
 el filtro por región usaba un campo distinto al que mostraba la pantalla. Las
-pruebas quedaron en `radar-licitaciones/pruebas/` y se vuelven a correr solas.
+pruebas quedaron en `SAAS/pruebas/` y se vuelven a correr solas.
 
 **Dos hallazgos que cambian lo que se puede prometer, y conviene leer antes de
 escribir la landing:**

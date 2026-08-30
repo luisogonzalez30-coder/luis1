@@ -8,7 +8,7 @@ de `app/`, en su propio proceso, y el frontend solo habla con Supabase usando
 la clave `anon` — con RLS decidiendo qué puede leer.
 
 ```
-radar-licitaciones/
+SAAS/
 │
 ├── app/                              # App Router. Todo lo que ve el usuario.
 │   ├── layout.tsx                    # <html>, fuentes, providers

@@ -26,6 +26,17 @@ Lo que **no** entra: los otros frentes del usuario (la API de ChatGPT, log-inspa
 kpop). Viven en sus propios espacios y no deben mezclarse acá — mezclarlos es lo que hacía que
 cada conversación arrancara sin saber de qué se estaba hablando.
 
+**La carpeta `SAAS/` es la excepción, y no es TuMuniAquí.** Es un producto distinto —alertas de
+Mercado Público para pymes proveedoras del Estado— que vive acá de forma transitoria porque
+comparte el conocimiento de la API de ChileCompra. Tiene su propio `SAAS/CLAUDE.md`, que se carga
+al trabajar ahí dentro. Dos reglas, y valen en las dos direcciones:
+
+- Una tarea de TuMuniAquí **no toca `SAAS/`**, ni para "ordenar" ni para actualizar dependencias.
+- Una tarea del SaaS **no toca nada fuera de `SAAS/`**. Si parece necesitarlo, se está mezclando.
+
+Está pendiente moverlo a su propio repositorio. Mientras tanto, la separación la sostienen esas
+dos reglas y su `CLAUDE.md`.
+
 ## Antes de tocar nada — el orden de lectura
 
 1. **`RETOMAR-AQUI.md`** — siempre, entero. Es corto y dice dónde quedó el trabajo y qué
