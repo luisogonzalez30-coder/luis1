@@ -7,12 +7,14 @@ Acompaña a `PROPUESTA-COMERCIAL.md`. Explica de dónde salió cada cifra y, sob
 
 ## 1. Antes de enviarla — cosas que hoy no puedes cumplir
 
-La propuesta está escrita en presente y compromete cosas concretas. Estas cinco no están
-resueltas al día de hoy. Enviarla sin resolverlas es vender algo que no puedes entregar.
+La propuesta está escrita en presente y compromete cosas concretas. De las cinco que
+listaba esta tabla, **cuatro siguen sin resolver** al día de hoy: la primera, la inscripción
+en Mercado Público, quedó resuelta el 30-ago-2026. Enviarla sin resolver las otras cuatro
+es vender algo que no puedes entregar.
 
 | # | Lo que promete la propuesta | Estado real hoy | Qué hacer |
 |---|---|---|---|
-| 1 | *"Estamos inscritos como proveedor en Mercado Público"* (§9) | Sin verificar | Inscribir la SpA en mercadopublico.cl. Es gratis y online. **Si no está hecho, borra esa frase antes de enviar.** |
+| 1 | ~~*"Estamos inscritos como proveedor en Mercado Público"* (§9)~~ | ✅ **Resuelto** el 30-ago-2026: la SpA está inscrita (confirmado por el usuario; no se pudo verificar contra la API porque el RUT de la empresa no está en el repositorio). La frase se queda. | Queda un paso aparte, que no es la inscripción: estar **hábil en ChileProveedores** y con los **rubros actualizados**. Es lo que exigen Compra Ágil y Convenio Marco — ver `docs/MERCADO-PUBLICO.md`, "Requisitos de la cuenta". |
 | 2 | Dominio propio institucional en la semana 2 (§5) | Hoy es `app-incidencias-urbanas.web.app` | Comprar `tumuniaqui.cl` en NIC Chile (~$10.000/año) y configurar `licanten.tumuniaqui.cl`. Requiere el plan Blaze de Firebase, que requiere tarjeta. |
 | 3 | Alerta de emergencias al celular del Alcalde (§3.3) | **No existe.** (Corregido el 09-ago-2026: antes esta fila decía que funcionaba por un bot no oficial.) El bot ya está migrado a la **API oficial de Meta** y corre en Render, así que el riesgo de bloqueo del número está cerrado — pero **la alerta al Alcalde se perdió en esa migración**: el bot oficial solo avisa "reporte recibido" y "reporte resuelto". En producción: 7 emergencias, 0 alertas. | **Sigue siendo el problema más grave de la propuesta, por otro motivo.** Reponerla necesita un listener nuevo + una plantilla aprobada en Meta. Mientras no esté, sácala de §3.3 o márcala como próxima etapa. Detalle abajo, sección 3. |
 | 4 | Respaldo diario automático (§7.3) | El script existe y funciona, pero nunca confirmaste haber creado la tarea programada de Windows, y respalda solo a tu disco local. | Confirmar la tarea (§25 de ESTADO_PROYECTO.md) y subir el respaldo a la nube. |

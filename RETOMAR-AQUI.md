@@ -1,7 +1,12 @@
-# Dónde quedamos — 26 de agosto de 2026
+# Dónde quedamos — 30 de agosto de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (48 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (49 secciones).
+
+**Lo más nuevo (30-ago): Mercado Público quedó operativo.** La red de las sesiones dejó de
+bloquear las APIs externas, la integración se fusionó a main después de una semana varada en
+una rama, y la inscripción como proveedor ya está hecha. Detalle en §49 y en la sección
+"La sesión del 30-ago" al final de este archivo.
 
 La app funciona y está en producción: https://app-incidencias-urbanas.web.app/licanten
 **Y desde el 26-ago la IA está encendida.** Las secciones están en orden cronológico, así que
@@ -216,8 +221,8 @@ y las ramas sobreviven aunque la conversación desaparezca. Se recupera cualquie
 
 | Rama (`claude/…`) | Qué guarda | Último commit | Estado |
 |---|---|---|---|
-| `chile-compras-api-integration-b4zcip` | Integración con la API de Mercado Público (+1.131 líneas, `docs/MERCADO-PUBLICO.md`) | 22-ago | Sin fusionar. Estaba detenida por la red, ya levantada |
-| `mercado-publico-verification-vrgedr` | Lo anterior más 2 commits: la moneda de cada orden (4.126 UF no son $4.126) y el Convenio Marco | 22-ago | Sin fusionar. **Es la que contiene lo demás**, si se retoma una sola, esta |
+| ~~`chile-compras-api-integration-b4zcip`~~ | Integración con la API de Mercado Público (+1.131 líneas, `docs/MERCADO-PUBLICO.md`) | 22-ago | ✅ **En main** (30-ago). Era ancestro de `vrgedr`, entró con ella |
+| ~~`mercado-publico-verification-vrgedr`~~ | Lo anterior más 2 commits: la moneda de cada orden (4.126 UF no son $4.126) y el Convenio Marco | 22-ago | ✅ **Fusionada a main** el 30-ago (§49). Ya no hay nada que rescatar acá |
 | `tumuniaqui-pdf-report-c7ubr7` | El informe de producto y tecnología para publicar en **Acquire.com**, con PDF armado (`docs/acquire/`) | 22-ago | Sin fusionar |
 | `organize-project-folders-iiwdbv` | Organizador de carpetas: `scripts/organizar-claude.ps1` y `.sh` | 23-ago | Sin fusionar. Esperaba que corrieras el script que mueve los secretos |
 | `web-automation-daily-9am-g2y52n` | 10 líneas en `LEEME.md`: cómo correr la revisión desde PowerShell | 24-ago | Sin fusionar. Lo demás de esa sesión ya entró en el PR #9 |
@@ -377,7 +382,7 @@ Reordenado el 11-ago tras la aceptación. Antes esta lista era "lo que falta par
 4. **Limpiar los 6 reportes de prueba de Licantén.** Ya no es cosmética: en cuanto entren los reportes reales del municipio, las estadísticas del primer mes y la primera Cuenta Pública nacen contaminadas. Varios son pruebas tuyas y se notan (uno dice *"Reja rota"* pero está categorizado **Árbol caído**; otro es de **Linares**, otra ciudad). Ese primer caso es justamente el que la sugerencia de categoría (§48.3) ahora previene: mirando la foto habría propuesto corregirlo antes de enviarlo. Decidir cuáles borrar **antes** de que el municipio empiece a usarlo.
 5. **El aviso de "cuadrilla asignada"** (§42). Se dijo "próxima etapa". El código está listo y apagado; falta la plantilla `ticket_asignado` en Meta y la variable en Render.
 6. **El costo por mensaje de Meta.** Cada reporte genera al menos dos mensajes de plantilla, y ahora el volumen deja de ser hipotético. Verifica la tarifa vigente de mensajes de utilidad en Chile y métela en tus números: la propuesta dice "no hay cobro por cantidad de reportes", cierto para lo que le cobras al municipio, falso para lo que te cuesta a ti.
-7. **Cómo facturas.** Ya tienes SpA. Falta inscribirte como proveedor en Mercado Público (gratis y online) — la propuesta afirma que ya lo estás, y ahora hay que emitir de verdad.
+7. **Cómo facturas.** Ya tienes SpA y **ya estás inscrito como proveedor en Mercado Público** (confirmado por ti el 30-ago-2026). La frase de la propuesta (§9) pasó a ser cierta y se queda. Lo que falta es distinto y más fino: estar **hábil en ChileProveedores** y con los **rubros actualizados** en "Administración → Administrar rubros". Sin eso, Compra Ágil y Convenio Marco no te ven, aunque el cazador encuentre la oportunidad (`docs/MERCADO-PUBLICO.md`). Y emitir de verdad sigue pendiente.
 8. **El acuerdo de tratamiento de datos.** Las páginas legales están escritas y publicadas (§35.2), pero falta que **las revise un abogado** y el acuerdo que la propuesta menciona. Con un municipio firmado, esto pasa de "conviene" a "corresponde".
 
 ~~Reponer "mis reportes"~~ — ✅ hecho el 10-ago (§41). ~~Política de privacidad y términos~~ — ✅ publicadas (§35.2). ~~Datos de prueba del demo~~ — ✅ 11-ago (§43.1, §43.2).
@@ -419,3 +424,43 @@ de estado lo distingue sola — hay que mirar la rama y el commit desplegado.
 ## Entrega ya armada
 
 `Escritorio/TuMuniAqui-Entrega/` tiene las dos carpetas (app general y versión Licantén) con su LEEME y los links. Sin credenciales adentro, a propósito.
+
+---
+
+## La sesión del 30-ago — Mercado Público quedó operativo
+
+Tres cosas, en orden de importancia.
+
+**1. La integración está en main.** Llevaba desde el 22-ago en
+`claude/mercado-publico-verification-vrgedr`, sin fusionar, o sea invisible para todas las
+demás conversaciones. Son 1.416 líneas: `scripts/mercado-publico.mjs` (con `mp:verificar`,
+`mp:activas`, `mp:historico`), `scripts/mp-directas.mjs`, tres módulos en `scripts/lib/` y
+`docs/MERCADO-PUBLICO.md`. Detalle y conflicto resuelto en §49. La app compila después de la
+fusión.
+
+**2. La red ya no bloquea las APIs externas.** Lo que `CLAUDE.md` describe como "un muro
+conocido" no aplica en las sesiones nuevas. Se probó corriendo el código, no leyendo la
+documentación: `mp:verificar` conectó en 1,4 s. Ojo: la API contesta
+`{"Codigo":203,"Mensaje":"Ticket no válido."}` a un ticket falso, con HTTP 200 — un 203 en el
+cuerpo es la API viva, no la red caída. El ticket está en la variable de entorno
+`MERCADOPUBLICO_TICKET` del contenedor, así que los scripts corren sin `.env`.
+
+**3. Ya estás inscrito como proveedor.** Era la promesa #1 de
+`docs/PROPUESTA-COMERCIAL-NOTAS.md`, la que obligaba a borrar una frase de la propuesta antes
+de enviarla. Esa frase ahora es cierta y se queda; quedan cuatro promesas por resolver, no
+cinco.
+
+### Lo que te toca a ti
+
+- **Estar hábil en ChileProveedores con los rubros actualizados.** No es lo mismo que estar
+  inscrito, y es lo que exigen Compra Ágil y Convenio Marco. Rubro desactualizado = invisible
+  para esos canales aunque el cazador encuentre la oportunidad. Es lo único que separa de
+  poder postular al Convenio Marco.
+- **El Convenio Marco de Desarrollo de Software cierra el 25-sep-2026.** Fue la oportunidad
+  mejor puntuada (21) de las 24 que devolvió el cazador: catálogo sin licitar, dura 2-3 años,
+  el canal de menor competencia para un proveedor chico. Es lo de mayor retorno de esta lista.
+- **Correr `npm run mp:activas` cada pocos días.** Las licitaciones LE municipales de tramo
+  chico cierran en 3 a 5 días y rotan rápido. Ningún script puede postular por ti: la API es
+  de solo lectura y ofertar es un acto comercial con login.
+- **Si quieres verificar la inscripción automáticamente**, hace falta el RUT de la SpA, que a
+  propósito no está en el repositorio.

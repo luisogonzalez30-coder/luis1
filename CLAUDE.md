@@ -72,13 +72,27 @@ El `.env` de la carpeta local del usuario tiene credenciales reales de Firebase 
 Nunca subirlas al repositorio, nunca pegarlas en un chat, nunca mandarlas a un servicio
 externo. `serviceAccountKey.json` y `backups/` viven fuera del repositorio y ahí se quedan.
 
-## Un muro conocido: no se llega al sitio desde estas sesiones
+## Un muro que estuvo puesto: la red de las sesiones
 
-La política de red de estos contenedores **bloquea el dominio de producción**
-(`app-incidencias-urbanas.web.app`): el proxy responde 403 al intentar conectarse. Un
-`curl` desde aquí devuelve código `000`, que *parece* el sitio caído y no lo es. No sacar
+> **Levantado desde el 30-ago-2026.** Comprobado corriendo el código, no leyendo esto:
+> producción, la landing, el bot, Nominatim y `api.mercadopublico.cl` responden todos, y el
+> proxy reporta `"selective": false` (sin lista blanca). **`npm run revisar` y los scripts de
+> `mp:*` funcionan desde acá.** Lo que sigue es el diagnóstico de cuando estaba puesto, que
+> se conserva porque el bloqueo se define por entorno y puede volver en una sesión nueva.
+>
+> Antes de dar por caído un servicio, comprobar cuál de los dos mundos es: `curl` a un
+> dominio del proyecto. Código `000` o 403 del proxy = la red de la sesión. Cualquier otra
+> respuesta = el servicio contestó, y lo que diga es real.
+
+La política de red de estos contenedores **bloqueaba el dominio de producción**
+(`app-incidencias-urbanas.web.app`): el proxy respondía 403 al intentar conectarse. Un
+`curl` desde aquí devolvía código `000`, que *parece* el sitio caído y no lo es. No sacar
 conclusiones de eso ni salir a arreglar nada: comprobar el estado real mirando la última
 corrida de `vigilar.yml` en GitHub Actions, que sí alcanza el sitio.
+
+Un detalle que confunde el diagnóstico con Mercado Público: la API contesta
+`{"Codigo":203,"Mensaje":"Ticket no válido."}` con HTTP 200. Un 203 en el cuerpo es la API
+viva rechazando el ticket, no la red bloqueada.
 
 Lo mismo bloquea las APIs externas (es lo que dejó detenida la integración con Mercado
 Público). GitHub es la excepción: va por un proxy aparte y funciona igual, lo que hace

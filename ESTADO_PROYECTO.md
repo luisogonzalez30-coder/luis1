@@ -970,7 +970,7 @@ Licantén (≈6.900 hab.) cae en el plan Comuna. Precios en **UF** para que el c
 
 Compromisos que el documento asume y que hay que poder cumplir: SLA por severidad (crítica: 4 h hábiles de respuesta), disponibilidad 99,5% mensual con descuento topeado en una mensualidad, 4 horas mensuales de ajustes incluidas, UF 2/hora para desarrollo adicional, y garantía de devolución íntegra en los primeros 60 días.
 
-**Cinco promesas del documento que hoy NO se pueden cumplir** — están en la tabla de la sección 1 de las notas, y son la razón de que la propuesta no se pueda enviar todavía: inscripción en Mercado Público (sin verificar), dominio propio (hoy es `.web.app`, requiere Blaze), alerta de WhatsApp (bot no oficial en la PC del usuario), respaldo diario (tarea programada nunca confirmada, §25) y manual de uso (no existe). La más grave es la tercera: comprometer contractualmente una alerta de emergencias que corre sobre automatización no oficial de WhatsApp es exponerse a un incumplimiento el día que Meta bloquee el número.
+**Cinco promesas del documento que hoy NO se pueden cumplir** — están en la tabla de la sección 1 de las notas, y son la razón de que la propuesta no se pueda enviar todavía. **Al 30-ago-2026 quedan cuatro**: la inscripción en Mercado Público está hecha (§49). Las otras cuatro: dominio propio (hoy es `.web.app`, requiere Blaze), alerta de WhatsApp (bot no oficial en la PC del usuario), respaldo diario (tarea programada nunca confirmada, §25) y manual de uso (no existe). La más grave es la tercera: comprometer contractualmente una alerta de emergencias que corre sobre automatización no oficial de WhatsApp es exponerse a un incumplimiento el día que Meta bloquee el número.
 
 ### 35.2 Política de privacidad y términos de servicio (Ley 21.719)
 
@@ -1816,3 +1816,58 @@ Verificación del despliegue, hecha el mismo día: el sitio sirve el bundle nuev
 (`firebasestorage.app`, no `appspot.com`), y el código de IA está adentro. Es la comprobación
 por contraste que describe §39 — la que distingue un sitio publicado de un sitio publicado y
 muerto.
+
+---
+
+## 49. Mercado Público: la red se abrió y la integración llegó a main (30-ago-2026)
+
+Dos cosas que llevaban semanas trabadas se destrabaron el mismo día.
+
+**La red ya no bloquea la API.** Lo que `CLAUDE.md` describe como "un muro conocido" —el
+proxy respondiendo 403 a los dominios externos— ya no aplica en las sesiones nuevas: el
+proxy reporta `"selective": false`, sin lista blanca. `api.mercadopublico.cl` y
+`www.mercadopublico.cl` responden. Ojo con el diagnóstico: la API contesta
+`{"Codigo":203,"Mensaje":"Ticket no válido."}` a un ticket falso, que es HTTP 200 con error
+en el cuerpo. Un 203 en el JSON es la API funcionando, no la red caída.
+
+**El ticket vive en el entorno de la sesión.** `MERCADOPUBLICO_TICKET` está definido como
+variable de entorno del contenedor, así que los scripts corren sin `.env` local y sin que el
+ticket se pegue en un chat. `leerTicket()` lo busca en `--ticket=`, en el entorno y en el
+`.env`, en ese orden.
+
+**La integración se fusionó a main.** Las 1.416 líneas estaban desde el 22-ago en
+`claude/mercado-publico-verification-vrgedr`, sin fusionar, y por eso ninguna otra sesión
+las veía —exactamente el error que `CLAUDE.md` marca como el más caro de este flujo. Esa
+rama contiene a `claude/chile-compras-api-integration-b4zcip` como ancestro, así que
+fusionar una sola bastó. Único conflicto: `.env.example`, donde main había borrado
+`VITE_GOOGLE_MAPS_API_KEY` el 25-ago y la rama todavía la traía; se conservó el borrado.
+
+Lo que quedó en el árbol:
+
+| Archivo | Qué hace |
+|---|---|
+| `scripts/mercado-publico.mjs` | Comandos `verificar`, `activas`, `historico` |
+| `scripts/mp-directas.mjs` | Tratos directos y compras ágiles |
+| `scripts/lib/mercadoPublico.mjs` | Cliente de la API, reintentos, el ticket nunca se imprime |
+| `scripts/lib/cazador.mjs` | Puntuación y ranking de oportunidades |
+| `scripts/lib/perfilProveedor.mjs` | El criterio comercial: rubros, tramos, mecanismos |
+| `docs/MERCADO-PUBLICO.md` | Cómo se usa y qué NO puede hacer |
+
+**Verificado contra la API real, no en seco.** `npm run mp:verificar` conectó en 1,4 s y leyó
+4.718 licitaciones activas y 1.356 órdenes de compra. `mp:activas` devolvió 24 oportunidades
+gastando 73 peticiones de las 10.000 diarias. La mejor puntuada (21) fue el **Convenio Marco
+de Desarrollo de Software** de ChileCompra, que cierra el 25-sep-2026: es catálogo sin
+licitar, dura 2-3 años y es el canal de menor competencia para un proveedor chico. Después,
+licitaciones LE municipales de tramo chico (Los Álamos $70M, Hualpén $32,5M, Lo Prado).
+
+**La inscripción como proveedor ya está hecha** (confirmada por el usuario ese día). Era la
+promesa #1 de `docs/PROPUESTA-COMERCIAL-NOTAS.md`, de modo que la frase "Estamos inscritos
+como proveedor en Mercado Público" de §9 de la propuesta pasó a ser cierta y se queda. No se
+pudo verificar contra la API porque el RUT de la SpA no está en el repositorio —si algún día
+se quiere automatizar, ese es el dato que falta.
+
+**Cuidado con confundir dos cosas distintas.** Estar inscrito no es lo mismo que estar
+**hábil en ChileProveedores con los rubros actualizados**, y es lo segundo lo que exigen
+Compra Ágil y Convenio Marco. Rubro desactualizado = invisible para esos dos canales por
+mucho que el cazador encuentre la oportunidad. Es el requisito que hoy separa de poder
+postular al Convenio Marco, que es justamente la mejor oportunidad detectada.
