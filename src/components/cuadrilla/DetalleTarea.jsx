@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Signpost } from 'lucide-react'
 import BadgeEstado from '../common/BadgeEstado'
 import EnlaceGoogleMaps from '../common/EnlaceGoogleMaps'
 import GaleriaFotos from '../common/GaleriaFotos'
@@ -48,6 +48,19 @@ export default function DetalleTarea({ incidencia, onVolver }) {
 
       <p className="mt-1 text-sm text-gray-500">{incidencia.direccion_texto || 'Sin dirección de referencia'}</p>
       <EnlaceGoogleMaps coordenadas={incidencia.coordenadas} />
+      {/* El hito que escribió el vecino (Paso 1). Va destacado y no como una
+          línea más de texto gris: en los sectores rurales de Licantén es LO
+          ÚNICO que permite dar con el lugar, porque no hay numeración de calles
+          y la dirección de arriba es la aproximación que devolvió el mapa. */}
+      {incidencia.referencia_ubicacion && (
+        <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-sm text-amber-900 ring-1 ring-amber-100">
+          <Signpost size={16} className="mt-0.5 shrink-0" />
+          <span>
+            <span className="font-medium">Referencia: </span>
+            {incidencia.referencia_ubicacion}
+          </span>
+        </p>
+      )}
 
       <p className="mt-2 text-xs text-gray-400">Ingresado: {formatearFecha(incidencia.fecha_creacion)}</p>
       {trabajadoresAsignados.length > 0 && (

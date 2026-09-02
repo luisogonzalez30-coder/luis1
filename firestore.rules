@@ -176,12 +176,61 @@ service cloud.firestore {
 
     // Topes de tamaño: evitan que alguien infle la base de datos con textos
     // gigantes. Son holgados respecto de lo que permite el formulario.
+    //
+    // detalles_adicionales bajó de 2000 a 1000 el 02-sep-2026: es el campo de
+    // texto libre más grande que escribe un anónimo, y 1000 caracteres siguen
+    // sobrando para describir un bache. El costo de dejarlo en 2000 se paga en
+    // cada lectura del panel, no solo al escribir.
     function textosDeTamanoRazonable(datos) {
       return datos.get('direccion_texto', '').size() <= 500 &&
-        datos.get('detalles_adicionales', '').size() <= 2000 &&
+        datos.get('detalles_adicionales', '').size() <= 1000 &&
+        datos.get('referencia_ubicacion', '').size() <= 300 &&
         datos.get('nombre_ciudadano', '').size() <= 150 &&
         datos.get('contacto_ciudadano', '').size() <= 150 &&
         datos.get('rut_ciudadano', '').size() <= 20;
+    }
+
+    // Tipos de los campos que escribe el vecino. Las reglas no tienen esquema,
+    // así que sin esto un cliente que no sea la app puede guardar un número o
+    // un mapa donde el panel espera texto y romper la vista del funcionario
+    // (que no valida: confía en que lo que está en la base tiene forma).
+    //
+    // Las coordenadas además se acotan al rectángulo de Chile (incluidas Isla
+    // de Pascua y Juan Fernández). Es lo que descarta el caso real de
+    // (0, 0) —el "isla nula" frente a África que devuelven los GPS que fallan—
+    // y cualquier punto inventado a mano: un pin en otro continente no es un
+    // reporte, es basura que el municipio tiene que ir a limpiar.
+    function tiposDeReporteValidos(datos) {
+      return datos.get('direccion_texto', '') is string &&
+        datos.get('detalles_adicionales', '') is string &&
+        datos.get('referencia_ubicacion', '') is string &&
+        datos.get('nombre_ciudadano', '') is string &&
+        datos.get('contacto_ciudadano', '') is string &&
+        datos.coordenadas.lat is number && datos.coordenadas.lng is number &&
+        datos.coordenadas.lat >= -56.0 && datos.coordenadas.lat <= -17.0 &&
+        datos.coordenadas.lng >= -110.0 && datos.coordenadas.lng <= -66.0;
+    }
+
+    // Un reporte recién creado por un vecino NO puede traer nada de gestión
+    // municipal. Sin esto, quien llame a Firestore directo (sin pasar por la
+    // app) puede nacer una incidencia ya "Resuelta", con una cuadrilla
+    // asignada y con un gasto de varios millones escrito — y eso entra tal cual
+    // al KPI financiero del Alcalde (ResumenGastoMensual.jsx) y a la Cuenta
+    // Pública, que son documentos que el municipio publica.
+    //
+    // Los valores exigidos son exactamente los que escribe datosIncidencia()
+    // en incidenciasService.js: cero costo, cero presupuesto, sin cuadrilla,
+    // sin fechas de gestión, sin calificación y con un solo voto.
+    function sinDatosDeGestion(datos) {
+      return datos.get('presupuesto_estimado', null) == null &&
+        datos.get('gasto_real', null) == null &&
+        datos.get('cuadrilla_asignada', '') == '' &&
+        datos.get('fecha_asignacion', null) == null &&
+        datos.get('fecha_cierre', null) == null &&
+        datos.get('calificacion_ciudadano', null) == null &&
+        datos.get('foto_despues_url', '') == '' &&
+        datos.get('fotos_antes_urls', []).size() == 0 &&
+        datos.get('upvotes', 1) == 1;
     }
 
     // dispositivos/{id}: solo guarda una marca de tiempo por dispositivo, nada
@@ -208,6 +257,18 @@ service cloud.firestore {
     // --- Incidencias ---
     // Cualquier ciudadano (sin login) puede CREAR un reporte para su municipalidad.
     // Solo funcionarios autenticados de ESA MISMA municipalidad pueden leer/actualizar/borrar.
+    //
+    // LECTURA: esta colección es la que guarda datos personales del vecino
+    // (nombre_ciudadano, contacto_ciudadano, direccion_texto y el texto libre de
+    // detalles_adicionales). Bajo la Ley 19.628 esos datos solo pueden tratarse
+    // para la finalidad por la que se entregaron —que el municipio resuelva el
+    // reporte—, así que leer exige request.auth != null Y pertenecer a ESA
+    // municipalidad: esDelMismoMunicipio() encadena esFuncionarioAutenticado(),
+    // que ya empieza por request.auth != null. No hay ninguna vía anónima de
+    // lectura acá, ni por get ni por list.
+    //
+    // Lo que el vecino sí puede ver sin login vive en tickets_publicos, que a
+    // propósito NO copia ninguno de esos campos (ver ese bloque más abajo).
     match /incidencias/{incidenciaId} {
       allow read: if esDelMismoMunicipio(resource.data.municipio_id);
 
@@ -219,8 +280,13 @@ service cloud.firestore {
                       request.resource.data.municipio_id is string &&
                       request.resource.data.municipio_id.size() > 0 &&
                       exists(/databases/$(database)/documents/municipalidades/$(request.resource.data.municipio_id)) &&
-                      request.resource.data.coordenadas.lat is number &&
-                      request.resource.data.coordenadas.lng is number &&
+                      // Tipos y rango geográfico (ver tiposDeReporteValidos): incluye
+                      // coordenadas.lat/lng numéricas, que antes era lo único que se
+                      // comprobaba acá.
+                      tiposDeReporteValidos(request.resource.data) &&
+                      // Un reporte nace sin gestión: sin costo, sin presupuesto, sin
+                      // cuadrilla y sin fechas de cierre (ver sinDatosDeGestion).
+                      sinDatosDeGestion(request.resource.data) &&
                       // Triage automático: si el cliente manda nivel_gravedad, debe ser
                       // uno de los 3 valores válidos (evita que alguien mande basura ahí).
                       (!('nivel_gravedad' in request.resource.data) ||
@@ -285,10 +351,32 @@ service cloud.firestore {
     // ticketsPublicosService.js, que regenera el número y reintenta cuando pasa esto).
     match /tickets_publicos/{ticketId} {
       allow get: if true;
-      // Antes era "if false" (evitar escanear todos los tickets) — ahora se
-      // necesita listar para pintar el mapa ciudadano, y ya no hay nada sensible
-      // que proteger en este documento.
-      allow list: if true;
+
+      // --- Listado: acotado, no libre (02-sep-2026) ---
+      // Estuvo en "if false" (nadie lista), después en "if true" (cualquiera
+      // lista todo) cuando el mapa ciudadano empezó a necesitar los pines.
+      // Ninguno de los dos extremos sirve:
+      //
+      //  - "if false" apaga cuatro cosas que hoy están en producción: los pines
+      //    del mapa tipo Waze, "Últimos reportes de la comuna", la detección de
+      //    duplicados por categoría y la página pública de Transparencia. Todas
+      //    consultan por list, ninguna por get.
+      //  - "if true" deja que cualquiera se baje la colección entera de una
+      //    sola consulta sin límite: el municipio completo, con coordenadas, en
+      //    un archivo. Además de ser un raspado, se paga como lecturas de
+      //    Firestore contra la cuota gratis del plan Spark (§19).
+      //
+      // El punto medio que sí es aplicable desde las reglas es exigir que la
+      // consulta venga acotada. Sin limit(), request.query.limit queda por
+      // sobre el techo y Firestore rechaza la consulta entera: no hay forma de
+      // pedir "todo". 500 es el techo real de la app (VENTANA_REPORTES en
+      // TransparenciaPage.jsx); el mapa pide 25 y los duplicados 15.
+      //
+      // Lo que esto NO frena: paginar de a 500 con cursores. Las reglas no ven
+      // el cursor ni las cláusulas where, así que el raspado decidido sigue
+      // siendo posible — para eso hace falta Firebase App Check (§28), que es
+      // el paso siguiente y no se resuelve en este archivo.
+      allow list: if request.query.limit <= 500;
 
       allow create: if request.resource.data.keys().hasAll(
                         ['incidencia_id', 'municipio_id', 'categoria', 'estado', 'fecha_creacion']

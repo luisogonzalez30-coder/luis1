@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, User, Check, MessageCircle } from 'lucide-react'
+import { X, User, Check, MessageCircle, Signpost } from 'lucide-react'
 import BadgeEstado from '../common/BadgeEstado'
 import BadgeGravedad from '../common/BadgeGravedad'
 import EnlaceGoogleMaps from '../common/EnlaceGoogleMaps'
@@ -81,6 +81,19 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
 
       <p className="mt-3 text-sm text-gray-500">{incidencia.direccion_texto || 'Sin dirección de referencia'}</p>
       <EnlaceGoogleMaps coordenadas={incidencia.coordenadas} />
+      {/* El hito que escribió el vecino (Paso 1). Va destacado y no como una
+          línea más de texto gris: en los sectores rurales de Licantén es LO
+          ÚNICO que permite dar con el lugar, porque no hay numeración de calles
+          y la dirección de arriba es la aproximación que devolvió el mapa. */}
+      {incidencia.referencia_ubicacion && (
+        <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-sm text-amber-900 ring-1 ring-amber-100">
+          <Signpost size={16} className="mt-0.5 shrink-0" />
+          <span>
+            <span className="font-medium">Referencia: </span>
+            {incidencia.referencia_ubicacion}
+          </span>
+        </p>
+      )}
 
       {incidencia.detalles_adicionales && (
         <p className="mt-2 rounded-lg bg-gray-50 p-2 text-sm text-gray-600">{incidencia.detalles_adicionales}</p>

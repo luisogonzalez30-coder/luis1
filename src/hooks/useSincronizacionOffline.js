@@ -16,7 +16,7 @@ export function useSincronizacionOffline() {
 
       sincronizandoRef.current = true
       try {
-        const pendientes = obtenerReportesPendientes()
+        const pendientes = await obtenerReportesPendientes()
         // Secuencial (no Promise.all): un ítem con conexión aún mala no debe
         // abortar los demás, y evita saturar la red con varios envíos a la vez
         // justo cuando la señal recién está volviendo.
@@ -27,7 +27,7 @@ export function useSincronizacionOffline() {
               15000,
               'timeout al sincronizar reporte offline'
             )
-            eliminarReportePendiente(item.idLocal)
+            await eliminarReportePendiente(item.idLocal)
           } catch (error) {
             console.error('[useSincronizacionOffline] No se pudo sincronizar un reporte, se reintentará después:', error)
           }

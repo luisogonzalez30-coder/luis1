@@ -57,6 +57,7 @@ export async function crearIncidencia({
   categoria,
   coordenadas,
   direccionTexto,
+  referenciaUbicacion,
   detallesAdicionales,
   fotosAntes,
   municipioId,
@@ -85,6 +86,12 @@ export async function crearIncidencia({
     categoria,
     coordenadas,
     direccion_texto: direccionTexto || '',
+    // Hito cercano que escribe el vecino en el Paso 1 (PasoUbicacion.jsx). Se
+    // guarda SOLO acá y no se copia a tickets_publicos: describe un lugar, pero
+    // en zona rural un hito ("la casa de la esquina pasando el puente")
+    // identifica a un vecino con bastante precisión, y tickets_publicos es de
+    // lectura abierta. Mismo criterio que detalles_adicionales (ver §29).
+    referencia_ubicacion: referenciaUbicacion || '',
     detalles_adicionales: detallesAdicionales || '',
     numero_ticket: numeroTicket,
     municipio_id: municipioId,

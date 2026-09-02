@@ -1871,3 +1871,161 @@ se quiere automatizar, ese es el dato que falta.
 Compra Ágil y Convenio Marco. Rubro desactualizado = invisible para esos dos canales por
 mucho que el cazador encuentre la oportunidad. Es el requisito que hoy separa de poder
 postular al Convenio Marco, que es justamente la mejor oportunidad detectada.
+
+---
+
+## 50. Endurecimiento de seguridad, cola offline en IndexedDB y referencia rural (02-sep-2026)
+
+Seis cambios pedidos juntos. Ninguno agrega una función nueva al vecino salvo el último; los
+cinco primeros cierran huecos que estaban abiertos en producción.
+
+### 50.1 Reglas de Firestore: qué puede nacer en un reporte
+
+`incidencias/{id}` ya exigía `estado == 'Pendiente'`. Faltaba lo demás. Un cliente que llame a
+Firestore directo —sin pasar por la app, que es trivial: las credenciales del proyecto viajan en
+el bundle— podía crear un reporte que naciera **con una cuadrilla asignada y con un
+`gasto_real.costo_final` de nueve millones**. Eso no se queda ahí: entra tal cual al KPI
+financiero del panel del Alcalde (`ResumenGastoMensual.jsx`) y a la Cuenta Pública, que son
+documentos que el municipio publica.
+
+Dos funciones nuevas:
+
+| Función | Qué exige en la creación anónima |
+| --- | --- |
+| `sinDatosDeGestion()` | `presupuesto_estimado` y `gasto_real` en `null`, `cuadrilla_asignada` vacía, sin `fecha_asignacion` ni `fecha_cierre`, sin calificación, sin fotos y `upvotes == 1` |
+| `tiposDeReporteValidos()` | tipos de texto correctos y coordenadas numéricas **dentro del rectángulo de Chile** (incluidas Isla de Pascua y Juan Fernández) |
+
+El rango geográfico descarta el caso real de `(0, 0)` —la "isla nula" frente a África que
+devuelven los GPS cuando fallan— y cualquier pin inventado a mano. `detalles_adicionales` bajó
+de 2000 a 1000 caracteres, y se agregó tope de 300 para el campo nuevo `referencia_ubicacion`.
+
+**La lectura ya estaba bien y no se tocó.** `allow read: if esDelMismoMunicipio(...)` encadena
+`esFuncionarioAutenticado()`, que empieza por `request.auth != null`: no existe ninguna vía
+anónima de leer `incidencias`, ni por `get` ni por `list`. Lo que sí se agregó es el comentario
+que dice por qué (Ley 19.628: los datos personales del vecino solo pueden tratarse para la
+finalidad por la que se entregaron).
+
+**Las tres excepciones anónimas de `update` se conservaron a propósito** (voto "+1",
+calificación de 1-5 estrellas y la URL de la foto que llega después). Cerrarlas apagaría tres
+funciones que hoy están en producción —una de ellas, la foto, corrige el bug de §11 que dejó 30
+de 30 reportes sin imagen— y ninguna de las tres lee ni expone un dato personal: cada una está
+acotada por `affectedKeys().hasOnly(...)` a un solo campo.
+
+### 50.2 `tickets_publicos`: listado acotado, no libre
+
+El pedido era `allow list: if false`. **Eso apaga cuatro cosas que están en producción**: los
+pines del mapa tipo Waze, "Últimos reportes de la comuna", la detección de duplicados por
+categoría y la página pública de Transparencia. Las cuatro consultan por `list`, ninguna por
+`get`, así que `get: if true` no las salva.
+
+Se implementó el punto medio que sí es aplicable desde las reglas:
+
+```
+allow get: if true;
+allow list: if request.query.limit <= 500;
+```
+
+Una consulta **sin `limit()` queda por sobre el techo y Firestore la rechaza entera**: no hay
+forma de pedir "toda la colección", que es el raspado que se quería frenar. 500 es el techo real
+de la app (`VENTANA_REPORTES` en `TransparenciaPage.jsx`); el mapa pide 25 y los duplicados 15.
+
+Lo que esto **no** frena: paginar de a 500 con cursores. Las reglas no ven el cursor ni las
+cláusulas `where`. Para eso hace falta Firebase App Check (§28), que sigue pendiente.
+
+### 50.3 Prueba de comportamiento de las reglas — `npm run reglas:probar`
+
+Que las reglas compilen no dice nada: un `deploy` acepta sin chistar tanto una regla que deja
+pasar el gasto de nueve millones como una que bloquea al vecino entero. `scripts/probar-reglas.mjs`
+levanta el emulador y corre 18 casos como cliente **anónimo**, cada uno con su par: el que debe
+pasar y el que debe ser rechazado.
+
+Vale la pena saber cómo salió: la primera corrida dio "13 denegados correctamente", y era
+mentira. El seed de la municipalidad se estaba rechazando en silencio (el emulador también
+aplica las reglas a su API REST), así que los 13 fallaban por `exists(municipalidades/licanten)`
+en `false`, no por lo que cada caso pretendía probar. **Sin el caso positivo al lado, esos 13
+falsos verdes habrían pasado por verificación.**
+
+### 50.4 Reglas de Storage
+
+Tope a 10 MB y formatos enumerados uno por uno en vez de `image/.*`: ese comodín aceptaba
+`image/svg+xml`, que no es una foto sino un documento que puede llevar `<script>` adentro y
+correr en el navegador del funcionario que lo abre.
+
+**No se escribió como `match /incidencias/{municipioId}/{allPaths=**}`.** En Storage las reglas
+se SUMAN —basta que una permita— así que un comodín por sobre las rutas existentes le habría
+devuelto la escritura anónima a `/despues` y `/comprobante`, que hoy exigen funcionario
+autenticado. El límite vive en `esImagenValida()`, que las tres rutas usan, y al final hay un
+`match /{allPaths=**} { allow read, write: if false; }` como cierre por defecto.
+
+Nota: este archivo **hoy no está activo**. Las fotos van a Cloudinary desde §19, porque activar
+Firebase Storage exige plan Blaze y el municipio no tiene tarjeta. Es endurecimiento para el día
+que se encienda.
+
+### 50.5 Webhook de WhatsApp
+
+La captura de `req.rawBody`, la verificación de `X-Hub-Signature-256` con `crypto.timingSafeEqual`
+y la respuesta inmediata a Meta **ya estaban implementadas** en `whatsapp-api-oficial/webhook.js`.
+Lo que se agregó:
+
+- `express.json({ verify })` **a nivel de app** en `server.js`, no solo dentro del router: así
+  ninguna ruta futura puede quedarse sin el cuerpo crudo por olvido.
+- El acuse pasó de `res.sendStatus(200)` a `res.status(200).send('EVENT_RECEIVED')`, que es el
+  cuerpo que Meta documenta.
+- El procesamiento se difiere con `setImmediate`, para que no corra antes de que el socket de la
+  respuesta termine de vaciarse.
+- `firmaValida()` rechaza explícitamente si falta el `appSecret`.
+
+### 50.6 La cola offline pasó a IndexedDB
+
+`localStorage` tenía dos problemas y el segundo es el que importa en terreno: son ~5 MB
+compartidos con todo lo demás, y **solo guarda texto**. Un `File` no cabe en JSON, así que la
+foto del vecino sin señal se descartaba — justo el vecino que más necesita que le crean.
+
+IndexedDB guarda `Blob`/`File` nativamente y su cuota se mide en porcentaje del disco.
+`utils/colaOffline.js` se reescribió sobre eso: la API es la misma, ahora asíncrona.
+
+- Lo que quedó encolado en `localStorage` **se migra** la primera vez que se lee la cola, y el
+  original se borra recién después de copiarlo.
+- Si abrir IndexedDB falla (Safari privado, WebView recortado, otra pestaña con versión vieja),
+  cae al respaldo de `localStorage` con el formato de siempre, y ahí las fotos siguen sin caber.
+- `guardarReportePendiente()` devuelve `{ idLocal, conFotos }`: `conFotos` es lo que decide si al
+  vecino se le dice que su foto quedó guardada o no. No se le promete lo que no pasó.
+- Si el guardado con fotos lanza `QuotaExceededError`, se reintenta sin ellas antes de rendirse:
+  el texto del reporte pesa unos KB y es lo que el municipio necesita sí o sí.
+
+### 50.7 Lotes de Firestore en `cerrar-asignaciones-atrasadas.mjs`
+
+El script mandaba un `batch.commit()` con todos los documentos. El Admin SDK rechaza sobre 500
+operaciones, y **un batch rechazado no escribe nada**: con 501 documentos el script fallaría
+entero y quedaría viva la tanda de avisos retroactivos que justamente viene a evitar. Ahora va de
+a 400 (margen para una segunda operación futura sobre el mismo documento), en orden y no en
+paralelo, informando hasta dónde alcanzó cada lote.
+
+### 50.8 Punto de referencia rural
+
+Campo nuevo y **obligatorio** en el Paso 1: "Punto de referencia o hito cercano". En Lora,
+Placilla, Duao, Iloca y el resto de los sectores rurales no hay numeración de calles, así que la
+coordenada y la dirección que devuelve el mapa no alcanzan; lo que hace llegar a la cuadrilla es
+el hito ("frente a la posta", "pasando el puente").
+
+Se guarda en `incidencias.referencia_ubicacion` y **no se copia a `tickets_publicos`**: en zona
+rural un hito identifica a un vecino con bastante precisión, y esa colección es de lectura
+abierta. Mismo criterio que `detalles_adicionales` (§29).
+
+Se muestra destacado —no como una línea gris más— en `DetalleTarea.jsx` (la cuadrilla en
+terreno), `PanelGestionDepartamento.jsx` y `PanelAsignacion.jsx`. Un campo que el vecino llena y
+nadie ve no sirve de nada.
+
+**Coordenadas por defecto sin GPS.** Si el navegador no da permiso, el pin ya no queda vacío: se
+parte del `centro_mapa` de la municipalidad, con respaldo en la constante `CENTRO_LICANTEN`. El
+aviso ámbar le dice al vecino que **ese no es el lugar de su reporte** y que arrastre el pin: un
+pin puesto por la app se ve idéntico a uno puesto a mano.
+
+> **La coordenada de respaldo quedó en `-34.9802, -71.9873`, no en la que venía en el pedido
+> (`-34.9878, -72.0069`).** Esa última cae ~2 km al suroeste del centro verificado, o sea fuera
+> del radio de 1800 m del sector "Licantén (centro)" — el mismo tipo de error que §43.1 documenta,
+> cuando una coordenada 6,5 km al oeste dejó 5 de los 6 reportes de Licantén "fuera de sectores".
+> `-34.9802, -71.9873` es la que se verificó el 11-ago-2026 y la que usan
+> `configurar-sectores.mjs` y `preparar-demo.mjs`. Si la del pedido era a propósito (la
+> municipalidad, otro hito), hay que cambiarla en los tres lugares a la vez.
+

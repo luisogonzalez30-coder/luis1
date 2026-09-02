@@ -37,14 +37,41 @@ const snap = await db
 
 if (!APLICAR) console.log('*** SIMULACRO — no se escribe nada. Agrega --aplicar. ***\n')
 
-const lote = db.batch()
-snap.forEach(d => {
+// Firebase Admin SDK rechaza un WriteBatch con más de 500 operaciones
+// ("Transaction too big" / INVALID_ARGUMENT), y un batch rechazado no escribe
+// NADA: si esta consulta llegara a devolver 501 documentos, el script fallaría
+// entero y quedaría la tanda de avisos retroactivos que justamente viene a
+// evitar. Hoy son ~decenas, pero eso depende del histórico del municipio, no
+// del script — el límite tiene que estar acá, no en la suerte.
+//
+// 400 y no 500: deja margen para que una operación futura sobre el mismo
+// documento (una segunda update, un set de auditoría) quepa sin volver a
+// tropezar con el tope.
+const MAX_OPERACIONES_POR_LOTE = 400
+
+const documentos = snap.docs
+
+for (const d of documentos) {
   const x = d.data()
   console.log(`  ${x.municipio_id} | ${x.numero_ticket} | ${x.contacto_ciudadano || '(sin teléfono)'} | "${(x.direccion_texto ?? '').slice(0, 34)}"`)
-  if (APLICAR) lote.update(d.ref, { notificado_whatsapp_asignacion: true })
-})
+}
 
-if (APLICAR) await lote.commit()
+if (APLICAR) {
+  // Los lotes se envían de a uno y en orden (no Promise.all): son escrituras
+  // contra la cuota de Firestore y el objetivo no es terminar rápido, sino que
+  // si algo falla se sepa exactamente hasta dónde se alcanzó a aplicar.
+  for (let desde = 0; desde < documentos.length; desde += MAX_OPERACIONES_POR_LOTE) {
+    const bloque = documentos.slice(desde, desde + MAX_OPERACIONES_POR_LOTE)
+    const lote = db.batch()
+
+    for (const d of bloque) {
+      lote.update(d.ref, { notificado_whatsapp_asignacion: true })
+    }
+
+    await lote.commit()
+    console.log(`  → lote aplicado: ${desde + bloque.length} de ${documentos.length}`)
+  }
+}
 
 console.log(`\n${APLICAR ? 'Marcados como notificados' : 'Se marcarían'}: ${snap.size}`)
 console.log('Ninguno recibe mensaje. Los avisos empiezan con la próxima asignación real.')
