@@ -21,12 +21,25 @@ import { esWhatsappValido, normalizarWhatsapp } from '../../utils/telefono'
 import Boton from '../common/Boton'
 import EncabezadoMunicipio from '../common/EncabezadoMunicipio'
 import PasoUbicacion, { MIN_REFERENCIA } from './PasoUbicacion'
+import BarraProgresoPasos from './BarraProgresoPasos'
 import PasoCategoria from './PasoCategoria'
 import PasoFoto from './PasoFoto'
 import TicketConfirmacion from './TicketConfirmacion'
 import AvisoPosibleDuplicado from './AvisoPosibleDuplicado'
 
-const TOTAL_PASOS = 3
+// Los tres pasos, en el ORDEN REAL del formulario. Vale decir por qué es este y
+// no "Foto → Ubicación → Detalles": la foto va al final a propósito, porque es
+// lo que permite que la IA revise una categoría YA elegida en vez de adivinar en
+// el vacío (ver el efecto de revisión de foto más abajo y §48). Además la
+// ubicación es el paso que más falla en terreno —GPS, señal— y conviene
+// resolverlo con el vecino todavía fresco, no después de haber subido fotos.
+const PASOS = [
+  { etiqueta: 'Ubicación' },
+  { etiqueta: 'El problema' },
+  { etiqueta: 'Foto y datos' },
+]
+
+const TOTAL_PASOS = PASOS.length
 
 // Radio de "posible duplicado" (estilo Waze): si hay un reporte activo de la
 // MISMA categoría más cerca que esto, se ofrece sumarse en vez de crear uno nuevo.
@@ -564,19 +577,20 @@ export default function FormularioCiudadano({ municipio }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-gradient-to-b from-primary/[0.04] to-transparent px-4 py-6">
-      <header className="mb-6">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-gradient-to-b from-primary/[0.04] to-transparent px-4 pb-6">
+      {/* Encabezado fijo: el nombre de la municipalidad y el progreso siguen a
+          la vista mientras el vecino baja por el formulario. Es lo que sostiene
+          la sensación de "trámite oficial en curso" — al hacer scroll, un
+          encabezado que se va deja la pantalla sin dueño.
+          El `-mx-4 px-4` lo saca del padding del contenedor para que el
+          desenfoque llegue de borde a borde, como en una app nativa. */}
+      <header className="barra-superior -mx-4 mb-6 px-4 pb-3 pt-5">
         <EncabezadoMunicipio municipio={municipio} tituloDefecto="Reportar Incidencia Urbana" />
-        <div className="mt-4 flex gap-1.5">
-          {Array.from({ length: TOTAL_PASOS }).map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                i + 1 <= paso ? 'bg-gradient-to-r from-primary to-primary-dark' : 'bg-gray-200'
-              }`}
-            />
-          ))}
-        </div>
+        {!duplicadoDetectado && (
+          <div className="mt-3.5">
+            <BarraProgresoPasos pasos={PASOS} pasoActual={paso} />
+          </div>
+        )}
       </header>
 
       <main className="flex-1">

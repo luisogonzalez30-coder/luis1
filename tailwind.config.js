@@ -19,9 +19,17 @@ export default {
         // sigan funcionando los modificadores de opacidad ya usados en el código
         // (ej. bg-primary/5, focus:ring-primary/30) — Tailwind 3 no resuelve <alpha-value>
         // sobre un var() plano.
+        // El fallback cambió a azul eléctrico #2563EB / #1D4ED8 el 02-sep-2026.
+        // OJO: esto es solo el respaldo para el instante previo a que
+        // utils/tema.js escriba las variables. El color real lo define CADA
+        // municipalidad en `color_primario` de su documento de Firestore — por
+        // eso el rediseño no puede fijar #2563EB a mano en las clases: eso
+        // rompería el multi-tenant, y una comuna con identidad verde vería
+        // botones azules. Todo lo que deba tomar el color del municipio usa
+        // `primary`; el azul literal solo vive en tema.js como defecto.
         primary: {
-          DEFAULT: 'rgb(var(--color-primary-rgb, 29 78 216) / <alpha-value>)',
-          dark: 'rgb(var(--color-primary-dark-rgb, 30 58 138) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--color-primary-rgb, 37 99 235) / <alpha-value>)',
+          dark: 'rgb(var(--color-primary-dark-rgb, 29 78 216) / <alpha-value>)',
         },
         // Tokens que NO cambian por municipalidad (definidos en index.css).
         // Mismo patrón rgb(var(...) / <alpha-value>) que `primary`, y por el
@@ -46,9 +54,27 @@ export default {
       },
       boxShadow: {
         // Sombras suaves y de baja opacidad: una sombra dura delata "web".
-        tarjeta: '0 1px 2px rgb(24 24 27 / 0.04), 0 1px 3px rgb(24 24 27 / 0.06)',
-        flotante: '0 4px 16px rgb(24 24 27 / 0.12), 0 1px 4px rgb(24 24 27 / 0.08)',
-        barra: '0 -1px 3px rgb(24 24 27 / 0.05)',
+        // Tintadas en slate-900 (15 23 42) y no en negro puro, para que la
+        // sombra pertenezca a la misma familia fría que las superficies.
+        tarjeta: '0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.06)',
+        flotante: '0 4px 16px rgb(15 23 42 / 0.12), 0 1px 4px rgb(15 23 42 / 0.08)',
+        barra: '0 -1px 3px rgb(15 23 42 / 0.05)',
+        // Botón flotante sobre el mapa (glassmorphism): más difusa y más abierta
+        // que `flotante`, porque tiene que despegarse de una foto satelital.
+        cristal: '0 8px 24px rgb(15 23 42 / 0.18), 0 2px 6px rgb(15 23 42 / 0.10)',
+      },
+      keyframes: {
+        // Avance de la barra de progreso segmentada del formulario ciudadano.
+        // Es un barrido de brillo sobre el segmento que se acaba de completar:
+        // confirma el avance sin mover nada de sitio (mover el layout en un
+        // formulario hace perder el punto donde iba el dedo).
+        'brillo-progreso': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+      },
+      animation: {
+        'brillo-progreso': 'brillo-progreso 900ms ease-out',
       },
       spacing: {
         // Zona segura del iPhone (barra de gestos). Sin esto la barra inferior
