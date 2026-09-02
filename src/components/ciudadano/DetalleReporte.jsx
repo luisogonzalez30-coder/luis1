@@ -67,16 +67,16 @@ export default function DetalleReporte({ ticket, onCerrar }) {
         <div className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-lg font-semibold leading-tight text-gray-900">
+              <h3 className="text-lg font-semibold leading-tight text-tinta-fuerte">
                 {info?.etiqueta || ticket.categoria}
               </h3>
-              <p className="mt-0.5 text-xs text-gray-400">
+              <p className="mt-0.5 text-xs text-tinta-tenue">
                 {info?.grupo} · N° {formatearNumeroTicket(ticket.id)}
               </p>
             </div>
             <button
               onClick={onCerrar}
-              className="shrink-0 rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+              className="shrink-0 rounded-full p-1 text-tinta-tenue transition-colors hover:bg-slate-100 hover:text-tinta"
               aria-label="Cerrar"
             >
               <X size={20} />
@@ -90,24 +90,24 @@ export default function DetalleReporte({ ticket, onCerrar }) {
 
           <div className="mt-4 space-y-3 text-sm">
             <div className="flex items-start gap-2.5">
-              <MapPin size={17} className="mt-0.5 shrink-0 text-gray-400" />
+              <MapPin size={17} className="mt-0.5 shrink-0 text-tinta-tenue" />
               <div className="min-w-0">
-                <p className="text-gray-700">{ticket.direccion_texto || 'Sin referencia escrita'}</p>
+                <p className="text-tinta">{ticket.direccion_texto || 'Sin referencia escrita'}</p>
                 <EnlaceGoogleMaps coordenadas={ticket.coordenadas} />
               </div>
             </div>
 
             <div className="flex items-start gap-2.5">
-              <Clock size={17} className="mt-0.5 shrink-0 text-gray-400" />
+              <Clock size={17} className="mt-0.5 shrink-0 text-tinta-tenue" />
               <div>
-                <p className="text-gray-700">Reportado el {creado || '—'}</p>
-                {cerrado && <p className="text-green-700">Resuelto el {cerrado}</p>}
+                <p className="text-tinta">Reportado el {creado || '—'}</p>
+                {cerrado && <p className="text-emerald-700">Resuelto el {cerrado}</p>}
               </div>
             </div>
 
             <div className="flex items-start gap-2.5">
-              <Users size={17} className="mt-0.5 shrink-0 text-gray-400" />
-              <p className="text-gray-700">
+              <Users size={17} className="mt-0.5 shrink-0 text-tinta-tenue" />
+              <p className="text-tinta">
                 {apoyos === 1 ? '1 vecino reportó esto' : `${apoyos} vecinos reportaron esto`}
               </p>
             </div>
@@ -117,11 +117,11 @@ export default function DetalleReporte({ ticket, onCerrar }) {
             <GaleriaFotos urls={ticket.fotos_antes_urls} alt="Foto del reporte" className="mt-4" />
           )}
 
-          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
 
           {ticket.estado !== 'Resuelto' && (
             votado ? (
-              <div className="mt-4 flex items-center justify-center gap-1.5 rounded-2xl bg-green-50 px-3 py-2.5 text-sm text-green-800">
+              <div className="mt-4 flex items-center justify-center gap-1.5 rounded-2xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
                 <CheckCircle2 size={16} /> Ya te sumaste a este reporte
               </div>
             ) : (

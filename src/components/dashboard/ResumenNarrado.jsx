@@ -47,18 +47,18 @@ export default function ResumenNarrado({ datos, periodo, nombreMunicipio }) {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 print:border-gray-300">
+    <div className="rounded-2xl border border-borde bg-white p-5 print:border-borde">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Sparkles size={18} className="text-primary" />
-          <h3 className="font-semibold text-gray-900">Resumen para leer en el concejo</h3>
+          <h3 className="font-semibold text-tinta-fuerte">Resumen para leer en el concejo</h3>
         </div>
 
         {!generando && (
           <button
             type="button"
             onClick={generar}
-            className="flex items-center gap-1.5 rounded-full border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 print:hidden"
+            className="flex items-center gap-1.5 rounded-full border border-borde px-3 py-1.5 text-sm font-medium text-tinta transition-colors hover:bg-slate-50 print:hidden"
           >
             {texto ? <RefreshCw size={14} /> : <Sparkles size={14} />}
             {texto ? 'Rehacer' : 'Redactar'}
@@ -67,21 +67,21 @@ export default function ResumenNarrado({ datos, periodo, nombreMunicipio }) {
       </div>
 
       {generando && (
-        <p className="mt-3 flex items-center gap-2 text-sm text-gray-500">
+        <p className="mt-3 flex items-center gap-2 text-sm text-tinta-suave">
           <Loader2 size={15} className="animate-spin" />
           Redactando con las cifras del período...
         </p>
       )}
 
       {!generando && !texto && !error && (
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-tinta-suave">
           Convierte las cifras de arriba en un párrafo para leer en voz alta. Usa solo estos
           números, no agrega ninguno.
         </p>
       )}
 
       {error && (
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-tinta-suave">
           No se pudo redactar el resumen en este momento. Las cifras de arriba están completas
           igual; puedes intentarlo de nuevo más tarde.
         </p>
@@ -89,7 +89,7 @@ export default function ResumenNarrado({ datos, periodo, nombreMunicipio }) {
 
       {texto && (
         <>
-          <div className="mt-3 whitespace-pre-line text-[15px] leading-relaxed text-gray-800">{texto}</div>
+          <div className="mt-3 whitespace-pre-line text-[15px] leading-relaxed text-tinta-fuerte">{texto}</div>
           <div className="mt-3 flex items-center gap-3 print:hidden">
             <button
               type="button"
@@ -99,7 +99,7 @@ export default function ResumenNarrado({ datos, periodo, nombreMunicipio }) {
               {copiado ? <Check size={14} /> : <Copy size={14} />}
               {copiado ? 'Copiado' : 'Copiar'}
             </button>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-tinta-tenue">
               Redactado a partir de las cifras del período. Revísalo antes de leerlo en público.
             </span>
           </div>

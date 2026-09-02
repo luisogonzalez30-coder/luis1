@@ -13,6 +13,7 @@
     "revisar": "node scripts/revisar-sistemas.mjs",
     "desplegar": "npm install && npm run build && firebase deploy --only hosting",
     "desplegar:reglas": "firebase deploy --only firestore:rules,firestore:indexes",
+    "reglas:probar": "firebase emulators:exec --only firestore --project demo-validacion \"node scripts/probar-reglas.mjs\"",
     "mp:verificar": "node scripts/mercado-publico.mjs verificar",
     "mp:activas": "node scripts/mercado-publico.mjs activas",
     "mp:historico": "node scripts/mercado-publico.mjs historico",

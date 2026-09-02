@@ -60,10 +60,10 @@ function Barra({ etiqueta, valor, maximo, sufijo = '', color }) {
   return (
     <div className="mb-1.5 break-inside-avoid">
       <div className="mb-0.5 flex items-baseline justify-between gap-3 text-xs">
-        <span className="truncate text-gray-700">{etiqueta}</span>
-        <span className="shrink-0 font-medium text-gray-900">{formatoNumero.format(valor)}{sufijo}</span>
+        <span className="truncate text-tinta">{etiqueta}</span>
+        <span className="shrink-0 font-medium text-tinta-fuerte">{formatoNumero.format(valor)}{sufijo}</span>
       </div>
-      <div className="h-2 rounded-full bg-gray-100 print:bg-gray-200">
+      <div className="h-2 rounded-full bg-slate-100 print:bg-slate-200">
         <div
           className="h-2 rounded-full"
           style={{ width: `${ancho}%`, backgroundColor: color || 'rgb(var(--color-primary-rgb))' }}
@@ -76,8 +76,8 @@ function Barra({ etiqueta, valor, maximo, sufijo = '', color }) {
 function Seccion({ numero, titulo, children }) {
   return (
     <section className="mt-8 break-inside-avoid">
-      <h2 className="mb-3 border-b border-gray-200 pb-1.5 text-base font-semibold text-gray-900">
-        <span className="text-gray-400">{numero}.</span> {titulo}
+      <h2 className="mb-3 border-b border-borde pb-1.5 text-base font-semibold text-tinta-fuerte">
+        <span className="text-tinta-tenue">{numero}.</span> {titulo}
       </h2>
       {children}
     </section>
@@ -86,10 +86,10 @@ function Seccion({ numero, titulo, children }) {
 
 function Dato({ etiqueta, valor, detalle }) {
   return (
-    <div className="rounded-xl border border-gray-200 p-3">
-      <p className="text-[11px] uppercase tracking-wide text-gray-500">{etiqueta}</p>
-      <p className="mt-1 text-2xl font-semibold text-gray-900">{valor}</p>
-      {detalle && <p className="mt-0.5 text-[11px] leading-snug text-gray-500">{detalle}</p>}
+    <div className="rounded-xl border border-borde p-3">
+      <p className="text-[11px] uppercase tracking-wide text-tinta-suave">{etiqueta}</p>
+      <p className="mt-1 text-2xl font-semibold text-tinta-fuerte">{valor}</p>
+      {detalle && <p className="mt-0.5 text-[11px] leading-snug text-tinta-suave">{detalle}</p>}
     </div>
   )
 }
@@ -224,18 +224,18 @@ export default function CuentaPublicaPage() {
   const maxMes = Math.max(...porMes.map((m) => m.recibidas), 1)
 
   return (
-    <div className="min-h-screen bg-gray-100 print:bg-white">
+    <div className="min-h-screen bg-slate-100 print:bg-white">
       {/* Barra de herramientas: no se imprime */}
-      <div className="sticky top-0 z-20 border-b border-gray-200 bg-white px-4 py-3 print:hidden">
+      <div className="sticky top-0 z-20 border-b border-borde bg-white px-4 py-3 print:hidden">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
-          <Link to="/dashboard/general" className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+          <Link to="/dashboard/general" className="flex items-center gap-1 text-sm text-tinta-suave hover:text-tinta">
             <ArrowLeft size={16} /> Volver al panel
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={periodoId}
               onChange={(e) => setPeriodoId(e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+              className="rounded-lg border border-borde px-3 py-1.5 text-sm"
             >
               {periodos.map((p) => <option key={p.id} value={p.id}>{p.etiqueta}</option>)}
             </select>
@@ -251,14 +251,14 @@ export default function CuentaPublicaPage() {
 
       <div className="mx-auto max-w-4xl bg-white p-8 shadow-sm print:max-w-none print:p-0 print:shadow-none">
         {/* Encabezado del documento */}
-        <header className="flex items-start gap-4 border-b-2 border-gray-900 pb-4">
+        <header className="flex items-start gap-4 border-b-2 border-tinta-fuerte pb-4">
           {municipio?.logo_url && (
             <img src={municipio.logo_url} alt="" className="h-16 w-16 object-contain" />
           )}
           <div className="flex-1">
-            <p className="text-xs uppercase tracking-widest text-gray-500">Cuenta pública de gestión</p>
-            <h1 className="text-2xl font-bold text-gray-900">{municipio?.nombre}</h1>
-            <p className="text-sm text-gray-600">
+            <p className="text-xs uppercase tracking-widest text-tinta-suave">Cuenta pública de gestión</p>
+            <h1 className="text-2xl font-bold text-tinta-fuerte">{municipio?.nombre}</h1>
+            <p className="text-sm text-tinta">
               Reportes ciudadanos · {periodo.etiqueta}
             </p>
           </div>
@@ -267,17 +267,17 @@ export default function CuentaPublicaPage() {
         {cargando ? (
           <div className="flex justify-center py-16"><Spinner /></div>
         ) : resumen.total === 0 ? (
-          <p className="py-16 text-center text-sm text-gray-500">
+          <p className="py-16 text-center text-sm text-tinta-suave">
             No hay reportes registrados en {periodo.etiqueta.toLowerCase()}.
           </p>
         ) : (
           <>
             <Seccion numero="1" titulo="Resumen del período">
-              <div className="mb-4 rounded-xl bg-gray-50 p-5 text-center print:border print:border-gray-200 print:bg-white">
-                <p className="text-5xl font-bold text-gray-900">{formatoNumero.format(resumen.resueltas)}</p>
-                <p className="mt-1 text-sm text-gray-600">
+              <div className="mb-4 rounded-xl bg-slate-50 p-5 text-center print:border print:border-borde print:bg-white">
+                <p className="text-5xl font-bold text-tinta-fuerte">{formatoNumero.format(resumen.resueltas)}</p>
+                <p className="mt-1 text-sm text-tinta">
                   problemas de la comuna resueltos, de {formatoNumero.format(resumen.total)} reportados por los vecinos
-                  <span className="font-medium text-gray-900"> ({resumen.porcentajeResuelto}%)</span>
+                  <span className="font-medium text-tinta-fuerte"> ({resumen.porcentajeResuelto}%)</span>
                 </p>
               </div>
 
@@ -333,7 +333,7 @@ export default function CuentaPublicaPage() {
             <Seccion numero="3" titulo="Desempeño por dirección municipal">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-gray-300 text-left text-gray-600">
+                  <tr className="border-b border-borde text-left text-tinta">
                     <th className="pb-1.5 font-medium">Dirección</th>
                     <th className="pb-1.5 text-right font-medium">Recibidos</th>
                     <th className="pb-1.5 text-right font-medium">Resueltos</th>
@@ -344,13 +344,13 @@ export default function CuentaPublicaPage() {
                 </thead>
                 <tbody className="tabular-nums">
                   {porDepartamento.map((d) => (
-                    <tr key={d.departamento} className="border-b border-gray-100">
-                      <td className="py-1.5 text-gray-900">{d.departamento}</td>
-                      <td className="py-1.5 text-right text-gray-700">{formatoNumero.format(d.recibidas)}</td>
-                      <td className="py-1.5 text-right text-gray-700">{formatoNumero.format(d.resueltas)}</td>
-                      <td className="py-1.5 text-right text-gray-700">{formatoNumero.format(d.pendientes)}</td>
-                      <td className="py-1.5 text-right text-gray-700">{formatearDuracion(d.promedio)}</td>
-                      <td className="py-1.5 text-right text-gray-700">{formatoCLP.format(d.inversion)}</td>
+                    <tr key={d.departamento} className="border-b border-borde">
+                      <td className="py-1.5 text-tinta-fuerte">{d.departamento}</td>
+                      <td className="py-1.5 text-right text-tinta">{formatoNumero.format(d.recibidas)}</td>
+                      <td className="py-1.5 text-right text-tinta">{formatoNumero.format(d.resueltas)}</td>
+                      <td className="py-1.5 text-right text-tinta">{formatoNumero.format(d.pendientes)}</td>
+                      <td className="py-1.5 text-right text-tinta">{formatearDuracion(d.promedio)}</td>
+                      <td className="py-1.5 text-right text-tinta">{formatoCLP.format(d.inversion)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -360,7 +360,7 @@ export default function CuentaPublicaPage() {
             <Seccion numero="4" titulo="Qué reportaron los vecinos">
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-tinta-suave">
                     Problemas más reportados
                   </h3>
                   {porCategoria.map((c) => (
@@ -368,13 +368,13 @@ export default function CuentaPublicaPage() {
                   ))}
                 </div>
                 <div>
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-tinta-suave">
                     Según gravedad
                   </h3>
                   {porGravedad.map((c) => (
                     <Barra key={c.etiqueta} etiqueta={c.etiqueta} valor={c.cantidad} maximo={maxGravedad} color={c.color} />
                   ))}
-                  <p className="mt-3 text-[11px] leading-snug text-gray-500">
+                  <p className="mt-3 text-[11px] leading-snug text-tinta-suave">
                     La gravedad se asigna automáticamente según el tipo de problema: los que implican riesgo a las
                     personas entran como Alta y encabezan la cola de trabajo.
                   </p>
@@ -411,7 +411,7 @@ export default function CuentaPublicaPage() {
               </div>
             </Seccion>
 
-            <footer className="mt-10 border-t border-gray-200 pt-3 text-[11px] leading-relaxed text-gray-500">
+            <footer className="mt-10 border-t border-borde pt-3 text-[11px] leading-relaxed text-tinta-suave">
               <p>
                 Documento generado automáticamente el{' '}
                 {new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })} a partir de

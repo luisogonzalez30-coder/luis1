@@ -2,7 +2,7 @@ import TarjetaIncidencia from './TarjetaIncidencia'
 
 export default function ListaIncidencias({ incidencias, incidenciaSeleccionadaId, onSeleccionar }) {
   if (incidencias.length === 0) {
-    return <p className="p-4 text-sm text-gray-400">No hay incidencias pendientes por ahora.</p>
+    return <p className="p-4 text-sm text-tinta-tenue">No hay incidencias pendientes por ahora.</p>
   }
 
   return (

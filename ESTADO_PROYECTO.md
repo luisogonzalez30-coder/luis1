@@ -1871,3 +1871,297 @@ se quiere automatizar, ese es el dato que falta.
 Compra Ágil y Convenio Marco. Rubro desactualizado = invisible para esos dos canales por
 mucho que el cazador encuentre la oportunidad. Es el requisito que hoy separa de poder
 postular al Convenio Marco, que es justamente la mejor oportunidad detectada.
+
+---
+
+## 50. Endurecimiento de seguridad, cola offline en IndexedDB y referencia rural (02-sep-2026)
+
+Seis cambios pedidos juntos. Ninguno agrega una función nueva al vecino salvo el último; los
+cinco primeros cierran huecos que estaban abiertos en producción.
+
+### 50.1 Reglas de Firestore: qué puede nacer en un reporte
+
+`incidencias/{id}` ya exigía `estado == 'Pendiente'`. Faltaba lo demás. Un cliente que llame a
+Firestore directo —sin pasar por la app, que es trivial: las credenciales del proyecto viajan en
+el bundle— podía crear un reporte que naciera **con una cuadrilla asignada y con un
+`gasto_real.costo_final` de nueve millones**. Eso no se queda ahí: entra tal cual al KPI
+financiero del panel del Alcalde (`ResumenGastoMensual.jsx`) y a la Cuenta Pública, que son
+documentos que el municipio publica.
+
+Dos funciones nuevas:
+
+| Función | Qué exige en la creación anónima |
+| --- | --- |
+| `sinDatosDeGestion()` | `presupuesto_estimado` y `gasto_real` en `null`, `cuadrilla_asignada` vacía, sin `fecha_asignacion` ni `fecha_cierre`, sin calificación, sin fotos y `upvotes == 1` |
+| `tiposDeReporteValidos()` | tipos de texto correctos y coordenadas numéricas **dentro del rectángulo de Chile** (incluidas Isla de Pascua y Juan Fernández) |
+
+El rango geográfico descarta el caso real de `(0, 0)` —la "isla nula" frente a África que
+devuelven los GPS cuando fallan— y cualquier pin inventado a mano. `detalles_adicionales` bajó
+de 2000 a 1000 caracteres, y se agregó tope de 300 para el campo nuevo `referencia_ubicacion`.
+
+**La lectura ya estaba bien y no se tocó.** `allow read: if esDelMismoMunicipio(...)` encadena
+`esFuncionarioAutenticado()`, que empieza por `request.auth != null`: no existe ninguna vía
+anónima de leer `incidencias`, ni por `get` ni por `list`. Lo que sí se agregó es el comentario
+que dice por qué (Ley 19.628: los datos personales del vecino solo pueden tratarse para la
+finalidad por la que se entregaron).
+
+**Las tres excepciones anónimas de `update` se conservaron a propósito** (voto "+1",
+calificación de 1-5 estrellas y la URL de la foto que llega después). Cerrarlas apagaría tres
+funciones que hoy están en producción —una de ellas, la foto, corrige el bug de §11 que dejó 30
+de 30 reportes sin imagen— y ninguna de las tres lee ni expone un dato personal: cada una está
+acotada por `affectedKeys().hasOnly(...)` a un solo campo.
+
+### 50.2 `tickets_publicos`: listado acotado, no libre
+
+El pedido era `allow list: if false`. **Eso apaga cuatro cosas que están en producción**: los
+pines del mapa tipo Waze, "Últimos reportes de la comuna", la detección de duplicados por
+categoría y la página pública de Transparencia. Las cuatro consultan por `list`, ninguna por
+`get`, así que `get: if true` no las salva.
+
+Se implementó el punto medio que sí es aplicable desde las reglas:
+
+```
+allow get: if true;
+allow list: if request.query.limit <= 500;
+```
+
+Una consulta **sin `limit()` queda por sobre el techo y Firestore la rechaza entera**: no hay
+forma de pedir "toda la colección", que es el raspado que se quería frenar. 500 es el techo real
+de la app (`VENTANA_REPORTES` en `TransparenciaPage.jsx`); el mapa pide 25 y los duplicados 15.
+
+Lo que esto **no** frena: paginar de a 500 con cursores. Las reglas no ven el cursor ni las
+cláusulas `where`. Para eso hace falta Firebase App Check (§28), que sigue pendiente.
+
+### 50.3 Prueba de comportamiento de las reglas — `npm run reglas:probar`
+
+Que las reglas compilen no dice nada: un `deploy` acepta sin chistar tanto una regla que deja
+pasar el gasto de nueve millones como una que bloquea al vecino entero. `scripts/probar-reglas.mjs`
+levanta el emulador y corre 18 casos como cliente **anónimo**, cada uno con su par: el que debe
+pasar y el que debe ser rechazado.
+
+Vale la pena saber cómo salió: la primera corrida dio "13 denegados correctamente", y era
+mentira. El seed de la municipalidad se estaba rechazando en silencio (el emulador también
+aplica las reglas a su API REST), así que los 13 fallaban por `exists(municipalidades/licanten)`
+en `false`, no por lo que cada caso pretendía probar. **Sin el caso positivo al lado, esos 13
+falsos verdes habrían pasado por verificación.**
+
+### 50.4 Reglas de Storage
+
+Tope a 10 MB y formatos enumerados uno por uno en vez de `image/.*`: ese comodín aceptaba
+`image/svg+xml`, que no es una foto sino un documento que puede llevar `<script>` adentro y
+correr en el navegador del funcionario que lo abre.
+
+**No se escribió como `match /incidencias/{municipioId}/{allPaths=**}`.** En Storage las reglas
+se SUMAN —basta que una permita— así que un comodín por sobre las rutas existentes le habría
+devuelto la escritura anónima a `/despues` y `/comprobante`, que hoy exigen funcionario
+autenticado. El límite vive en `esImagenValida()`, que las tres rutas usan, y al final hay un
+`match /{allPaths=**} { allow read, write: if false; }` como cierre por defecto.
+
+Nota: este archivo **hoy no está activo**. Las fotos van a Cloudinary desde §19, porque activar
+Firebase Storage exige plan Blaze y el municipio no tiene tarjeta. Es endurecimiento para el día
+que se encienda.
+
+### 50.5 Webhook de WhatsApp
+
+La captura de `req.rawBody`, la verificación de `X-Hub-Signature-256` con `crypto.timingSafeEqual`
+y la respuesta inmediata a Meta **ya estaban implementadas** en `whatsapp-api-oficial/webhook.js`.
+Lo que se agregó:
+
+- `express.json({ verify })` **a nivel de app** en `server.js`, no solo dentro del router: así
+  ninguna ruta futura puede quedarse sin el cuerpo crudo por olvido.
+- El acuse pasó de `res.sendStatus(200)` a `res.status(200).send('EVENT_RECEIVED')`, que es el
+  cuerpo que Meta documenta.
+- El procesamiento se difiere con `setImmediate`, para que no corra antes de que el socket de la
+  respuesta termine de vaciarse.
+- `firmaValida()` rechaza explícitamente si falta el `appSecret`.
+
+### 50.6 La cola offline pasó a IndexedDB
+
+`localStorage` tenía dos problemas y el segundo es el que importa en terreno: son ~5 MB
+compartidos con todo lo demás, y **solo guarda texto**. Un `File` no cabe en JSON, así que la
+foto del vecino sin señal se descartaba — justo el vecino que más necesita que le crean.
+
+IndexedDB guarda `Blob`/`File` nativamente y su cuota se mide en porcentaje del disco.
+`utils/colaOffline.js` se reescribió sobre eso: la API es la misma, ahora asíncrona.
+
+- Lo que quedó encolado en `localStorage` **se migra** la primera vez que se lee la cola, y el
+  original se borra recién después de copiarlo.
+- Si abrir IndexedDB falla (Safari privado, WebView recortado, otra pestaña con versión vieja),
+  cae al respaldo de `localStorage` con el formato de siempre, y ahí las fotos siguen sin caber.
+- `guardarReportePendiente()` devuelve `{ idLocal, conFotos }`: `conFotos` es lo que decide si al
+  vecino se le dice que su foto quedó guardada o no. No se le promete lo que no pasó.
+- Si el guardado con fotos lanza `QuotaExceededError`, se reintenta sin ellas antes de rendirse:
+  el texto del reporte pesa unos KB y es lo que el municipio necesita sí o sí.
+
+### 50.7 Lotes de Firestore en `cerrar-asignaciones-atrasadas.mjs`
+
+El script mandaba un `batch.commit()` con todos los documentos. El Admin SDK rechaza sobre 500
+operaciones, y **un batch rechazado no escribe nada**: con 501 documentos el script fallaría
+entero y quedaría viva la tanda de avisos retroactivos que justamente viene a evitar. Ahora va de
+a 400 (margen para una segunda operación futura sobre el mismo documento), en orden y no en
+paralelo, informando hasta dónde alcanzó cada lote.
+
+### 50.8 Punto de referencia rural
+
+Campo nuevo y **obligatorio** en el Paso 1: "Punto de referencia o hito cercano". En Lora,
+Placilla, Duao, Iloca y el resto de los sectores rurales no hay numeración de calles, así que la
+coordenada y la dirección que devuelve el mapa no alcanzan; lo que hace llegar a la cuadrilla es
+el hito ("frente a la posta", "pasando el puente").
+
+Se guarda en `incidencias.referencia_ubicacion` y **no se copia a `tickets_publicos`**: en zona
+rural un hito identifica a un vecino con bastante precisión, y esa colección es de lectura
+abierta. Mismo criterio que `detalles_adicionales` (§29).
+
+Se muestra destacado —no como una línea gris más— en `DetalleTarea.jsx` (la cuadrilla en
+terreno), `PanelGestionDepartamento.jsx` y `PanelAsignacion.jsx`. Un campo que el vecino llena y
+nadie ve no sirve de nada.
+
+**Coordenadas por defecto sin GPS.** Si el navegador no da permiso, el pin ya no queda vacío: se
+parte del `centro_mapa` de la municipalidad, con respaldo en la constante `CENTRO_LICANTEN`. El
+aviso ámbar le dice al vecino que **ese no es el lugar de su reporte** y que arrastre el pin: un
+pin puesto por la app se ve idéntico a uno puesto a mano.
+
+> **La coordenada de respaldo quedó en `-34.9802, -71.9873`, no en la que venía en el pedido
+> (`-34.9878, -72.0069`).** Esa última cae ~2 km al suroeste del centro verificado, o sea fuera
+> del radio de 1800 m del sector "Licantén (centro)" — el mismo tipo de error que §43.1 documenta,
+> cuando una coordenada 6,5 km al oeste dejó 5 de los 6 reportes de Licantén "fuera de sectores".
+> `-34.9802, -71.9873` es la que se verificó el 11-ago-2026 y la que usan
+> `configurar-sectores.mjs` y `preparar-demo.mjs`. Si la del pedido era a propósito (la
+> municipalidad, otro hito), hay que cambiarla en los tres lugares a la vez.
+
+---
+
+## 51. Rediseño visual: sistema de diseño GovTech (02-sep-2026)
+
+No es un cambio de colores: es pasar de "cada pantalla decide su gris" a un sistema
+con tokens. El síntoma que lo motivó era medible — 39 archivos usaban la escala
+`gray` de Tailwind directamente, con `border-gray-300` en un formulario y
+`border-gray-200` en el de al lado, y radios de 12, 16 y 24 px mezclados sin criterio.
+
+### 51.1 Tokens globales
+
+| Token | Valor | Para qué |
+| --- | --- | --- |
+| `--superficie` | `#FFFFFF` | tarjetas |
+| `--superficie-hundida` | `#F8FAFC` (slate-50) | el fondo del que salen |
+| `--borde` | `#E2E8F0` (slate-200) | separadores |
+| `tinta-fuerte` / `tinta` / `tinta-suave` / `tinta-tenue` | slate 900/700/500/400 | jerarquía completa de texto |
+
+La escala pasó de neutra cálida (zinc) a **fría (slate)**. El motivo es contraste
+simultáneo: un gris cálido bajo un primario azul se percibe amarillento, y era buena
+parte de por qué la app "se veía vieja" sin que se pudiera señalar qué.
+
+**Radios: dos y solo dos.** `rounded-2xl` (16 px) para superficies que CONTIENEN
+—tarjetas, hojas, mapas, avisos— y `rounded-xl` (12 px) para controles que se TOCAN
+—inputs, botones, píldoras—. El control más cerrado que su contenedor es una
+corrección óptica: con el mismo radio el input se ve pegado a la pared de la tarjeta.
+
+**Clases de componente nuevas** en `index.css`, para que un campo de texto se defina
+una vez y no quince: `.campo`, `.campo-error`, `.etiqueta-campo`, `.barra-superior`.
+
+### 51.2 El primario sigue siendo del municipio, no del rediseño
+
+El azul eléctrico `#2563EB` (hover `#1D4ED8`) entró **como valor por defecto en
+`utils/tema.js`**, no como clase fija.
+
+Es la decisión de fondo del rediseño y conviene que quede escrita: `primary` se lee
+de una variable CSS que escribe `tema.js` según `color_primario` del documento de la
+municipalidad. Fijar `#2563EB` en las clases —que es lo que pediría una lectura
+literal de "paleta azul"— habría roto el multi-tenant: una comuna con identidad
+verde vería botones azules. Todo lo que debe tomar el color del municipio usa
+`primary`; el azul literal vive en un solo lugar, como respaldo.
+
+### 51.3 Píldoras de estado con punto indicador
+
+`BadgeEstado` pasó a píldoras con punto: Pendiente rosa, En Proceso ámbar, Resuelto
+esmeralda. Es un semáforo de **avance**, no de gravedad.
+
+`BadgeGravedad` se rediseñó **distinto a propósito** —contorno neutro sobre blanco,
+no píldora rellena— porque conviven en la misma tarjeta y son dos escalas
+independientes. El caso concreto que lo obliga: un reporte "Resuelto" de "Gravedad
+Alta" mostraría una píldora verde junto a una roja, que parece una contradicción y
+no lo es.
+
+**El color de gravedad va en el punto, no en el texto.** Se intentó al revés y no se
+puede: el amarillo de "Media" (`#fab219`) sobre blanco da ~1,8:1 de contraste, o sea
+ilegible. Es además la regla de la skill `dataviz` — el texto usa tokens de texto,
+nunca el color de la serie. El valor sale de `utils/gravedad.js`, así que el rojo del
+badge y el del pin del mapa son literalmente el mismo.
+
+### 51.4 Flujo ciudadano
+
+**Barra de progreso segmentada** (`BarraProgresoPasos.jsx`, componente nuevo). Antes
+eran tres barritas iguales sin etiqueta: decían "vas por algún lado" pero no cuántos
+pasos faltaban. Ahora cada segmento lleva su nombre, el paso hecho muestra ✓, y el
+relleno es un `scale-x` sobre un hijo absoluto —no un cambio de ancho— para que el
+texto de abajo no salte y el pulgar no pierda el punto donde iba.
+
+> **El orden de los pasos NO se cambió.** El pedido decía "Foto → Ubicación →
+> Detalles"; el orden real es **Ubicación → El problema → Foto y datos**, y se
+> mantuvo. La foto va al final porque es lo que permite que la IA revise una
+> categoría YA elegida en vez de adivinar en el vacío (§48), y la ubicación va
+> primera porque es el paso que más falla en terreno (GPS, señal) y conviene
+> resolverlo con el vecino todavía fresco. Cambiar el orden habría roto §48.
+
+**Paso Foto**: mientras no hay ninguna foto, la zona de captura ocupa el ancho
+completo con ícono de cámara en disco blanco. Un cuadrito de 1/3 de pantalla no se
+lee como "toca acá" en un celular al sol. Con una foto ya cargada vuelve a la
+cuadrícula de miniaturas, donde el botón de agregar sí puede ser chico.
+
+**Paso Ubicación**: el mapa pasó a superficie con marco, sombra y `overflow-hidden`
+—las esquinas cuadradas de Leaflet asomando bajo un contenedor redondeado era de lo
+que más delataba "web hecha rápido"—. **El botón de GPS se movió adentro del mapa**,
+flotando con glassmorphism (`bg-white/90` + `backdrop-blur`). Antes era un botón
+primario a ancho completo arriba de todo: competía con "Siguiente" (dos botones
+azules grandes en una pantalla) y estaba lejos de lo que modifica. El botón de capa
+satelital se movió a la esquina opuesta para que no se encimen.
+
+**Selector de categoría: dos niveles.** Nivel 1 = los 9 grupos como cuadrícula de 2
+columnas, con ícono en disco del color del grupo (`utils/iconosGrupo.js`, nuevo).
+Nivel 2 = las categorías de ese grupo. La búsqueda corta transversalmente: escribir
+"bache" salta directo a los resultados.
+
+> Se hizo en dos niveles y **no** como cuadrícula plana de las 58 categorías, que es
+> lo que saldría de la instrucción literal: 58 tarjetas en 2 columnas son 29 filas de
+> scroll — exactamente el problema que la hoja vino a resolver cuando reemplazó al
+> `<select>` (§29). Con 9 grupos la cuadrícula cabe casi entera en pantalla, que es
+> cuando una cuadrícula sirve de algo.
+
+También se quitó el autofoco del buscador al abrir: con el nivel 1 siendo una
+cuadrícula, abrir el teclado la taparía justo cuando se quiere que el vecino la vea.
+
+### 51.5 Encabezados
+
+`.barra-superior` (fija, `bg-white/80` + `backdrop-blur-md`) en el formulario
+ciudadano, con `-mx-4 px-4` para que el desenfoque llegue de borde a borde.
+
+`EncabezadoMunicipio` suma un badge "Municipalidad" con ícono verificado. No es
+decorativo: esta app pide nombre y teléfono, y lo primero que hay que responder es
+"¿a quién le estoy dando mis datos?". El dato ya estaba cargado, así que es gratis.
+
+### 51.6 Panel administrativo
+
+Tarjetas de indicador con el número en `text-3xl font-extrabold` contra una etiqueta
+chica en mayúsculas, ícono de apoyo arriba a la derecha y punto de color del estado.
+La versión anterior usaba `text-2xl` sobre una etiqueta del mismo peso visual: a un
+metro las cuatro tarjetas se leían como un bloque gris parejo, y un panel de gestión
+se mira de reojo.
+
+**El número va en tinta, nunca en el color del estado.** Además de ser la regla de
+`dataviz`, resuelve un problema real: "0 pendientes" en rojo se lee como alarma
+cuando es la mejor noticia posible.
+
+Grilla y ejes del gráfico de gravedad pasaron a slate (antes `#e1e0d9`/`#52514e`,
+grises cálidos que contra superficies frías se veían verdosos). **Las barras no se
+tocaron**: conservan la paleta validada de `utils/gravedad.js`.
+
+### 51.7 Barrida de la paleta
+
+39 archivos usaban `gray-*`, `red-*` y `green-*` de Tailwind directamente. Se
+migraron en bloque a los tokens (`tinta-*`, `borde`, `slate-*`) y a la familia fría
+(`rose`, `emerald`). No queda ninguna clase `gray-` en `src/`.
+
+Fue una sustitución mecánica 1:1 de clases de color, sin tocar lógica ni estructura.
+Se hizo completa y no solo en los archivos del pedido a propósito: una paleta migrada
+a medias —tarjetas frías junto a tarjetas cálidas— se ve peor que no haber migrado.
+

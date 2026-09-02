@@ -19,8 +19,8 @@ export default function CiudadanoPage() {
   if (error) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
-        <AlertTriangle size={32} className="text-red-500" />
-        <p className="text-sm text-gray-600">{error}</p>
+        <AlertTriangle size={32} className="text-rose-500" />
+        <p className="text-sm text-tinta">{error}</p>
       </div>
     )
   }
@@ -28,8 +28,8 @@ export default function CiudadanoPage() {
   if (noEncontrado) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
-        <MapPinOff size={32} className="text-gray-400" />
-        <p className="text-sm text-gray-600">
+        <MapPinOff size={32} className="text-tinta-tenue" />
+        <p className="text-sm text-tinta">
           No encontramos la municipalidad "<span className="font-medium">{municipioSlug}</span>".
           Revisa el link que te compartieron.
         </p>

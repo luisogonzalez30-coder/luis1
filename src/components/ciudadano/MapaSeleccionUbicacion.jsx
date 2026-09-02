@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet'
-import { Satellite, Map as MapIcon } from 'lucide-react'
+import { Satellite, Map as MapIcon, LocateFixed } from 'lucide-react'
 import { aplicarFixIconosLeaflet } from '../../utils/leafletIconFix'
 import { crearIconoPin } from '../../utils/iconoPin'
 import { COLOR_POR_GRAVEDAD } from '../../utils/gravedad'
@@ -62,7 +62,21 @@ function ManejadorClicksMapa({ onSeleccionar }) {
 // `incidenciasCercanas` (opcional) pinta además los reportes activos de la
 // municipalidad — estilo Waze: tocar uno abre un popup con la opción de votar
 // "+1" en vez de crear un reporte duplicado (ver PopupVotoIncidencia.jsx).
-export default function MapaSeleccionUbicacion({ coordenadas, centroPorDefecto, enfoque, onCambiar, incidenciasCercanas = [] }) {
+// El botón de GPS vive ACÁ y no en PasoUbicacion, aunque la acción la ejecute el
+// formulario. Dos razones: es una acción sobre el mapa y tiene que verse encima
+// del mapa (antes era un botón primario a ancho completo, arriba de todo, que
+// competía con "Siguiente" y estaba lejos de lo que modifica); y porque el mapa
+// ya tenía su propio flotante —el cambio de capa— así que los dos tienen que
+// repartirse las esquinas en un solo lugar, o se enciman.
+export default function MapaSeleccionUbicacion({
+  coordenadas,
+  centroPorDefecto,
+  enfoque,
+  onCambiar,
+  incidenciasCercanas = [],
+  onUbicarme,
+  ubicando = false,
+}) {
   const [capa, setCapa] = useState('calle')
 
   const centroInicial = coordenadas
@@ -72,7 +86,7 @@ export default function MapaSeleccionUbicacion({ coordenadas, centroPorDefecto, 
       : CENTRO_DEFECTO
 
   return (
-    <div className="relative h-56 w-full overflow-hidden rounded-xl border border-gray-300">
+    <div className="relative h-64 w-full overflow-hidden rounded-2xl shadow-tarjeta ring-1 ring-borde">
       {/* La key fuerza un remount SOLO al pasar de "sin ubicación" a "con ubicación",
           para centrar el mapa una vez ahí. Después no se vuelve a mover solo (evita
           pelear con el usuario mientras arrastra el pin o navega el mapa). */}
@@ -109,14 +123,41 @@ export default function MapaSeleccionUbicacion({ coordenadas, centroPorDefecto, 
         )}
       </MapContainer>
 
+      {/* Los dos flotantes usan el mismo cristal: blanco al 85-90% con
+          desenfoque, para leerse igual sobre la capa de calles (clara) que
+          sobre la satelital (oscura y llena de detalle). Un botón blanco opaco
+          sobre una foto aérea se ve pegado encima; con el desenfoque se ve
+          apoyado.
+
+          z-[1000] los pone sobre los controles propios de Leaflet, que ocupan
+          el rango 400-1000 de su stacking. Van en esquinas OPUESTAS a
+          propósito: el de capa es una preferencia de vista y el de GPS es la
+          acción, así que el pulgar derecho tiene que encontrar el segundo sin
+          riesgo de tocar el primero. */}
       <button
         type="button"
         onClick={() => setCapa((c) => (c === 'calle' ? 'satelital' : 'calle'))}
-        className="absolute bottom-2 right-2 z-[1000] flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-md hover:bg-gray-50"
+        className="absolute bottom-3 left-3 z-[1000] flex min-h-[36px] items-center gap-1.5 rounded-xl bg-white/85 px-2.5 py-1.5 text-xs font-semibold text-tinta shadow-cristal ring-1 ring-white/60 backdrop-blur-md transition-transform active:scale-95"
       >
         {capa === 'calle' ? <Satellite size={14} /> : <MapIcon size={14} />}
         {capa === 'calle' ? 'Ver satelital' : 'Ver calles'}
       </button>
+
+      {onUbicarme && (
+        <button
+          type="button"
+          onClick={onUbicarme}
+          disabled={ubicando}
+          className="absolute bottom-3 right-3 z-[1000] flex min-h-[44px] items-center gap-2 rounded-xl bg-white/90 px-3.5 py-2.5 text-sm font-semibold text-tinta-fuerte shadow-cristal ring-1 ring-white/60 backdrop-blur-md transition-transform active:scale-95 disabled:opacity-70"
+        >
+          <LocateFixed
+            size={18}
+            className={`shrink-0 text-primary ${ubicando ? 'animate-spin' : ''}`}
+            aria-hidden="true"
+          />
+          {ubicando ? 'Buscando...' : coordenadas ? 'Mi GPS' : 'Usar mi GPS'}
+        </button>
+      )}
     </div>
   )
 }

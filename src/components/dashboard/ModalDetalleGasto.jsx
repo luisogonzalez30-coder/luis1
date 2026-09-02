@@ -74,23 +74,23 @@ export default function ModalDetalleGasto({ incidencias, departamento, onCerrar 
       )}
 
       {filtradas.length === 0 ? (
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-tinta-tenue">
           {soloRevision ? 'Ninguno de los cierres de este filtro quedó marcado a revisar.' : 'No hay incidencias resueltas este mes en este filtro.'}
         </p>
       ) : (
         <>
-          <div className="mb-4 grid grid-cols-3 gap-2 rounded-lg bg-gray-50 p-2 text-center text-xs">
+          <div className="mb-4 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-2 text-center text-xs">
             <div>
-              <p className="text-gray-500">Horas hombre</p>
-              <p className="font-semibold text-gray-900">{totales.horas}h</p>
+              <p className="text-tinta-suave">Horas hombre</p>
+              <p className="font-semibold text-tinta-fuerte">{totales.horas}h</p>
             </div>
             <div>
-              <p className="text-gray-500">Mano de obra</p>
-              <p className="font-semibold text-gray-900">{formatoCLP.format(totales.manoDeObra)}</p>
+              <p className="text-tinta-suave">Mano de obra</p>
+              <p className="font-semibold text-tinta-fuerte">{formatoCLP.format(totales.manoDeObra)}</p>
             </div>
             <div>
-              <p className="text-gray-500">Total gastado</p>
-              <p className="font-semibold text-gray-900">{formatoCLP.format(totales.total)}</p>
+              <p className="text-tinta-suave">Total gastado</p>
+              <p className="font-semibold text-tinta-fuerte">{formatoCLP.format(totales.total)}</p>
             </div>
           </div>
 
@@ -105,24 +105,24 @@ export default function ModalDetalleGasto({ incidencias, departamento, onCerrar 
                 <li
                   key={inc.id}
                   className={`rounded-xl border p-3 text-sm ${
-                    tieneAlerta(inc) ? 'border-orange-300 bg-orange-50/40' : 'border-gray-200'
+                    tieneAlerta(inc) ? 'border-orange-300 bg-orange-50/40' : 'border-borde'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-gray-900">{etiquetaCategoria(inc.categoria)}</p>
-                    <p className="text-xs text-gray-400">{formatearFecha(inc.fecha_cierre)}</p>
+                    <p className="font-medium text-tinta-fuerte">{etiquetaCategoria(inc.categoria)}</p>
+                    <p className="text-xs text-tinta-tenue">{formatearFecha(inc.fecha_cierre)}</p>
                   </div>
                   {departamento === 'Todos' && (
-                    <p className="text-xs text-gray-400">{inc.departamento}</p>
+                    <p className="text-xs text-tinta-tenue">{inc.departamento}</p>
                   )}
 
-                  <div className="mt-2 space-y-0.5 text-xs text-gray-600">
-                    <p>Horas hombre utilizadas: <span className="font-medium text-gray-900">{horas}h</span></p>
+                  <div className="mt-2 space-y-0.5 text-xs text-tinta">
+                    <p>Horas hombre utilizadas: <span className="font-medium text-tinta-fuerte">{horas}h</span></p>
                     {trabajadoresAsignados.length > 0 && (
                       <p>Personal: {trabajadoresAsignados.map((t) => t.nombre).join(', ')}</p>
                     )}
                     {manoDeObra > 0 && (
-                      <p>Costo mano de obra: <span className="font-medium text-gray-900">{formatoCLP.format(manoDeObra)}</span></p>
+                      <p>Costo mano de obra: <span className="font-medium text-tinta-fuerte">{formatoCLP.format(manoDeObra)}</span></p>
                     )}
                     {materialesUsados?.length > 0 ? (
                       <div>
@@ -173,7 +173,7 @@ export default function ModalDetalleGasto({ incidencias, departamento, onCerrar 
                     </div>
                   )}
 
-                  <p className="mt-2 border-t border-gray-100 pt-1.5 text-sm font-semibold text-gray-900">
+                  <p className="mt-2 border-t border-borde pt-1.5 text-sm font-semibold text-tinta-fuerte">
                     Costo final: {formatoCLP.format(inc.gasto_real?.costo_final || 0)}
                   </p>
                 </li>

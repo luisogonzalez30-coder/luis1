@@ -18,14 +18,16 @@ export default function PasoCategoria({ categoria, direccionTexto, detallesAdici
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">2. ¿Qué problema encontraste?</h2>
-        <p className="text-sm text-gray-500">Busca tu problema por nombre o elígelo de la lista por color.</p>
+        <h2 className="text-xl font-bold tracking-tight text-tinta-fuerte">¿Qué problema encontraste?</h2>
+        <p className="mt-1 text-sm font-medium text-tinta-suave">
+          Elige el área y después el problema, o búscalo escribiendo.
+        </p>
       </div>
 
       <SelectorCategoria categoria={categoria} onCambiar={onCambiarCategoria} />
 
       {categoriaSeleccionada?.avisoSeguridad && (
-        <div className="flex items-start gap-2 rounded-2xl bg-amber-50 p-3 text-sm text-amber-800">
+        <div className="flex items-start gap-2 rounded-2xl bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-inset ring-amber-100">
           <ShieldAlert size={18} className="mt-0.5 shrink-0" />
           <span>
             Este formulario informa a la municipalidad, <strong>no reemplaza una denuncia policial</strong>.
@@ -36,22 +38,20 @@ export default function PasoCategoria({ categoria, direccionTexto, detallesAdici
       )}
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">¿Dónde exactamente?</label>
+        <label className="etiqueta-campo">¿Dónde exactamente?</label>
         <input
           type="text"
           value={direccionTexto}
           onChange={(e) => onCambiarDireccion(e.target.value)}
           placeholder="Ej: Pasando el puente, frente a la escuela"
-          className={`w-full rounded-2xl border p-3 text-base transition-shadow focus:outline-none focus:ring-2 ${
-            direccionCorta ? 'border-red-400 focus:ring-red-200' : 'border-gray-300 focus:border-primary focus:ring-primary/30'
-          }`}
+          className={`campo ${direccionCorta ? 'campo-error' : ''}`}
         />
         {/* Cuando el texto lo puso la app (dirección del punto marcado en el
             Paso 1), hay que decirlo: si no, el vecino cree que ese campo ya
             está resuelto y no le agrega la referencia que la cuadrilla
             necesita para encontrar el problema dentro de la cuadra. */}
         {direccionAutocompletada && !direccionCorta ? (
-          <p className="mt-1 flex items-start gap-1.5 text-xs text-primary">
+          <p className="mt-1.5 flex items-start gap-1.5 text-xs text-primary">
             <Wand2 size={13} className="mt-0.5 shrink-0" />
             <span>
               La completamos con la dirección del punto que marcaste. Corrígela si no calza, y agrégale una
@@ -59,24 +59,22 @@ export default function PasoCategoria({ categoria, direccionTexto, detallesAdici
             </span>
           </p>
         ) : (
-          <p className={`mt-1 text-xs ${direccionCorta ? 'text-red-600' : 'text-gray-400'}`}>
+          <p className={`mt-1.5 text-xs ${direccionCorta ? 'font-medium text-rose-600' : 'text-tinta-suave'}`}>
             Una referencia que ayude a la cuadrilla a llegar al lugar exacto.
           </p>
         )}
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Cuéntanos qué pasa</label>
+        <label className="etiqueta-campo">Cuéntanos qué pasa</label>
         <textarea
           value={detallesAdicionales}
           onChange={(e) => onCambiarDetalles(e.target.value)}
           placeholder="Ej: Lleva 2 semanas así, afecta el paso de sillas de ruedas..."
           rows={3}
-          className={`w-full resize-none rounded-2xl border p-3 text-base transition-shadow focus:outline-none focus:ring-2 ${
-            detallesCortos ? 'border-red-400 focus:ring-red-200' : 'border-gray-300 focus:border-primary focus:ring-primary/30'
-          }`}
+          className={`campo resize-none ${detallesCortos ? 'campo-error' : ''}`}
         />
-        <p className={`mt-1 text-xs ${detallesCortos ? 'text-red-600' : 'text-gray-400'}`}>
+        <p className={`mt-1.5 text-xs ${detallesCortos ? 'font-medium text-rose-600' : 'text-tinta-suave'}`}>
           Mientras más nos cuentes, mejor preparada llega la cuadrilla.
         </p>
       </div>

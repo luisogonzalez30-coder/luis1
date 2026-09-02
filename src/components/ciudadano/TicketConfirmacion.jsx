@@ -9,13 +9,13 @@ export default function TicketConfirmacion({ numeroTicket, pendienteSincronizar,
       {pendienteSincronizar ? (
         <>
           <CloudOff size={56} className="text-amber-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Guardado sin conexión</h2>
+          <h2 className="text-xl font-semibold text-tinta-fuerte">Guardado sin conexión</h2>
           {/* Las dos condiciones van dichas a propósito: useSincronizacionOffline
               reacciona al evento 'online' (se envía solo, sin que el vecino haga
               nada, si dejó la app abierta) y también al volver a primer plano.
               Decir solo "la próxima vez que abras la app" hacía pensar que había
               que hacer algo a mano. */}
-          <p className="text-gray-500">
+          <p className="text-tinta-suave">
             Se guardó en tu teléfono y se enviará automáticamente <strong>en cuanto vuelva la señal</strong>, o la
             próxima vez que abras la app. Anota este número:
           </p>
@@ -23,16 +23,16 @@ export default function TicketConfirmacion({ numeroTicket, pendienteSincronizar,
       ) : esVotoExistente ? (
         <>
           <ThumbsUp size={56} className="text-primary" />
-          <h2 className="text-xl font-semibold text-gray-900">¡Te sumaste al reporte!</h2>
-          <p className="text-gray-500">
+          <h2 className="text-xl font-semibold text-tinta-fuerte">¡Te sumaste al reporte!</h2>
+          <p className="text-tinta-suave">
             No hacía falta crear uno nuevo — este es el número al que te sumaste:
           </p>
         </>
       ) : (
         <>
-          <CheckCircle2 size={56} className="text-green-600" />
-          <h2 className="text-xl font-semibold text-gray-900">¡Reporte enviado!</h2>
-          <p className="text-gray-500">Este es el número de tu reporte:</p>
+          <CheckCircle2 size={56} className="text-emerald-600" />
+          <h2 className="text-xl font-semibold text-tinta-fuerte">¡Reporte enviado!</h2>
+          <p className="text-tinta-suave">Este es el número de tu reporte:</p>
         </>
       )}
 
@@ -47,7 +47,7 @@ export default function TicketConfirmacion({ numeroTicket, pendienteSincronizar,
       </div>
 
       {!pendienteSincronizar && !esVotoExistente && (
-        <div className="flex items-start gap-2 rounded-2xl bg-gray-50 p-3 text-left text-sm text-gray-600">
+        <div className="flex items-start gap-2 rounded-2xl bg-slate-50 p-3 text-left text-sm text-tinta">
           <MessageCircle size={18} className="mt-0.5 shrink-0 text-primary" />
           <span>
             También te lo mandamos por WhatsApp. Si se te pierde, escríbenos <strong>"mis reportes"</strong> por

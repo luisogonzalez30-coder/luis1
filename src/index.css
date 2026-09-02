@@ -15,9 +15,12 @@
    un ajuste de contraste se haga una vez y no archivo por archivo.
    --------------------------------------------------------------------------- */
 :root {
-  /* Superficies */
-  --superficie: #ffffff;
-  --superficie-hundida: #f7f7f8;
+  /* Superficies (rediseño 02-sep-2026). Escala Slate de Tailwind, elegida por
+     ser la neutra fría que acompaña al azul institucional sin ensuciarlo: un
+     gris cálido bajo un primario azul se ve amarillento por contraste
+     simultáneo, que es lo que hacía ver "vieja" la paleta anterior. */
+  --superficie: #ffffff;          /* tarjetas: blanco puro, para que floten */
+  --superficie-hundida: #f8fafc;  /* slate-50: el fondo del que salen */
 
   /* IMPORTANTE: los colores van como tripleta RGB sin envolver, no como hex.
      tailwind.config.js los consume con el patrón rgb(var(--x) / <alpha-value>),
@@ -27,11 +30,15 @@
      de build— y el estilo desaparece. Mismo motivo por el que `primary` ya
      estaba definido así. */
 
-  /* Tinta */
-  --tinta-fuerte-rgb: 24 24 27;   /* #18181b */
-  --tinta-rgb: 63 63 70;          /* #3f3f46 */
-  --tinta-suave-rgb: 113 113 122; /* #71717a */
-  --tinta-tenue-rgb: 161 161 170; /* #a1a1aa */
+  /* Tinta: escala Slate, para que el texto y las superficies sean de la misma
+     familia fría. Los cuatro pasos son la jerarquía completa — título, cuerpo,
+     secundario, deshabilitado — y no hay un quinto a propósito: cuando hacen
+     falta más de cuatro niveles de gris, el problema es la jerarquía, no la
+     paleta. */
+  --tinta-fuerte-rgb: 15 23 42;    /* slate-900 — títulos */
+  --tinta-rgb: 51 65 85;           /* slate-700 — cuerpo */
+  --tinta-suave-rgb: 100 116 139;  /* slate-500 — subtítulos y ayudas */
+  --tinta-tenue-rgb: 148 163 184;  /* slate-400 — placeholders */
 
   /* Estados. Paleta fija de la skill dataviz — nunca se tematiza por comuna, y
      nunca carga sola con el significado: siempre va con ícono + etiqueta. */
@@ -40,13 +47,29 @@
   --estado-serio-rgb: 236 131 90;    /* #ec835a */
   --estado-critico-rgb: 208 59 59;   /* #d03b3b */
 
-  /* Borde hairline. Se usa siempre sin modificador de opacidad (ya la trae),
-     así que puede ir como color completo. */
-  --borde: rgb(24 24 27 / 0.08);
+  /* Borde hairline. Slate-200 sólido en vez del negro al 8% que había antes:
+     sobre el fondo slate-50 el negro translúcido se veía sucio, mientras que un
+     paso de la misma escala separa sin ensuciar. Se usa siempre sin modificador
+     de opacidad, así que puede ir como color completo. */
+  --borde: #e2e8f0;
 
   /* Alto real de la barra inferior, para que el contenido no quede debajo */
   --alto-barra-inferior: 4.5rem;
 }
+
+/* ---------------------------------------------------------------------------
+   Radios: dos, y solo dos
+   ---------------------------------------------------------------------------
+   - rounded-2xl (16px) → superficies que CONTIENEN: tarjetas, hojas, mapas,
+     avisos, la zona de fotos.
+   - rounded-xl  (12px) → controles que se TOCAN: inputs, botones, píldoras,
+     selects.
+
+   La razón de que el control sea más cerrado que su contenedor es óptica: un
+   radio igual hace que el input se vea pegado a la pared de la tarjeta. Un
+   tercer radio no existe a propósito — es lo que hace que el conjunto se lea
+   como un sistema y no como una suma de pantallas.
+   --------------------------------------------------------------------------- */
 
 /* min-height (no height): las pantallas que crecen más que el viewport —los
    dashboards, la cuenta pública— tienen que poder hacer scroll. Con height:100%
@@ -92,6 +115,30 @@ body {
   /* Tarjeta estándar: una sola definición para que todas respiren igual. */
   .tarjeta {
     @apply rounded-2xl bg-white p-5 ring-1 ring-borde;
+  }
+
+  /* Campo de texto. Existía repetido en ~15 archivos con variaciones mínimas
+     (border-gray-300 vs border-gray-200, p-3 vs p-3.5, rounded-2xl vs -xl), que
+     es como una interfaz se desalinea sin que nadie lo decida. */
+  .campo {
+    @apply w-full rounded-xl border border-borde bg-white p-3 text-base text-tinta-fuerte
+           placeholder:text-tinta-tenue transition-shadow
+           focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25;
+  }
+
+  .campo-error {
+    @apply border-rose-400 focus:border-rose-400 focus:ring-rose-200;
+  }
+
+  /* Etiqueta de campo. */
+  .etiqueta-campo {
+    @apply mb-1.5 block text-sm font-semibold text-tinta-fuerte;
+  }
+
+  /* Encabezado fijo translúcido. Se repite en el lado ciudadano y en los
+     paneles, así que vive acá una sola vez. */
+  .barra-superior {
+    @apply sticky top-0 z-50 border-b border-borde bg-white/80 backdrop-blur-md;
   }
 }
 

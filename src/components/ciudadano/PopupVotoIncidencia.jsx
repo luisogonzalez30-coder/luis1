@@ -63,7 +63,7 @@ export default function PopupVotoIncidencia({ ticket }) {
 
   return (
     <div className="w-56">
-      <strong className="text-sm text-gray-900">{etiquetaCategoria(ticket.categoria)}</strong>
+      <strong className="text-sm text-tinta-fuerte">{etiquetaCategoria(ticket.categoria)}</strong>
 
       <div className="mt-1 flex gap-1">
         <BadgeEstado estado={ticket.estado} />
@@ -78,21 +78,21 @@ export default function PopupVotoIncidencia({ ticket }) {
         />
       )}
 
-      <p className="mt-2 text-xs text-gray-500">
+      <p className="mt-2 text-xs text-tinta-suave">
         {upvotes} {upvotes === 1 ? 'persona reportó esto' : 'personas reportaron esto'}
       </p>
 
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
 
       {votado ? (
         <div className="mt-2">
-          <div className="flex items-center gap-1.5 rounded-lg bg-green-50 px-2 py-1.5 text-xs text-green-800">
+          <div className="flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2 py-1.5 text-xs text-emerald-800">
             <CheckCircle2 size={14} className="shrink-0" /> Ya te sumaste a este reporte
           </div>
 
           {ticket.id && (
             <div className="mt-2 rounded-xl bg-primary/5 px-3 py-2.5 text-center ring-1 ring-primary/20">
-              <p className="text-[11px] text-gray-500">Número de este reporte</p>
+              <p className="text-[11px] text-tinta-suave">Número de este reporte</p>
               <p className="mt-0.5 text-xl font-bold tracking-[0.15em] text-primary">
                 {formatearNumeroTicket(ticket.id)}
               </p>

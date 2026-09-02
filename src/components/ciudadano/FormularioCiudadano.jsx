@@ -20,22 +20,54 @@ import { sugerirCategoria, esElMismoProblema } from '../../services/iaService'
 import { esWhatsappValido, normalizarWhatsapp } from '../../utils/telefono'
 import Boton from '../common/Boton'
 import EncabezadoMunicipio from '../common/EncabezadoMunicipio'
-import PasoUbicacion from './PasoUbicacion'
+import PasoUbicacion, { MIN_REFERENCIA } from './PasoUbicacion'
+import BarraProgresoPasos from './BarraProgresoPasos'
 import PasoCategoria from './PasoCategoria'
 import PasoFoto from './PasoFoto'
 import TicketConfirmacion from './TicketConfirmacion'
 import AvisoPosibleDuplicado from './AvisoPosibleDuplicado'
 
-const TOTAL_PASOS = 3
+// Los tres pasos, en el ORDEN REAL del formulario. Vale decir por qué es este y
+// no "Foto → Ubicación → Detalles": la foto va al final a propósito, porque es
+// lo que permite que la IA revise una categoría YA elegida en vez de adivinar en
+// el vacío (ver el efecto de revisión de foto más abajo y §48). Además la
+// ubicación es el paso que más falla en terreno —GPS, señal— y conviene
+// resolverlo con el vecino todavía fresco, no después de haber subido fotos.
+const PASOS = [
+  { etiqueta: 'Ubicación' },
+  { etiqueta: 'El problema' },
+  { etiqueta: 'Foto y datos' },
+]
+
+const TOTAL_PASOS = PASOS.length
 
 // Radio de "posible duplicado" (estilo Waze): si hay un reporte activo de la
 // MISMA categoría más cerca que esto, se ofrece sumarse en vez de crear uno nuevo.
 const RADIO_DUPLICADO_METROS = 50
 
+// Punto de partida cuando el GPS no está disponible (permiso denegado, celular
+// sin señal de satélite, navegador que no lo soporta). Antes de esto el mapa
+// quedaba sin pin y el vecino tenía que encontrar su casa a mano en un mapa
+// centrado en cualquier parte: es la clase de fricción que hace abandonar el
+// formulario justo en el primer paso.
+//
+// El centro real de cada municipalidad vive en municipalidades/{slug}.centro_mapa
+// y es lo primero que se usa. Esta constante es solo el respaldo si ese campo
+// no está configurado.
+//
+// OJO CON ESTA COORDENADA. -34.9802, -71.9873 es el centro de Licantén
+// verificado el 11-ago-2026 (ver §43.1 y scripts/configurar-sectores.mjs). Antes
+// figuraba -34.9743, -72.0604 —6,5 km al oeste, en pleno campo— y el efecto no
+// fue cosmético: 5 de los 6 reportes de Licantén caían "fuera de sectores" y el
+// mapa abría sobre potreros. Si se cambia, hay que cambiarla también en
+// configurar-sectores.mjs y en preparar-demo.mjs, y comprobarla contra el mapa.
+const CENTRO_LICANTEN = { lat: -34.9802, lng: -71.9873 }
+
 export default function FormularioCiudadano({ municipio }) {
   const [paso, setPaso] = useState(1)
   const [categoria, setCategoria] = useState('')
   const [direccionTexto, setDireccionTexto] = useState('')
+  const [referenciaUbicacion, setReferenciaUbicacion] = useState('')
   const [detallesAdicionales, setDetallesAdicionales] = useState('')
   const [fotos, setFotos] = useState([])
   const [nombreCiudadano, setNombreCiudadano] = useState('')
@@ -72,6 +104,10 @@ export default function FormularioCiudadano({ municipio }) {
   // pedido: solo lo fijan el GPS y el buscador, nunca un toque en el mapa (ver
   // CentradorMapa en MapaSeleccionUbicacion.jsx).
   const [enfoqueMapa, setEnfoqueMapa] = useState(null)
+  // true cuando el pin lo puso el respaldo (centro de la comuna) y no el vecino:
+  // hay que decírselo, porque un pin en el centro del pueblo se ve igual de
+  // confiable que uno puesto a mano y la cuadrilla saldría al lugar equivocado.
+  const [ubicacionPorDefecto, setUbicacionPorDefecto] = useState(false)
   const { coordenadas: coordenadasGPS, cargando, error, obtenerUbicacion } = useGeolocation()
 
   // La geocodificación inversa solo corre cuando el punto lo puso el GPS o un
@@ -90,8 +126,29 @@ export default function FormularioCiudadano({ municipio }) {
     if (!coordenadasGPS) return
     setCoordenadas(coordenadasGPS)
     setDireccionElegida(null)
+    setUbicacionPorDefecto(false)
     setEnfoqueMapa({ ...coordenadasGPS, zoom: 17, id: Date.now() })
   }, [coordenadasGPS])
+
+  // El GPS falló (permiso denegado es el caso más común) y todavía no hay punto:
+  // en vez de dejar el mapa sin pin, se parte desde el centro de la comuna. No
+  // reemplaza a que el vecino marque el lugar —el aviso de PasoUbicacion se lo
+  // pide explícitamente y el pin es arrastrable— pero le da algo que mover, que
+  // es mucho más fácil que buscar su calle desde cero en un mapa de Chile.
+  //
+  // Solo corre si `coordenadas` sigue vacío: si ya buscó su dirección o tocó el
+  // mapa, ese punto manda y un error de GPS posterior no debe pisarlo.
+  useEffect(() => {
+    if (!error || coordenadas) return
+
+    const centro = municipio?.centro_mapa || CENTRO_LICANTEN
+    setCoordenadas(centro)
+    setDireccionElegida(null)
+    setUbicacionPorDefecto(true)
+    // Zoom 15 y no 17: el punto NO es el del problema, así que conviene mostrar
+    // el entorno para que el vecino se ubique y arrastre el pin.
+    setEnfoqueMapa({ ...centro, zoom: 15, id: Date.now() })
+  }, [error, coordenadas, municipio?.centro_mapa])
 
   // Un toque o un arrastre en el mapa es la ubicación más precisa que hay (el
   // vecino está señalando el problema con el dedo), así que invalida la
@@ -99,10 +156,12 @@ export default function FormularioCiudadano({ municipio }) {
   function fijarCoordenadasDesdeMapa(nuevas) {
     setCoordenadas(nuevas)
     setDireccionElegida(null)
+    setUbicacionPorDefecto(false)
   }
 
   function elegirDireccionBuscada(resultado) {
     setCoordenadas(resultado.coordenadas)
+    setUbicacionPorDefecto(false)
     setDireccionElegida({ texto: resultado.etiqueta, aproximada: resultado.aproximada })
     // Un sector o una localidad se muestran más alejados a propósito: el punto
     // exacto está en algún lugar alrededor de ese centro, y el vecino necesita
@@ -110,9 +169,11 @@ export default function FormularioCiudadano({ municipio }) {
     setEnfoqueMapa({ ...resultado.coordenadas, zoom: resultado.aproximada ? 15 : 17, id: Date.now() })
   }
 
-  // La foto es obligatoria SALVO que el celular esté sin señal: las fotos no se
-  // pueden guardar en la cola offline (un File no cabe en localStorage, ver §10),
-  // así que exigirla dejaría a un vecino en zona sin cobertura sin poder reportar.
+  // La foto es obligatoria SALVO que el celular esté sin señal. El motivo
+  // original era que un File no cabía en la cola offline (localStorage, §10);
+  // desde el 02-sep-2026 la cola es IndexedDB y sí las guarda, pero la excepción
+  // se mantiene: en el respaldo de localStorage siguen sin caber, y exigir foto
+  // a un vecino en zona sin cobertura lo deja sin poder reportar.
   useEffect(() => {
     const actualizar = () => setSinConexion(!navigator.onLine)
     window.addEventListener('online', actualizar)
@@ -174,17 +235,31 @@ export default function FormularioCiudadano({ municipio }) {
   const fotoLista = fotos.length > 0 || sinConexion
 
   const puedeAvanzar = {
-    1: Boolean(coordenadas),
+    // La referencia es obligatoria además del punto en el mapa: en Lora,
+    // Placilla, Duao y el resto de los sectores rurales de Licantén no hay
+    // numeración formal, así que la coordenada sola no basta para que la
+    // cuadrilla encuentre el lugar (ver PasoUbicacion.jsx).
+    1: Boolean(coordenadas) && referenciaUbicacion.trim().length >= MIN_REFERENCIA,
     2: Boolean(categoria) && direccionTexto.trim().length >= 3 && detallesAdicionales.trim().length >= 5,
     3: fotoLista && datosCompletos,
   }[paso]
 
-  function encolarSinConexion(datosReporte, tieneFotos) {
+  // Desde el 02-sep-2026 la cola vive en IndexedDB (ver utils/colaOffline.js),
+  // así que ahora las FOTOS también se guardan: antes se descartaban porque un
+  // File no cabe en localStorage. `conFotos` dice si de verdad quedaron —en el
+  // respaldo de localStorage siguen sin caber— y de eso depende lo que se le
+  // promete al vecino en pantalla.
+  async function encolarSinConexion(datosReporte, fotosPendientes) {
     const numeroTicket = generarNumeroTicket()
-    const idLocal = guardarReportePendiente({ ...datosReporte, numeroTicketExistente: numeroTicket })
+    const tieneFotos = fotosPendientes.length > 0
+    const { idLocal, conFotos } = await guardarReportePendiente({
+      ...datosReporte,
+      fotosAntes: fotosPendientes,
+      numeroTicketExistente: numeroTicket,
+    })
 
     if (!idLocal) {
-      // El dispositivo no pudo guardar en localStorage (modo privado / sin espacio):
+      // El dispositivo no pudo guardar por ninguna vía (modo privado / sin espacio):
       // no hay garantía de reintento automático, hay que ser honestos sobre eso.
       setErrorEnvio(
         `No pudimos guardar tu reporte en este dispositivo para reintentar más tarde. Anota este número y contacta a la municipalidad directamente: ${numeroTicket}`
@@ -195,7 +270,7 @@ export default function FormularioCiudadano({ municipio }) {
     // Para el vecino esto ya fue "enviar un reporte", así que corre el mismo
     // enfriamiento aunque todavía esté en la cola offline.
     registrarReporteLocal()
-    setFotoDescartadaOffline(tieneFotos)
+    setFotoDescartadaOffline(tieneFotos && !conFotos)
     setPendienteSincronizar(true)
     setTicket(numeroTicket)
   }
@@ -222,6 +297,7 @@ export default function FormularioCiudadano({ municipio }) {
       categoria,
       coordenadas,
       direccionTexto,
+      referenciaUbicacion: referenciaUbicacion.trim(),
       detallesAdicionales,
       municipioId: municipio.id,
       nombreCiudadano: nombreCiudadano.trim(),
@@ -238,7 +314,7 @@ export default function FormularioCiudadano({ municipio }) {
     // más abajo: en zona rural es común estar "conectado" a una red sin salida
     // real a internet, algo que navigator.onLine no detecta.
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      encolarSinConexion(datosReporte, fotos.length > 0)
+      await encolarSinConexion(datosReporte, fotos)
       setEnviando(false)
       return
     }
@@ -253,9 +329,9 @@ export default function FormularioCiudadano({ municipio }) {
       setTicket(numeroTicket)
     } catch (err) {
       if (err.esTimeout) {
-        // Las fotos NO se persisten en la cola offline (un File no cabe razonablemente
-        // en localStorage) — el reporte se guarda igual, sin ellas.
-        encolarSinConexion(datosReporte, fotos.length > 0)
+        // Las fotos SÍ se persisten desde el 02-sep-2026: la cola pasó a
+        // IndexedDB, que guarda Blob/File nativamente (ver utils/colaOffline.js).
+        await encolarSinConexion(datosReporte, fotos)
       } else if (err.code === 'permission-denied') {
         // Firestore contesta "Missing or insufficient permissions." en inglés y
         // sin decir por qué. Al vecino eso no le dice nada —lo vio en pantalla
@@ -280,6 +356,7 @@ export default function FormularioCiudadano({ municipio }) {
     setPaso(1)
     setCategoria('')
     setDireccionTexto('')
+    setReferenciaUbicacion('')
     setDetallesAdicionales('')
     setFotos([])
     setNombreCiudadano('')
@@ -290,6 +367,7 @@ export default function FormularioCiudadano({ municipio }) {
     setFotoDescartadaOffline(false)
     setCoordenadas(null)
     setDireccionElegida(null)
+    setUbicacionPorDefecto(false)
     setSugerenciaCategoria(null)
     setRevisandoFoto(false)
     fotoRevisadaRef.current = null
@@ -499,19 +577,20 @@ export default function FormularioCiudadano({ municipio }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-gradient-to-b from-primary/[0.04] to-transparent px-4 py-6">
-      <header className="mb-6">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-gradient-to-b from-primary/[0.04] to-transparent px-4 pb-6">
+      {/* Encabezado fijo: el nombre de la municipalidad y el progreso siguen a
+          la vista mientras el vecino baja por el formulario. Es lo que sostiene
+          la sensación de "trámite oficial en curso" — al hacer scroll, un
+          encabezado que se va deja la pantalla sin dueño.
+          El `-mx-4 px-4` lo saca del padding del contenedor para que el
+          desenfoque llegue de borde a borde, como en una app nativa. */}
+      <header className="barra-superior -mx-4 mb-6 px-4 pb-3 pt-5">
         <EncabezadoMunicipio municipio={municipio} tituloDefecto="Reportar Incidencia Urbana" />
-        <div className="mt-4 flex gap-1.5">
-          {Array.from({ length: TOTAL_PASOS }).map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                i + 1 <= paso ? 'bg-gradient-to-r from-primary to-primary-dark' : 'bg-gray-200'
-              }`}
-            />
-          ))}
-        </div>
+        {!duplicadoDetectado && (
+          <div className="mt-3.5">
+            <BarraProgresoPasos pasos={PASOS} pasoActual={paso} />
+          </div>
+        )}
       </header>
 
       <main className="flex-1">
@@ -538,6 +617,9 @@ export default function FormularioCiudadano({ municipio }) {
                 direccionAproximada={direccionDelPunto}
                 buscandoDireccion={buscandoDireccion}
                 pedirAjustarPin={Boolean(direccionElegida?.aproximada)}
+                ubicacionPorDefecto={ubicacionPorDefecto}
+                referenciaUbicacion={referenciaUbicacion}
+                onCambiarReferencia={setReferenciaUbicacion}
                 incidenciasCercanas={incidenciasActivas}
                 ultimosReportes={ultimosReportes}
               />
@@ -575,7 +657,7 @@ export default function FormularioCiudadano({ municipio }) {
       </main>
 
       {errorEnvio && (
-        <div className="mb-4 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-4 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">
           <AlertTriangle size={18} className="mt-0.5 shrink-0" />
           <span>{errorEnvio}</span>
         </div>

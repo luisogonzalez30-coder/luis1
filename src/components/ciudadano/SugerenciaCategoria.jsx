@@ -33,13 +33,13 @@ export default function SugerenciaCategoria({ sugerencia, categoriaElegida, onAc
       <div className="flex items-start gap-2">
         <Sparkles size={18} className="mt-0.5 shrink-0 text-primary" />
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">
+          <p className="text-sm font-medium text-tinta-fuerte">
             Por la foto, esto parece <span className="text-primary">{sugerencia.etiqueta}</span>
           </p>
 
-          {sugerencia.motivo && <p className="mt-1 text-sm text-gray-600">{sugerencia.motivo}</p>}
+          {sugerencia.motivo && <p className="mt-1 text-sm text-tinta">{sugerencia.motivo}</p>}
 
-          <p className="mt-2 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-tinta-suave">
             Tú lo marcaste como <strong>{elegida?.etiqueta || categoriaElegida}</strong>. Si te
             equivocaste, cámbialo acá — si no, déjalo así y sigue.
           </p>
@@ -56,7 +56,7 @@ export default function SugerenciaCategoria({ sugerencia, categoriaElegida, onAc
             <button
               type="button"
               onClick={onDescartar}
-              className="flex items-center gap-1.5 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+              className="flex items-center gap-1.5 rounded-full border border-borde bg-white px-4 py-2 text-sm font-medium text-tinta transition-colors hover:bg-slate-50"
             >
               <X size={15} />
               Dejarlo así

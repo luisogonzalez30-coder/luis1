@@ -1,9 +1,20 @@
-# Dónde quedamos — 30 de agosto de 2026
+# Dónde quedamos — 2 de septiembre de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (49 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (51 secciones).
 
-**Lo más nuevo (30-ago): Mercado Público quedó operativo.** La red de las sesiones dejó de
+**Lo más nuevo (02-sep, segunda tanda): rediseño visual completo.** La app pasó a tener
+un sistema de diseño con tokens (superficies slate, dos radios, clases de campo), píldoras
+de estado con punto, barra de progreso segmentada, selector de categorías en dos niveles y
+tarjetas de indicador tipo panel SaaS. Detalle en §51 y en "La sesión del 02-sep" abajo.
+
+**Antes (02-sep): tanda de correcciones de seguridad, rendimiento y UX.** Reglas de
+Firestore y Storage endurecidas, la cola offline pasó a IndexedDB (ahora sí guarda las fotos),
+los lotes del script de asignaciones se dividen en bloques de 400, y el Paso 1 del formulario
+pide un punto de referencia rural. Detalle en §50 y en "La sesión del 02-sep" al final de este
+archivo. **Hay una decisión esperándote ahí: una coordenada.**
+
+**Antes (30-ago): Mercado Público quedó operativo.** La red de las sesiones dejó de
 bloquear las APIs externas, la integración se fusionó a main después de una semana varada en
 una rama, y la inscripción como proveedor ya está hecha. Detalle en §49 y en la sección
 "La sesión del 30-ago" al final de este archivo.
@@ -464,3 +475,121 @@ cinco.
   de solo lectura y ofertar es un acto comercial con login.
 - **Si quieres verificar la inscripción automáticamente**, hace falta el RUT de la SpA, que a
   propósito no está en el repositorio.
+
+---
+
+## La sesión del 02-sep — seguridad, cola offline y referencia rural
+
+Seis correcciones pedidas juntas. Todo el detalle técnico está en **§50** de
+`ESTADO_PROYECTO.md`; acá va lo que hay que saber para retomar.
+
+### Qué se hizo
+
+| # | Cambio | Archivo |
+| --- | --- | --- |
+| 1 | Un reporte anónimo ya no puede nacer con gasto, presupuesto ni cuadrilla; coordenadas acotadas a Chile; `detalles_adicionales` a 1000 caracteres | `firestore.rules` |
+| 2 | `tickets_publicos`: `get` libre, `list` solo con `limit() <= 500` (una consulta sin límite queda rechazada) | `firestore.rules` |
+| 3 | Storage: tope 10 MB y formatos enumerados (se cerró `image/svg+xml`) | `storage.rules` |
+| 4 | Cuerpo crudo a nivel de app, acuse `EVENT_RECEIVED` y procesamiento diferido con `setImmediate` | `whatsapp-api-oficial/` |
+| 5 | Cola offline en IndexedDB, con migración de lo que hubiera en `localStorage` — **ahora guarda las fotos** | `src/utils/colaOffline.js` |
+| 6 | Lotes de Firestore en bloques de 400 | `scripts/cerrar-asignaciones-atrasadas.mjs` |
+| 7 | Campo obligatorio "Punto de referencia o hito cercano" + pin por defecto sin GPS | `PasoUbicacion.jsx`, `FormularioCiudadano.jsx` |
+
+Verificado: `npm run build` pasa, y **`npm run reglas:probar`** (script nuevo) corre 18 casos de
+las reglas contra el emulador como cliente anónimo — 18 de 18.
+
+### 🔴 Te toca a ti: la coordenada de respaldo
+
+El pedido traía `lat: -34.9878, lng: -72.0069` como centro de Licantén. **No se usó esa.** Cae
+~2 km al suroeste del centro verificado, fuera del radio de 1800 m del sector "Licantén
+(centro)" — es el mismo tipo de error que §43.1 documenta, cuando una coordenada 6,5 km al oeste
+dejó 5 de los 6 reportes de Licantén "fuera de sectores".
+
+Se dejó **`-34.9802, -71.9873`**, la verificada el 11-ago y la que ya usan
+`configurar-sectores.mjs` y `preparar-demo.mjs`. En la práctica casi nunca se usa: primero manda
+`municipalidades/licanten.centro_mapa`, que está bien configurado.
+
+**Si la del pedido era a propósito** (la municipalidad, otro hito), avísame y la cambio — pero
+hay que cambiarla en los tres archivos a la vez, no solo en uno.
+
+### Dos cosas que se hicieron distinto a lo pedido, y por qué
+
+1. **`tickets_publicos` no quedó en `allow list: if false`.** Eso apaga el mapa de pines,
+   "Últimos reportes de la comuna", la detección de duplicados y la página de Transparencia: las
+   cuatro consultan por `list`. Quedó acotado a `limit() <= 500`, que bloquea el raspado de la
+   colección completa —una consulta sin límite es rechazada— sin apagar nada. Si igual quieres el
+   `false`, es una línea y las cuatro funciones se caen con él.
+2. **Las excepciones anónimas de `update` en `incidencias` se conservaron** (voto "+1",
+   calificación y la URL de la foto que llega después). Ninguna toca datos personales —cada una
+   está acotada a un campo con `affectedKeys().hasOnly(...)`— y cerrarlas apagaría tres funciones
+   que están en producción, incluida la foto, que corrige el bug que dejó 30 de 30 reportes sin
+   imagen. La lectura, que es lo que la Ley 19.628 protege, **ya exigía funcionario autenticado**
+   y sigue igual.
+
+### Antes de desplegar
+
+Las reglas **no se desplegaron** (esta sesión no tiene credenciales de Firebase). Van con
+`npm run desplegar:reglas`, y las de Storage aparte. Antes de eso conviene mirar `DESPLEGAR.md`.
+
+El campo `referencia_ubicacion` es obligatorio en el formulario nuevo pero **no** en las reglas
+(los reportes viejos no lo tienen, y una regla que lo exija rompería el reintento de un reporte
+encolado antes de este cambio). Si algún día se quiere obligar del lado servidor, hay que esperar
+a que no queden colas offline viejas dando vueltas.
+
+### La red de esta sesión
+
+Volvió a estar bloqueada: `npm run revisar` dejó los 5 sistemas web "sin revisar" (los
+certificados, que no pasan por el proxy, salieron bien). No es una caída — es lo que describe el
+apartado "Un muro que estuvo puesto" de `CLAUDE.md`. El estado real se mira en la última corrida
+de `vigilar.yml` en GitHub Actions.
+
+---
+
+## El rediseño visual del 02-sep (§51)
+
+Segunda tanda del mismo día. Todo el detalle está en **§51**; acá va lo necesario para
+retomar.
+
+### Qué cambió
+
+| Área | Cambio |
+| --- | --- |
+| Tokens | Superficies slate (`#F8FAFC` fondo / blanco tarjeta), borde `#E2E8F0`, tinta en 4 pasos, **dos radios** (16 px contiene / 12 px se toca) |
+| Clases nuevas | `.campo`, `.campo-error`, `.etiqueta-campo`, `.barra-superior` en `index.css` |
+| Badges | Estado como píldora con punto (rosa/ámbar/esmeralda); gravedad como contorno neutro, distinto a propósito |
+| Formulario | Barra de progreso segmentada con etiquetas y ✓; encabezado fijo con desenfoque |
+| Paso Foto | Zona de captura a ancho completo cuando no hay fotos |
+| Paso Ubicación | Mapa con marco y sombra; **botón de GPS flotando sobre el mapa** con glassmorphism |
+| Categorías | Hoja de **dos niveles**: 9 grupos en cuadrícula 2×N con ícono en disco de color → categorías del grupo |
+| Panel | Tarjetas con número `text-3xl extrabold`, ícono de apoyo y punto de estado |
+| Paleta | 39 archivos migrados de `gray/red/green` a los tokens. **No queda ninguna clase `gray-` en `src/`** |
+
+Verificado: `npm run build` limpio.
+
+### Tres cosas que se hicieron distinto a lo pedido
+
+1. **El azul `#2563EB` quedó como valor por defecto en `utils/tema.js`, no como clase
+   fija.** `primary` se lee de una variable CSS que escribe `tema.js` según
+   `color_primario` de cada municipalidad. Fijar el azul en las clases habría roto el
+   multi-tenant: una comuna con identidad verde vería botones azules.
+2. **El orden de los pasos NO se cambió.** El pedido decía "Foto → Ubicación →
+   Detalles"; el orden real es **Ubicación → El problema → Foto y datos**. La foto va al
+   final porque es lo que permite que la IA revise una categoría ya elegida en vez de
+   adivinar (§48); cambiarlo habría roto esa función. La barra de progreso muestra el
+   orden real.
+3. **Las categorías no quedaron como cuadrícula plana de 58 tarjetas.** Serían 29 filas
+   de scroll, o sea el problema que la hoja vino a resolver (§29). Quedó en dos niveles:
+   la cuadrícula táctil con íconos es la de los 9 grupos.
+
+Además, el color de gravedad quedó en el **punto** y no en el texto: el amarillo de
+"Media" (`#fab219`) sobre blanco da ~1,8:1 de contraste, ilegible.
+
+### Lo que falta mirar
+
+El rediseño **no se pudo ver en un navegador desde la sesión** (la red del contenedor
+bloquea el dominio). Está compilado y desplegado en la vista previa del PR, pero nadie lo
+ha mirado con ojos todavía. Vale la pena abrirlo en un celular antes de fusionar,
+sobre todo el Paso 1: el botón de GPS flotante y el de capa satelital comparten el borde
+inferior del mapa y quedaron en esquinas opuestas — conviene confirmar que no se pisan en
+pantallas angostas.
+

@@ -260,6 +260,25 @@ function escucharTicketsResueltos() {
 // respondiendo para no marcar el deploy como caído. No hace nada más — toda
 // la lógica real corre en los listeners de arriba, no en request handlers.
 const app = express()
+
+// El cuerpo CRUDO, capturado antes de parsear, es lo único con lo que se puede
+// verificar la firma X-Hub-Signature-256 de Meta: el HMAC se calcula sobre los
+// bytes exactos que viajaron, y volver a serializar el objeto ya parseado
+// cambia espaciado y orden de claves, así que la firma nunca calzaría.
+//
+// Va a nivel de app y no solo dentro del router del webhook (webhook.js lo
+// repite por si se monta suelto en una prueba): así ninguna ruta que se agregue
+// más adelante puede quedarse sin el crudo por olvido. express.json() no vuelve
+// a parsear un cuerpo ya parseado, de modo que tenerlo en los dos lugares no
+// duplica trabajo ni pierde req.rawBody.
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      req.rawBody = buf
+    },
+  })
+)
+
 app.get('/', (_req, res) => res.status(200).send('Status: OK'))
 
 // --- /salud: para que algo externo sepa que esto se rompió ---

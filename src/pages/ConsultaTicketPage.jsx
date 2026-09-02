@@ -53,7 +53,7 @@ function FormularioSeguimiento({ incidenciaId }) {
 
   if (enviado) {
     return (
-      <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-green-50 p-2 text-sm text-green-700">
+      <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-emerald-50 p-2 text-sm text-emerald-700">
         <Check size={16} /> ¡Gracias! Se agregó tu información al reporte.
       </p>
     )
@@ -71,30 +71,30 @@ function FormularioSeguimiento({ incidenciaId }) {
   }
 
   return (
-    <form onSubmit={manejarEnvio} className="mt-3 rounded-lg border border-gray-200 p-3">
-      <label className="mb-1 block text-xs font-medium text-gray-700">¿Hay algo más que quieras contarnos?</label>
+    <form onSubmit={manejarEnvio} className="mt-3 rounded-lg border border-borde p-3">
+      <label className="mb-1 block text-xs font-medium text-tinta">¿Hay algo más que quieras contarnos?</label>
       <textarea
         value={texto}
         onChange={(e) => setTexto(e.target.value)}
         rows={2}
         maxLength={1000}
         placeholder="Ej: El problema empeoró, ahora también..."
-        className="w-full rounded-lg border border-gray-300 p-2 text-sm"
+        className="w-full rounded-lg border border-borde p-2 text-sm"
       />
 
-      <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-xs text-gray-500">
+      <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-xs text-tinta-suave">
         <Camera size={14} />
         {archivo ? archivo.name : 'Adjuntar una foto (opcional)'}
         <input type="file" accept="image/*" capture="environment" onChange={(e) => setArchivo(e.target.files?.[0] || null)} className="hidden" />
       </label>
 
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
 
       <div className="mt-2 flex gap-2">
         <Boton type="submit" cargando={enviando} disabled={!texto.trim() && !archivo} className="flex-1">
           Enviar
         </Boton>
-        <button type="button" onClick={() => setAbierto(false)} className="px-2 text-sm text-gray-500">
+        <button type="button" onClick={() => setAbierto(false)} className="px-2 text-sm text-tinta-suave">
           Cancelar
         </button>
       </div>
@@ -119,11 +119,11 @@ function TarjetaResultado({ resultado, onCalificado }) {
   }
 
   return (
-    <div className="mt-5 rounded-xl border border-gray-200 p-4">
+    <div className="mt-5 rounded-xl border border-borde p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="font-semibold text-gray-900">{etiquetaCategoria(resultado.categoria)}</h2>
-          <p className="text-xs text-gray-400">N° {formatearNumeroTicket(resultado.id)}</p>
+          <h2 className="font-semibold text-tinta-fuerte">{etiquetaCategoria(resultado.categoria)}</h2>
+          <p className="text-xs text-tinta-tenue">N° {formatearNumeroTicket(resultado.id)}</p>
         </div>
         <BadgeEstado estado={resultado.estado} />
       </div>
@@ -132,7 +132,7 @@ function TarjetaResultado({ resultado, onCalificado }) {
         <BadgeGravedad nivel={resultado.nivel_gravedad} />
       </div>
 
-      <dl className="mt-4 space-y-1 text-sm text-gray-600">
+      <dl className="mt-4 space-y-1 text-sm text-tinta">
         <div className="flex justify-between">
           <dt>Reportado el</dt>
           <dd>{formatearFecha(resultado.fecha_creacion)}</dd>
@@ -146,22 +146,22 @@ function TarjetaResultado({ resultado, onCalificado }) {
       </dl>
 
       {resultado.estado === 'Resuelto' && resultado.foto_despues_url && (
-        <div className="mt-4 border-t border-gray-100 pt-3">
-          <p className="mb-1 text-xs font-medium uppercase text-gray-400">Foto del trabajo terminado</p>
+        <div className="mt-4 border-t border-borde pt-3">
+          <p className="mb-1 text-xs font-medium uppercase text-tinta-tenue">Foto del trabajo terminado</p>
           <GaleriaFotos urls={[resultado.foto_despues_url]} alt="Trabajo terminado" />
         </div>
       )}
 
       {resultado.estado === 'Resuelto' && (
-        <div className="mt-4 border-t border-gray-100 pt-3">
+        <div className="mt-4 border-t border-borde pt-3">
           {resultado.calificacion_ciudadano ? (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">Tu calificación:</p>
+              <p className="text-sm text-tinta-suave">Tu calificación:</p>
               <EstrellasCalificacion valor={resultado.calificacion_ciudadano} soloLectura />
             </div>
           ) : (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">¿Quedó bien resuelto?</p>
+              <p className="text-sm text-tinta-suave">¿Quedó bien resuelto?</p>
               <EstrellasCalificacion valor={0} onSeleccionar={calificar} />
             </div>
           )}
@@ -245,8 +245,8 @@ export default function ConsultaTicketPage() {
         <ArrowLeft size={16} /> {municipioSlug ? 'Volver' : 'Volver al inicio'}
       </Link>
 
-      <h1 className="text-xl font-bold text-gray-900">Consultar estado de un reporte</h1>
-      <p className="mt-2 text-sm text-gray-500">
+      <h1 className="text-xl font-bold text-tinta-fuerte">Consultar estado de un reporte</h1>
+      <p className="mt-2 text-sm text-tinta-suave">
         Ingresa el número que recibiste al enviar tu reporte.
       </p>
 
@@ -257,7 +257,7 @@ export default function ConsultaTicketPage() {
           value={numeroTicket}
           onChange={(e) => setNumeroTicket(e.target.value)}
           placeholder="482 173"
-          className="w-full rounded-2xl border border-gray-300 p-3 text-lg tracking-widest transition-shadow focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-full rounded-2xl border border-borde p-3 text-lg tracking-widest transition-shadow focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         <Boton type="submit" cargando={buscando} disabled={!numeroTicket.trim()}>
           <Search size={18} />
@@ -265,7 +265,7 @@ export default function ConsultaTicketPage() {
       </form>
 
       {noEncontrado && (
-        <p className="mt-4 rounded-2xl bg-gray-100 p-3 text-center text-sm text-gray-600">
+        <p className="mt-4 rounded-2xl bg-slate-100 p-3 text-center text-sm text-tinta">
           No encontramos ningún reporte con ese número. Revisa que esté bien escrito.
         </p>
       )}
@@ -280,7 +280,7 @@ export default function ConsultaTicketPage() {
       )}
 
       {!resultado && (
-        <div className="mt-6 flex items-start gap-2 rounded-2xl bg-primary/5 p-4 text-sm text-gray-700">
+        <div className="mt-6 flex items-start gap-2 rounded-2xl bg-primary/5 p-4 text-sm text-tinta">
           <MessageSquare size={18} className="mt-0.5 shrink-0 text-primary" />
           <span>
             <strong>¿Perdiste tu número?</strong> Escríbele <strong>"mis reportes"</strong> por WhatsApp

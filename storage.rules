@@ -8,9 +8,21 @@ service firebase.storage {
         firestore.exists(/databases/(default)/documents/usuarios_municipales/$(request.auth.uid));
     }
 
+    // Tope de subida y formatos aceptados.
+    //
+    // 10 MB en vez de 8: es lo que pidió el cambio del 02-sep-2026 y calza con
+    // lo que sacan los celulares actuales. En la práctica nada llega ni cerca —
+    // utils/comprimirImagen.js deja las fotos bajo el medio mega antes de
+    // subirlas— así que esto es el techo del cliente que NO pasa por la app.
+    //
+    // Los formatos se enumeran uno por uno en vez de 'image/.*': ese comodín
+    // aceptaba image/svg+xml, que no es una foto sino un documento que puede
+    // llevar <script> adentro. Servido desde el bucket y abierto en una pestaña,
+    // eso corre en el navegador del funcionario. jpg va además de jpeg porque
+    // algunos navegadores viejos declaran ese content-type.
     function esImagenValida() {
-      return request.resource.size < 8 * 1024 * 1024 &&
-        request.resource.contentType.matches('image/.*');
+      return request.resource.size < 10 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/(jpeg|png|webp|jpg)');
     }
 
     // Foto "antes": la sube el ciudadano al crear el reporte (sin login).
@@ -19,10 +31,27 @@ service firebase.storage {
       allow write: if esImagenValida();
     }
 
-    // Foto "después": solo la sube la cuadrilla autenticada al cerrar la incidencia.
+    // Foto "después" y comprobante de materiales: solo los sube la cuadrilla
+    // autenticada al cerrar la incidencia.
     match /incidencias/{incidenciaId}/despues/{archivo} {
       allow read: if true;
       allow write: if esFuncionarioAutenticado() && esImagenValida();
+    }
+
+    match /incidencias/{incidenciaId}/comprobante/{archivo} {
+      allow read: if esFuncionarioAutenticado();
+      allow write: if esFuncionarioAutenticado() && esImagenValida();
+    }
+
+    // Cierre por defecto. Va al final y a propósito NO se escribió como
+    // `match /incidencias/{municipioId}/{allPaths=**} { allow write: if esImagenValida(); }`:
+    // en Storage las reglas se SUMAN (basta que una permita), así que un comodín
+    // así por sobre las rutas de arriba le habría devuelto la escritura anónima
+    // a /despues y /comprobante, que hoy exigen funcionario autenticado. El
+    // límite de 10 MB y los formatos aplican igual a las tres rutas porque viven
+    // en esImagenValida(), que las tres usan.
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

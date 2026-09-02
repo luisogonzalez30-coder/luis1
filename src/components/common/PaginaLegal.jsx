@@ -38,8 +38,8 @@ export function ContactoDatos({ municipio }) {
 export function Seccion({ titulo, children }) {
   return (
     <section className="mt-6">
-      <h2 className="mb-2 text-base font-semibold text-gray-900">{titulo}</h2>
-      <div className="flex flex-col gap-2 text-sm leading-relaxed text-gray-700">{children}</div>
+      <h2 className="mb-2 text-base font-semibold text-tinta-fuerte">{titulo}</h2>
+      <div className="flex flex-col gap-2 text-sm leading-relaxed text-tinta">{children}</div>
     </section>
   )
 }
@@ -61,7 +61,7 @@ export default function PaginaLegal({ municipioSlug, titulo, bajada, children })
 
   if (noEncontrado) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4 text-center text-gray-500">
+      <div className="flex min-h-screen items-center justify-center px-4 text-center text-tinta-suave">
         No encontramos esta municipalidad.
       </div>
     )
@@ -69,18 +69,18 @@ export default function PaginaLegal({ municipioSlug, titulo, bajada, children })
 
   return (
     <div className="mx-auto min-h-screen max-w-2xl px-4 py-6">
-      <Link to={`/${municipioSlug}`} className="mb-4 flex items-center gap-1 text-sm text-gray-500">
+      <Link to={`/${municipioSlug}`} className="mb-4 flex items-center gap-1 text-sm text-tinta-suave">
         <ArrowLeft size={16} /> Volver
       </Link>
 
       <EncabezadoMunicipio municipio={municipio} />
-      <h1 className="mt-3 text-2xl font-bold text-gray-900">{titulo}</h1>
-      <p className="mt-1 text-sm text-gray-500">{bajada}</p>
-      <p className="mt-1 text-xs text-gray-400">Última actualización: {ULTIMA_ACTUALIZACION}</p>
+      <h1 className="mt-3 text-2xl font-bold text-tinta-fuerte">{titulo}</h1>
+      <p className="mt-1 text-sm text-tinta-suave">{bajada}</p>
+      <p className="mt-1 text-xs text-tinta-tenue">Última actualización: {ULTIMA_ACTUALIZACION}</p>
 
       {children(municipio)}
 
-      <div className="mt-10 border-t border-gray-200 pt-4 text-xs text-gray-400">
+      <div className="mt-10 border-t border-borde pt-4 text-xs text-tinta-tenue">
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           <Link to={`/${municipioSlug}/privacidad`} className="underline">Política de privacidad</Link>
           <Link to={`/${municipioSlug}/terminos`} className="underline">Términos de servicio</Link>

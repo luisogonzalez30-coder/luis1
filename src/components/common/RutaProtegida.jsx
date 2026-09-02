@@ -22,7 +22,7 @@ export default function RutaProtegida({ children, rolesPermitidos = null }) {
 
   if (rolesPermitidos && !rolesPermitidos.includes(perfil.rol)) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4 text-center text-gray-500">
+      <div className="flex min-h-screen items-center justify-center px-4 text-center text-tinta-suave">
         No tienes permiso para acceder a esta sección con el rol "{perfil.rol}".
       </div>
     )

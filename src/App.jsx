@@ -42,7 +42,7 @@ function RedirectorDashboard() {
   if (perfil.rol === 'TERRENO') return <Navigate to="/cuadrilla" replace />
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 text-center text-gray-500">
+    <div className="flex min-h-screen items-center justify-center px-4 text-center text-tinta-suave">
       Tu rol ("{perfil.rol}") no está reconocido. Contacta al administrador.
     </div>
   )

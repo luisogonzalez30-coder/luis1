@@ -141,7 +141,7 @@ export default function MapaIncidencias({ incidencias, incidenciaSeleccionadaId,
           pathOptions={{ color: '#6B7280', weight: 1, fillColor: '#6B7280', fillOpacity: 0.05 }}
         >
           <Tooltip direction="center" permanent className="!border-0 !bg-transparent !shadow-none">
-            <span className="text-[11px] font-medium text-gray-600">{s.nombre}</span>
+            <span className="text-[11px] font-medium text-tinta">{s.nombre}</span>
           </Tooltip>
         </Circle>
       ))}

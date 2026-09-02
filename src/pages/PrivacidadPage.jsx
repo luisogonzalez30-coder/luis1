@@ -31,7 +31,7 @@ export default function PrivacidadPage() {
               <li>No vendemos tus datos, no los usamos para publicidad y no los compartimos con terceros ajenos a la gestión de tu reporte.</li>
               <li>Puedes pedir que te los muestren, los corrijan o los borren, cuando quieras y gratis.</li>
             </ul>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-tinta-suave">
               Este resumen es para que se entienda rápido. Lo que obliga legalmente es el detalle de abajo.
             </p>
           </Seccion>
@@ -92,7 +92,7 @@ export default function PrivacidadPage() {
               donde cualquiera puede ver los reportes de la comuna, y una página de transparencia
               con estadísticas.
             </p>
-            <p className="rounded-xl bg-green-50 p-3">
+            <p className="rounded-xl bg-emerald-50 p-3">
               <strong>Es público:</strong> la categoría del problema, su gravedad, su ubicación en
               el mapa, la referencia de ubicación que escribiste, las fotos, el estado del reporte
               y la calificación que le pusiste al final.
@@ -162,7 +162,7 @@ export default function PrivacidadPage() {
               tiene un plazo legal para responderte. Si no te responde, o no quedas conforme, puedes
               reclamar ante la <strong>Agencia de Protección de Datos Personales</strong>.
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-tinta-suave">
               La Ley 21.719 entra en plena vigencia el 1 de diciembre de 2026. Hasta esa fecha rige
               la Ley 19.628, que reconoce los derechos de acceso, rectificación, cancelación y
               oposición. La municipalidad aplica desde ya el estándar más exigente de las dos.

@@ -311,13 +311,19 @@ function excedeLimite(numero) {
 // no filtrar información por el tiempo de comparación.
 function firmaValida(req, appSecret) {
   const recibida = req.get('X-Hub-Signature-256') || ''
-  if (!recibida.startsWith('sha256=') || !req.rawBody) return false
+  // Sin rawBody no hay nada que verificar: pasa cuando el cuerpo llegó vacío o
+  // con un content-type que express.json() no parsea. Se rechaza, nunca se
+  // asume válido.
+  if (!appSecret || !recibida.startsWith('sha256=') || !req.rawBody) return false
 
   const esperada =
     'sha256=' + crypto.createHmac('sha256', appSecret).update(req.rawBody).digest('hex')
 
   const a = Buffer.from(recibida)
   const b = Buffer.from(esperada)
+  // timingSafeEqual exige buffers del mismo largo (lanza si no lo son), por eso
+  // el largo se compara antes. Esa comparación no filtra nada: el largo de un
+  // sha256 hexadecimal es fijo y público.
   return a.length === b.length && crypto.timingSafeEqual(a, b)
 }
 
@@ -674,10 +680,24 @@ function crearRouter({ db, verifyToken, appSecret }) {
     // Se responde 200 ANTES de procesar: Meta espera el acuse en pocos segundos
     // y si se demora reintenta el mismo evento (y termina reenviándolo hasta
     // deshabilitar el webhook). El trabajo real va después, en segundo plano.
-    res.sendStatus(200)
+    //
+    // "EVENT_RECEIVED" es el cuerpo que Meta documenta para este acuse. Da lo
+    // mismo para el protocolo (lo que cuenta es el 200), pero deja el log de la
+    // consola de Meta legible al diagnosticar.
+    res.status(200).send('EVENT_RECEIVED')
 
-    procesarCuerpo(req.app.locals.db || db, req.body).catch((error) => {
-      console.error(`[webhook] Falló al procesar el evento.\n    ${explicarError(error)}`)
+    // setImmediate saca el procesamiento del tick en el que se está cerrando la
+    // respuesta. Sin él, una llamada síncrona pesada dentro de procesarCuerpo
+    // (parseo, armado de mensajes) corre antes de que el socket termine de
+    // vaciarse, que es justo lo que se quería evitar respondiendo temprano.
+    // El cuerpo se captura acá porque el objeto req puede reciclarse.
+    const cuerpo = req.body
+    const baseDatos = req.app.locals.db || db
+
+    setImmediate(() => {
+      procesarCuerpo(baseDatos, cuerpo).catch((error) => {
+        console.error(`[webhook] Falló al procesar el evento.\n    ${explicarError(error)}`)
+      })
     })
   })
 

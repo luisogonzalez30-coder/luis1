@@ -2,10 +2,17 @@
 // a la app en tiempo de ejecución, vía variables CSS leídas por tailwind.config.js.
 const VAR_PRIMARIO = '--color-primary-rgb'
 const VAR_PRIMARIO_OSCURO = '--color-primary-dark-rgb'
-const DEFAULT_PRIMARIO = '29 78 216' // #1D4ED8
-const DEFAULT_PRIMARIO_OSCURO = '30 58 138' // #1E3A8A
+// Azul eléctrico institucional. Es el color de la app cuando la municipalidad
+// no definió el suyo — no un color fijo de la interfaz: cada comuna sobrescribe
+// esto con `color_primario` en su documento de Firestore (multi-tenant), y esa
+// es la razón por la que el rediseño no fija #2563EB en las clases de Tailwind.
+// El par claro/oscuro se mantiene a un paso de distancia (blue-600 → blue-700)
+// para que el degradado del botón y su estado hover se lean como profundidad y
+// no como dos colores distintos.
+const DEFAULT_PRIMARIO = '37 99 235' // #2563EB (blue-600)
+const DEFAULT_PRIMARIO_OSCURO = '29 78 216' // #1D4ED8 (blue-700)
 const TITULO_DEFECTO = 'TuMuniAquí'
-const COLOR_DEFECTO = '#1D4ED8'
+const COLOR_DEFECTO = '#2563EB'
 
 function hexARgbTriple(hex) {
   if (typeof hex !== 'string') return null

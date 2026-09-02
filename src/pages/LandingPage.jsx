@@ -36,11 +36,11 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 px-6 py-10 text-center">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-50 px-6 py-10 text-center">
       <div className="flex flex-col items-center gap-2">
         <MapPin size={40} className="text-primary" />
-        <h1 className="text-xl font-bold text-gray-900">TuMuniAquí</h1>
-        <p className="max-w-sm text-sm text-gray-500">Municipalidad Demo</p>
+        <h1 className="text-xl font-bold text-tinta-fuerte">TuMuniAquí</h1>
+        <p className="max-w-sm text-sm text-tinta-suave">Municipalidad Demo</p>
       </div>
 
       <div className="flex w-full max-w-sm flex-col gap-3">
@@ -48,14 +48,14 @@ export default function LandingPage() {
           <Link
             key={to}
             to={to}
-            className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm transition-colors hover:border-primary"
+            className="flex items-center gap-3 rounded-2xl border border-borde bg-white p-4 text-left shadow-sm transition-colors hover:border-primary"
           >
             <Icono size={22} className="shrink-0 text-primary" />
             <div className="flex-1">
-              <p className="font-medium text-gray-900">{titulo}</p>
-              <p className="text-xs text-gray-500">{descripcion}</p>
+              <p className="font-medium text-tinta-fuerte">{titulo}</p>
+              <p className="text-xs text-tinta-suave">{descripcion}</p>
             </div>
-            <ArrowRight size={18} className="shrink-0 text-gray-300" />
+            <ArrowRight size={18} className="shrink-0 text-tinta-tenue" />
           </Link>
         ))}
       </div>
