@@ -16,7 +16,7 @@ export default function EstrellasCalificacion({ valor = 0, onSeleccionar, soloLe
           className={soloLectura ? 'cursor-default' : 'transition-transform hover:scale-110'}
           aria-label={`${n} estrella${n > 1 ? 's' : ''}`}
         >
-          <Star size={22} className={n <= valor ? 'fill-amber-400 text-amber-400' : 'text-gray-300'} />
+          <Star size={22} className={n <= valor ? 'fill-amber-400 text-amber-400' : 'text-tinta-tenue'} />
         </button>
       ))}
     </div>

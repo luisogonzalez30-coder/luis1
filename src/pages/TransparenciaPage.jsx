@@ -30,11 +30,11 @@ function BarraConteo({ etiqueta, cantidad, maximo, color }) {
   const porcentaje = maximo > 0 ? Math.max((cantidad / maximo) * 100, 4) : 0
   return (
     <div className="mb-2">
-      <div className="mb-0.5 flex justify-between text-xs text-gray-600">
+      <div className="mb-0.5 flex justify-between text-xs text-tinta">
         <span>{etiqueta}</span>
         <span className="font-medium">{cantidad}</span>
       </div>
-      <div className="h-2 rounded-full bg-gray-100">
+      <div className="h-2 rounded-full bg-slate-100">
         <div className="h-2 rounded-full" style={{ width: `${porcentaje}%`, backgroundColor: color || 'var(--color-primario, #1D4ED8)' }} />
       </div>
     </div>
@@ -72,7 +72,7 @@ export default function TransparenciaPage() {
 
   if (noEncontrado) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4 text-center text-gray-500">
+      <div className="flex min-h-screen items-center justify-center px-4 text-center text-tinta-suave">
         No encontramos esta municipalidad.
       </div>
     )
@@ -120,7 +120,7 @@ export default function TransparenciaPage() {
       </Link>
 
       <EncabezadoMunicipio municipio={municipio} tituloDefecto="Transparencia" />
-      <p className="mt-1 text-sm text-gray-500">Así vamos gestionando los reportes ciudadanos de la comuna.</p>
+      <p className="mt-1 text-sm text-tinta-suave">Así vamos gestionando los reportes ciudadanos de la comuna.</p>
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
@@ -129,32 +129,32 @@ export default function TransparenciaPage() {
           { etiqueta: 'En proceso', valor: enProceso },
           { etiqueta: 'Tiempo promedio', valor: formatearHoras(promedioHoras) },
         ].map((tarjeta) => (
-          <div key={tarjeta.etiqueta} className="rounded-xl border border-gray-200 p-3">
-            <p className="text-xs text-gray-500">{tarjeta.etiqueta}</p>
-            <p className="mt-1 text-xl font-bold text-gray-900">{tarjeta.valor}</p>
+          <div key={tarjeta.etiqueta} className="rounded-xl border border-borde p-3">
+            <p className="text-xs text-tinta-suave">{tarjeta.etiqueta}</p>
+            <p className="mt-1 text-xl font-bold text-tinta-fuerte">{tarjeta.valor}</p>
           </div>
         ))}
       </div>
 
       {total === 0 ? (
-        <p className="mt-8 text-center text-sm text-gray-400">Todavía no hay reportes en esta municipalidad.</p>
+        <p className="mt-8 text-center text-sm text-tinta-tenue">Todavía no hay reportes en esta municipalidad.</p>
       ) : (
         <>
           <div className="mt-6">
-            <h2 className="mb-2 text-sm font-semibold text-gray-700">Por gravedad</h2>
+            <h2 className="mb-2 text-sm font-semibold text-tinta">Por gravedad</h2>
             {conteoPorGravedad.map((c) => (
               <BarraConteo key={c.etiqueta} etiqueta={c.etiqueta} cantidad={c.cantidad} maximo={maximoGravedad} color={c.color} />
             ))}
           </div>
 
           <div className="mt-6">
-            <h2 className="mb-2 text-sm font-semibold text-gray-700">Categorías más reportadas</h2>
+            <h2 className="mb-2 text-sm font-semibold text-tinta">Categorías más reportadas</h2>
             {conteoPorCategoria.map((c) => (
               <BarraConteo key={c.etiqueta} etiqueta={c.etiqueta} cantidad={c.cantidad} maximo={maximoCategoria} />
             ))}
           </div>
 
-          <p className="mt-6 text-xs text-gray-400">
+          <p className="mt-6 text-xs text-tinta-tenue">
             {pendientes} reportes están pendientes de asignar cuadrilla.
             {estaTopeado && ` Estas cifras consideran los ${VENTANA_REPORTES} reportes más recientes${fechaMasAntigua ? `, desde el ${fechaMasAntigua}` : ''}.`}
             {' '}Datos en tiempo real, sin incluir información que identifique a quien reportó.

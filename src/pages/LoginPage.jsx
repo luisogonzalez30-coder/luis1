@@ -41,31 +41,31 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <form onSubmit={manejarSubmit} className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-sm">
-        <h1 className="mb-1 text-xl font-bold text-gray-900">Acceso Funcionarios</h1>
-        <p className="mb-6 text-sm text-gray-500">Dashboard DOM y Cuadrillas de Terreno</p>
+        <h1 className="mb-1 text-xl font-bold text-tinta-fuerte">Acceso Funcionarios</h1>
+        <p className="mb-6 text-sm text-tinta-suave">Dashboard DOM y Cuadrillas de Terreno</p>
 
-        <label className="mb-1 block text-sm font-medium text-gray-700">Correo</label>
+        <label className="mb-1 block text-sm font-medium text-tinta">Correo</label>
         <input
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mb-4 w-full rounded-lg border border-gray-300 p-2.5"
+          className="mb-4 w-full rounded-lg border border-borde p-2.5"
         />
 
-        <label className="mb-1 block text-sm font-medium text-gray-700">Contraseña</label>
+        <label className="mb-1 block text-sm font-medium text-tinta">Contraseña</label>
         <input
           type="password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mb-4 w-full rounded-lg border border-gray-300 p-2.5"
+          className="mb-4 w-full rounded-lg border border-borde p-2.5"
         />
 
         {error && (
-          <div className="mb-4 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+          <div className="mb-4 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">
             <AlertTriangle size={18} className="mt-0.5 shrink-0" />
             <span>{error}</span>
           </div>

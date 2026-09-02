@@ -95,7 +95,7 @@ export default function BuscadorDireccion({ municipio, sinConexion = false, onEl
   return (
     <div ref={contenedor} className="relative">
       <div className="relative">
-        <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-tinta-tenue" />
         <input
           ref={campo}
           type="text"
@@ -118,7 +118,7 @@ export default function BuscadorDireccion({ municipio, sinConexion = false, onEl
           aria-controls="lista-direcciones"
           aria-autocomplete="list"
           aria-label="Buscar dirección"
-          className="min-h-[48px] w-full rounded-2xl border border-gray-300 py-3 pl-10 pr-10 text-base transition-shadow focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="min-h-[48px] w-full rounded-2xl border border-borde py-3 pl-10 pr-10 text-base transition-shadow focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         {cargando ? (
           <Loader2 size={18} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-primary" />
@@ -127,7 +127,7 @@ export default function BuscadorDireccion({ municipio, sinConexion = false, onEl
             type="button"
             onClick={limpiar}
             aria-label="Borrar la dirección escrita"
-            className="absolute right-1 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            className="absolute right-1 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full text-tinta-tenue transition-colors hover:bg-slate-100 hover:text-tinta"
           >
             <X size={18} />
           </button>
@@ -155,7 +155,7 @@ export default function BuscadorDireccion({ municipio, sinConexion = false, onEl
               {resultado.origen === 'sector' ? (
                 <Landmark size={18} className="shrink-0 text-primary" />
               ) : (
-                <MapPin size={18} className="shrink-0 text-gray-400" />
+                <MapPin size={18} className="shrink-0 text-tinta-tenue" />
               )}
               <span className="min-w-0">
                 <span className="block truncate text-base text-tinta-fuerte">{resultado.etiqueta}</span>
@@ -170,7 +170,7 @@ export default function BuscadorDireccion({ municipio, sinConexion = false, onEl
             <p className="px-3.5 py-4 text-sm text-tinta-suave">Buscando direcciones...</p>
           )}
 
-          {error && <p className="px-3.5 py-3 text-sm text-red-700">{error}</p>}
+          {error && <p className="px-3.5 py-3 text-sm text-rose-700">{error}</p>}
 
           {sinResultados && (
             <p className="px-3.5 py-4 text-sm text-tinta-suave">

@@ -86,8 +86,8 @@ export default function FormularioCierreGasto({ incidencia, guardando, error, on
   return (
     <div>
       {presupuesto && (
-        <div className="mb-3 rounded-lg bg-gray-50 p-2 text-xs text-gray-600">
-          <p className="mb-0.5 font-medium uppercase text-gray-400">Presupuestado</p>
+        <div className="mb-3 rounded-lg bg-slate-50 p-2 text-xs text-tinta">
+          <p className="mb-0.5 font-medium uppercase text-tinta-tenue">Presupuestado</p>
           {/* Un presupuesto marcado "no aplica" llega con costo_aprox en null
               (ver ModalPresupuesto.jsx). Con `|| 0` se mostraba "$0", que la
               cuadrilla lee como "no me autorizaron gastar nada" en vez de "no
@@ -112,11 +112,11 @@ export default function FormularioCierreGasto({ incidencia, guardando, error, on
         </div>
       )}
 
-      <p className="mb-1 text-xs font-medium uppercase text-gray-400">Foto del trabajo terminado (opcional)</p>
+      <p className="mb-1 text-xs font-medium uppercase text-tinta-tenue">Foto del trabajo terminado (opcional)</p>
       {previewUrl ? (
         <img src={previewUrl} alt="Después" className="mb-3 max-h-56 w-full rounded-xl object-cover" />
       ) : (
-        <label className="mb-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 p-6 text-gray-500">
+        <label className="mb-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-borde p-6 text-tinta-suave">
           <Camera size={24} />
           <span className="text-sm font-medium">Subir foto de término</span>
           <input
@@ -129,20 +129,20 @@ export default function FormularioCierreGasto({ incidencia, guardando, error, on
         </label>
       )}
 
-      <label className="mb-1 block text-sm font-medium text-gray-700">Horas reales trabajadas</label>
+      <label className="mb-1 block text-sm font-medium text-tinta">Horas reales trabajadas</label>
       <input
         type="number"
         min="1"
         value={horasReales}
         onChange={(e) => setHorasReales(e.target.value)}
-        className="mb-1 w-full rounded-lg border border-gray-300 p-2.5"
+        className="mb-1 w-full rounded-lg border border-borde p-2.5"
       />
       {trabajadoresAsignados.length > 0 && Number(horasReales) > 0 && (
-        <p className="mb-3 text-xs text-gray-500">Costo de mano de obra (calculado): {formatoCLP.format(costoManoObra)}</p>
+        <p className="mb-3 text-xs text-tinta-suave">Costo de mano de obra (calculado): {formatoCLP.format(costoManoObra)}</p>
       )}
 
-      <label className="mb-1 mt-2 block text-sm font-medium text-gray-700">Materiales / insumos usados</label>
-      <p className="mb-2 text-xs text-gray-400">Uno por línea, con su costo. Si no se usó ninguno, deja la lista vacía.</p>
+      <label className="mb-1 mt-2 block text-sm font-medium text-tinta">Materiales / insumos usados</label>
+      <p className="mb-2 text-xs text-tinta-tenue">Uno por línea, con su costo. Si no se usó ninguno, deja la lista vacía.</p>
       <div className="mb-2 space-y-2">
         {materiales.map((m, i) => (
           <div key={i} className="flex gap-2">
@@ -151,7 +151,7 @@ export default function FormularioCierreGasto({ incidencia, guardando, error, on
               placeholder="Ej: 2 sacos de asfalto frío"
               value={m.descripcion}
               onChange={(e) => actualizarMaterial(i, 'descripcion', e.target.value)}
-              className="flex-1 rounded-lg border border-gray-300 p-2 text-sm"
+              className="flex-1 rounded-lg border border-borde p-2 text-sm"
             />
             <input
               type="number"
@@ -159,13 +159,13 @@ export default function FormularioCierreGasto({ incidencia, guardando, error, on
               placeholder="$"
               value={m.costo}
               onChange={(e) => actualizarMaterial(i, 'costo', e.target.value)}
-              className="w-24 rounded-lg border border-gray-300 p-2 text-sm"
+              className="w-24 rounded-lg border border-borde p-2 text-sm"
             />
             {materiales.length > 1 && (
               <button
                 type="button"
                 onClick={() => quitarMaterial(i)}
-                className="shrink-0 text-gray-400 hover:text-estado-critico"
+                className="shrink-0 text-tinta-tenue hover:text-estado-critico"
                 aria-label="Quitar material"
               >
                 <Trash2 size={18} />
@@ -209,7 +209,7 @@ export default function FormularioCierreGasto({ incidencia, guardando, error, on
       )}
 
       {error && (
-        <div className="mb-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-3 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">
           <AlertTriangle size={18} className="mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>

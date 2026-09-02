@@ -65,21 +65,21 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
     // y tiene su propio scroll. Antes quedaba encajado en el contenedor del
     // mapa y, si ese contenedor era bajo, el panel se cortaba y no se podía
     // llegar al botón de asignar.
-    <div className="fixed inset-y-0 right-0 z-[1000] flex w-full max-w-sm flex-col overflow-y-auto border-l border-gray-200 bg-white p-4 shadow-2xl">
+    <div className="fixed inset-y-0 right-0 z-[1000] flex w-full max-w-sm flex-col overflow-y-auto border-l border-borde bg-white p-4 shadow-2xl">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{etiquetaCategoria(incidencia.categoria)}</h3>
+          <h3 className="text-lg font-semibold text-tinta-fuerte">{etiquetaCategoria(incidencia.categoria)}</h3>
           <div className="mt-1 flex gap-1.5">
             <BadgeEstado estado={incidencia.estado} />
             <BadgeGravedad nivel={incidencia.nivel_gravedad} />
           </div>
         </div>
-        <button onClick={onCerrar} className="rounded-full p-1 hover:bg-gray-100" aria-label="Cerrar">
+        <button onClick={onCerrar} className="rounded-full p-1 hover:bg-slate-100" aria-label="Cerrar">
           <X size={20} />
         </button>
       </div>
 
-      <p className="mt-3 text-sm text-gray-500">{incidencia.direccion_texto || 'Sin dirección de referencia'}</p>
+      <p className="mt-3 text-sm text-tinta-suave">{incidencia.direccion_texto || 'Sin dirección de referencia'}</p>
       <EnlaceGoogleMaps coordenadas={incidencia.coordenadas} />
       {/* El hito que escribió el vecino (Paso 1). Va destacado y no como una
           línea más de texto gris: en los sectores rurales de Licantén es LO
@@ -96,7 +96,7 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
       )}
 
       {incidencia.detalles_adicionales && (
-        <p className="mt-2 rounded-lg bg-gray-50 p-2 text-sm text-gray-600">{incidencia.detalles_adicionales}</p>
+        <p className="mt-2 rounded-lg bg-slate-50 p-2 text-sm text-tinta">{incidencia.detalles_adicionales}</p>
       )}
 
       {!incidencia.es_anonimo && (incidencia.nombre_ciudadano || incidencia.contacto_ciudadano) && (
@@ -113,16 +113,16 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
       <ListaSeguimientos incidenciaId={incidencia.id} />
 
       <div className="mt-5">
-        <label className="mb-1 block text-sm font-medium text-gray-700">Cuadrilla asignada</label>
+        <label className="mb-1 block text-sm font-medium text-tinta">Cuadrilla asignada</label>
         {cuadrillas.length === 0 ? (
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-tinta-tenue">
             Tu municipalidad todavía no tiene cuadrillas configuradas. Contacta al administrador.
           </p>
         ) : (
           <select
             value={cuadrilla}
             onChange={(e) => setCuadrilla(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 p-2.5"
+            className="w-full rounded-lg border border-borde p-2.5"
           >
             <option value="">Selecciona una cuadrilla</option>
             {cuadrillas.map((c) => (
@@ -132,7 +132,7 @@ export default function PanelAsignacion({ incidencia, cuadrillas = [], onCerrar 
         )}
       </div>
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-rose-600">{error}</p>}
       {listo && (
         <p className="mt-2 flex items-center gap-1.5 text-sm text-estado-bueno">
           <Check size={16} className="shrink-0" />

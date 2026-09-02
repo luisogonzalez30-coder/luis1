@@ -657,7 +657,7 @@ export default function FormularioCiudadano({ municipio }) {
       </main>
 
       {errorEnvio && (
-        <div className="mb-4 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-4 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">
           <AlertTriangle size={18} className="mt-0.5 shrink-0" />
           <span>{errorEnvio}</span>
         </div>

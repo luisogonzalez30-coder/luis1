@@ -26,7 +26,7 @@ function hoyISO() {
 function ContactoDepartamento({ jefe }) {
   if (!jefe) {
     return (
-      <p className="rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-500">
+      <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-tinta-suave">
         Este departamento no tiene un jefe con cuenta creada. Se crea desde{' '}
         <span className="font-medium">Funcionarios</span>.
       </p>
@@ -36,15 +36,15 @@ function ContactoDepartamento({ jefe }) {
   const whatsapp = enlaceWhatsapp(jefe.telefono)
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl bg-gray-50 px-3 py-2">
+    <div className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
       <div className="mr-auto">
-        <p className="text-[11px] text-gray-500">Jefe de departamento</p>
-        <p className="text-sm font-medium leading-tight text-gray-900">{jefe.nombre}</p>
+        <p className="text-[11px] text-tinta-suave">Jefe de departamento</p>
+        <p className="text-sm font-medium leading-tight text-tinta-fuerte">{jefe.nombre}</p>
       </div>
       {jefe.correo && (
         <a
           href={`mailto:${jefe.correo}`}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 ring-1 ring-black/5 transition-colors hover:bg-gray-100"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-tinta ring-1 ring-black/5 transition-colors hover:bg-slate-100"
         >
           <Mail size={13} /> Correo
         </a>
@@ -54,12 +54,12 @@ function ContactoDepartamento({ jefe }) {
           href={whatsapp}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 ring-1 ring-black/5 transition-colors hover:bg-gray-100"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-tinta ring-1 ring-black/5 transition-colors hover:bg-slate-100"
         >
           <Phone size={13} /> WhatsApp
         </a>
       ) : (
-        <span className="text-[11px] text-gray-400">Sin teléfono cargado</span>
+        <span className="text-[11px] text-tinta-tenue">Sin teléfono cargado</span>
       )}
     </div>
   )
@@ -173,19 +173,19 @@ export default function ModalTrabajadoresDepartamento({
 
       {soloLectura && cuadrillasActivas.length > 0 && (
         <div className="mb-3 rounded-xl border border-black/5 px-3 py-2.5">
-          <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+          <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-tinta-suave">
             <MapPin size={12} /> Cuadrillas en terreno
           </p>
           <ul className="space-y-1">
             {cuadrillasActivas.map((nombre) => {
               const ubicacion = ubicacionesCuadrilla.find((u) => u.cuadrilla === nombre)
               return (
-                <li key={nombre} className="text-sm text-gray-600">
-                  <span className="font-medium text-gray-900">{nombre}</span>
+                <li key={nombre} className="text-sm text-tinta">
+                  <span className="font-medium text-tinta-fuerte">{nombre}</span>
                   {ubicacion?.coordenadas ? (
                     <EnlaceGoogleMaps coordenadas={ubicacion.coordenadas} />
                   ) : (
-                    <span className="ml-2 text-xs text-gray-400">Sin ubicación registrada todavía</span>
+                    <span className="ml-2 text-xs text-tinta-tenue">Sin ubicación registrada todavía</span>
                   )}
                 </li>
               )
@@ -195,9 +195,9 @@ export default function ModalTrabajadoresDepartamento({
       )}
 
       {cargando ? (
-        <p className="text-sm text-gray-400">Cargando...</p>
+        <p className="text-sm text-tinta-tenue">Cargando...</p>
       ) : trabajadores.length === 0 ? (
-        <p className="text-sm text-gray-400">Todavía no hay trabajadores registrados en este departamento.</p>
+        <p className="text-sm text-tinta-tenue">Todavía no hay trabajadores registrados en este departamento.</p>
       ) : (
         <ul className="space-y-2">
           {trabajadores.map((t) => {
@@ -223,11 +223,11 @@ export default function ModalTrabajadoresDepartamento({
                   >
                     <ChevronDown
                       size={14}
-                      className={`mt-1 shrink-0 text-gray-400 transition-transform duration-200 ${fichaAbierta ? 'rotate-180' : ''}`}
+                      className={`mt-1 shrink-0 text-tinta-tenue transition-transform duration-200 ${fichaAbierta ? 'rotate-180' : ''}`}
                     />
                     <span>
-                      <span className="block font-medium text-gray-900 group-hover:text-primary">{t.nombre}</span>
-                      <span className="block text-xs text-gray-500">
+                      <span className="block font-medium text-tinta-fuerte group-hover:text-primary">{t.nombre}</span>
+                      <span className="block text-xs text-tinta-suave">
                         {t.cargo}{t.tarifa_hora ? ` · $${t.tarifa_hora.toLocaleString('es-CL')}/hora` : ''}
                       </span>
                     </span>
@@ -236,7 +236,7 @@ export default function ModalTrabajadoresDepartamento({
                   {!soloLectura && (
                     <button
                       onClick={() => eliminarTrabajador(t.id)}
-                      className="rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                      className="rounded p-1 text-tinta-tenue transition-colors hover:bg-rose-50 hover:text-rose-600"
                       title="Quitar del equipo"
                     >
                       <Trash2 size={16} />
@@ -250,7 +250,7 @@ export default function ModalTrabajadoresDepartamento({
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           !marcadoHoy
-                            ? 'bg-gray-100 text-gray-500'
+                            ? 'bg-slate-100 text-tinta-suave'
                             : t.presente_hoy
                               ? 'bg-[#0ca30c]/10 text-[#0a7d0a]'
                               : 'bg-[#d03b3b]/10 text-[#b32f2f]'
@@ -260,7 +260,7 @@ export default function ModalTrabajadoresDepartamento({
                       </span>
 
                       {t.disponible ? (
-                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-tinta">
                           Disponible
                         </span>
                       ) : (
@@ -286,7 +286,7 @@ export default function ModalTrabajadoresDepartamento({
                       <button
                         onClick={() => marcarAsistencia(t.id, true)}
                         className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                          marcadoHoy && t.presente_hoy ? 'bg-[#0ca30c] text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#0ca30c]/10'
+                          marcadoHoy && t.presente_hoy ? 'bg-[#0ca30c] text-white' : 'bg-slate-100 text-tinta hover:bg-[#0ca30c]/10'
                         }`}
                       >
                         Presente
@@ -294,18 +294,18 @@ export default function ModalTrabajadoresDepartamento({
                       <button
                         onClick={() => marcarAsistencia(t.id, false)}
                         className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                          marcadoHoy && t.presente_hoy === false ? 'bg-[#d03b3b] text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#d03b3b]/10'
+                          marcadoHoy && t.presente_hoy === false ? 'bg-[#d03b3b] text-white' : 'bg-slate-100 text-tinta hover:bg-[#d03b3b]/10'
                         }`}
                       >
                         Ausente
                       </button>
 
-                      <span className="mx-0.5 text-gray-300">·</span>
+                      <span className="mx-0.5 text-tinta-tenue">·</span>
 
                       <button
                         onClick={() => actualizarDisponibilidad(t.id, true)}
                         className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                          t.disponible ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-primary/10'
+                          t.disponible ? 'bg-primary text-white' : 'bg-slate-100 text-tinta hover:bg-primary/10'
                         }`}
                       >
                         Disponible
@@ -313,7 +313,7 @@ export default function ModalTrabajadoresDepartamento({
                       <button
                         onClick={() => iniciarAsignacion(t)}
                         className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                          !t.disponible ? 'bg-[#c2410c] text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#ec835a]/15'
+                          !t.disponible ? 'bg-[#c2410c] text-white' : 'bg-slate-100 text-tinta hover:bg-[#ec835a]/15'
                         }`}
                       >
                         Designado{!t.disponible && t.asignado_a ? ` — ${t.asignado_a}` : ''}
@@ -330,7 +330,7 @@ export default function ModalTrabajadoresDepartamento({
                       value={textoAsignado}
                       onChange={(e) => setTextoAsignado(e.target.value)}
                       placeholder="¿A qué está designado? (opcional)"
-                      className="flex-1 rounded-lg border border-gray-300 p-1.5 text-xs"
+                      className="flex-1 rounded-lg border border-borde p-1.5 text-xs"
                       onKeyDown={(e) => e.key === 'Enter' && guardarAsignacion(t.id)}
                     />
                     <button
@@ -359,8 +359,8 @@ export default function ModalTrabajadoresDepartamento({
       )}
 
       {!soloLectura && (
-        <form onSubmit={manejarAgregar} className="mt-4 flex flex-col gap-2 border-t border-gray-200 pt-4">
-          <p className="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">
+        <form onSubmit={manejarAgregar} className="mt-4 flex flex-col gap-2 border-t border-borde pt-4">
+          <p className="mb-1 flex items-center gap-1 text-sm font-medium text-tinta">
             <UserPlus size={16} /> Agregar trabajador
           </p>
           <div className="flex gap-2">
@@ -369,14 +369,14 @@ export default function ModalTrabajadoresDepartamento({
               placeholder="Nombre"
               value={nombreNuevo}
               onChange={(e) => setNombreNuevo(e.target.value)}
-              className="flex-1 rounded-lg border border-gray-300 p-2 text-sm"
+              className="flex-1 rounded-lg border border-borde p-2 text-sm"
             />
             <input
               type="text"
               placeholder="Cargo"
               value={cargoNuevo}
               onChange={(e) => setCargoNuevo(e.target.value)}
-              className="flex-1 rounded-lg border border-gray-300 p-2 text-sm"
+              className="flex-1 rounded-lg border border-borde p-2 text-sm"
             />
           </div>
           <input
@@ -385,7 +385,7 @@ export default function ModalTrabajadoresDepartamento({
             placeholder="Tarifa por hora (CLP)"
             value={tarifaNueva}
             onChange={(e) => setTarifaNueva(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 p-2 text-sm"
+            className="w-full rounded-lg border border-borde p-2 text-sm"
           />
           <Boton
             type="submit"

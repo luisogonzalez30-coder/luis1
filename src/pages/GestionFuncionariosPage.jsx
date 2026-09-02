@@ -88,40 +88,40 @@ export default function GestionFuncionariosPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <Link to="/dashboard/general" className="mb-4 flex items-center gap-1 text-sm text-gray-500">
+      <Link to="/dashboard/general" className="mb-4 flex items-center gap-1 text-sm text-tinta-suave">
         <ArrowLeft size={16} /> Volver al Dashboard
       </Link>
 
-      <h1 className="text-xl font-bold text-gray-900">Gestión de funcionarios</h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <h1 className="text-xl font-bold text-tinta-fuerte">Gestión de funcionarios</h1>
+      <p className="mt-1 text-sm text-tinta-suave">
         Crea cuentas para Jefes de Departamento y Terreno de tu municipalidad. Para crear otro Alcalde, contacta soporte.
       </p>
 
-      <form onSubmit={manejarSubmit} className="mt-6 rounded-2xl border border-gray-200 p-5">
-        <h2 className="mb-4 flex items-center gap-2 font-semibold text-gray-800">
+      <form onSubmit={manejarSubmit} className="mt-6 rounded-2xl border border-borde p-5">
+        <h2 className="mb-4 flex items-center gap-2 font-semibold text-tinta-fuerte">
           <UserPlus size={18} /> Nueva cuenta
         </h2>
 
-        <label className="mb-1 block text-sm font-medium text-gray-700">Nombre</label>
+        <label className="mb-1 block text-sm font-medium text-tinta">Nombre</label>
         <input
           type="text"
           required
           value={form.nombre}
           onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
-          className="mb-4 w-full rounded-lg border border-gray-300 p-2.5"
+          className="mb-4 w-full rounded-lg border border-borde p-2.5"
         />
 
-        <label className="mb-1 block text-sm font-medium text-gray-700">Correo</label>
+        <label className="mb-1 block text-sm font-medium text-tinta">Correo</label>
         <input
           type="email"
           required
           value={form.correo}
           onChange={(e) => setForm((f) => ({ ...f, correo: e.target.value }))}
-          className="mb-4 w-full rounded-lg border border-gray-300 p-2.5"
+          className="mb-4 w-full rounded-lg border border-borde p-2.5"
         />
 
-        <label className="mb-1 block text-sm font-medium text-gray-700">
-          Teléfono <span className="font-normal text-gray-400">(opcional)</span>
+        <label className="mb-1 block text-sm font-medium text-tinta">
+          Teléfono <span className="font-normal text-tinta-tenue">(opcional)</span>
         </label>
         <input
           type="tel"
@@ -129,14 +129,14 @@ export default function GestionFuncionariosPage() {
           value={form.telefono}
           onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
           placeholder="9 1234 5678"
-          className="w-full rounded-lg border border-gray-300 p-2.5"
+          className="w-full rounded-lg border border-borde p-2.5"
         />
-        <p className="mb-4 mt-1 text-xs text-gray-400">
+        <p className="mb-4 mt-1 text-xs text-tinta-tenue">
           Habilita el botón de WhatsApp en la tarjeta de su departamento, para contactarlo directo
           desde el panel del Alcalde.
         </p>
 
-        <label className="mb-1 block text-sm font-medium text-gray-700">Contraseña temporal</label>
+        <label className="mb-1 block text-sm font-medium text-tinta">Contraseña temporal</label>
         <input
           type="text"
           required
@@ -144,14 +144,14 @@ export default function GestionFuncionariosPage() {
           value={form.contrasena}
           onChange={(e) => setForm((f) => ({ ...f, contrasena: e.target.value }))}
           placeholder="Mínimo 6 caracteres"
-          className="mb-4 w-full rounded-lg border border-gray-300 p-2.5"
+          className="mb-4 w-full rounded-lg border border-borde p-2.5"
         />
 
-        <label className="mb-1 block text-sm font-medium text-gray-700">Rol</label>
+        <label className="mb-1 block text-sm font-medium text-tinta">Rol</label>
         <select
           value={form.rol}
           onChange={(e) => setForm((f) => ({ ...f, rol: e.target.value }))}
-          className="mb-4 w-full rounded-lg border border-gray-300 p-2.5"
+          className="mb-4 w-full rounded-lg border border-borde p-2.5"
         >
           <option value="JEFE_DEPARTAMENTO">Jefe de Departamento</option>
           <option value="TERRENO">Terreno</option>
@@ -159,11 +159,11 @@ export default function GestionFuncionariosPage() {
 
         {form.rol === 'JEFE_DEPARTAMENTO' && (
           <>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Departamento</label>
+            <label className="mb-1 block text-sm font-medium text-tinta">Departamento</label>
             <select
               value={form.departamento}
               onChange={(e) => setForm((f) => ({ ...f, departamento: e.target.value }))}
-              className="mb-4 w-full rounded-lg border border-gray-300 p-2.5"
+              className="mb-4 w-full rounded-lg border border-borde p-2.5"
             >
               {DEPARTAMENTOS.map((dep) => (
                 <option key={dep} value={dep}>{dep}</option>
@@ -173,14 +173,14 @@ export default function GestionFuncionariosPage() {
         )}
 
         {error && (
-          <div className="mb-4 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+          <div className="mb-4 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">
             <AlertTriangle size={18} className="mt-0.5 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {exito && (
-          <div className="mb-4 flex items-start gap-2 rounded-xl bg-green-50 p-3 text-sm text-green-700">
+          <div className="mb-4 flex items-start gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">
             <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
             <span>{exito}</span>
           </div>
@@ -191,19 +191,19 @@ export default function GestionFuncionariosPage() {
         </Boton>
       </form>
 
-      <h2 className="mb-3 mt-8 font-semibold text-gray-800">Funcionarios de tu municipalidad</h2>
+      <h2 className="mb-3 mt-8 font-semibold text-tinta-fuerte">Funcionarios de tu municipalidad</h2>
 
       {cargandoLista ? (
         <Spinner />
       ) : funcionarios.length === 0 ? (
-        <p className="text-sm text-gray-500">Todavía no hay otros funcionarios registrados.</p>
+        <p className="text-sm text-tinta-suave">Todavía no hay otros funcionarios registrados.</p>
       ) : (
         <ul className="space-y-2">
           {funcionarios.map((f) => (
-            <li key={f.uid} className="flex items-center justify-between rounded-xl border border-gray-200 p-3">
+            <li key={f.uid} className="flex items-center justify-between rounded-xl border border-borde p-3">
               <div>
-                <p className="font-medium text-gray-900">{f.nombre || '(sin nombre)'}</p>
-                <p className="text-sm text-gray-500">
+                <p className="font-medium text-tinta-fuerte">{f.nombre || '(sin nombre)'}</p>
+                <p className="text-sm text-tinta-suave">
                   {f.correo} · {ETIQUETA_ROL[f.rol] || f.rol}
                   {f.rol === 'JEFE_DEPARTAMENTO' && f.departamento ? ` · ${f.departamento}` : ''}
                 </p>
@@ -212,7 +212,7 @@ export default function GestionFuncionariosPage() {
                 <button
                   onClick={() => manejarEliminar(f)}
                   disabled={eliminandoUid === f.uid}
-                  className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                  className="rounded-lg p-2 text-tinta-tenue hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
                   title="Quitar acceso"
                 >
                   <Trash2 size={18} />

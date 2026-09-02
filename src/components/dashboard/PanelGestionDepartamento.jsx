@@ -99,21 +99,21 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
     // "fixed" (no "absolute"): alto completo de pantalla y scroll propio, para
     // que el panel no se corte cuando el contenedor del mapa es bajo — ver el
     // mismo cambio en PanelAsignacion.jsx.
-    <div className="fixed inset-y-0 right-0 z-[1000] w-full max-w-sm overflow-y-auto border-l border-gray-200 bg-white p-4 shadow-2xl">
+    <div className="fixed inset-y-0 right-0 z-[1000] w-full max-w-sm overflow-y-auto border-l border-borde bg-white p-4 shadow-2xl">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{etiquetaCategoria(incidencia.categoria)}</h3>
+          <h3 className="text-lg font-semibold text-tinta-fuerte">{etiquetaCategoria(incidencia.categoria)}</h3>
           <div className="mt-1 flex gap-1.5">
             <BadgeEstado estado={incidencia.estado} />
             <BadgeGravedad nivel={incidencia.nivel_gravedad} />
           </div>
         </div>
-        <button onClick={onCerrar} className="rounded-full p-1 hover:bg-gray-100" aria-label="Cerrar">
+        <button onClick={onCerrar} className="rounded-full p-1 hover:bg-slate-100" aria-label="Cerrar">
           <X size={20} />
         </button>
       </div>
 
-      <p className="mt-3 text-sm text-gray-500">{incidencia.direccion_texto || 'Sin dirección de referencia'}</p>
+      <p className="mt-3 text-sm text-tinta-suave">{incidencia.direccion_texto || 'Sin dirección de referencia'}</p>
       <EnlaceGoogleMaps coordenadas={incidencia.coordenadas} />
       {/* El hito que escribió el vecino (Paso 1). Va destacado y no como una
           línea más de texto gris: en los sectores rurales de Licantén es LO
@@ -129,15 +129,15 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
         </p>
       )}
 
-      <p className="mt-2 text-xs text-gray-400">Ingresado: {formatearFecha(incidencia.fecha_creacion)}</p>
+      <p className="mt-2 text-xs text-tinta-tenue">Ingresado: {formatearFecha(incidencia.fecha_creacion)}</p>
       {incidencia.fecha_asignacion && (
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-tinta-tenue">
           Tiempo de reacción: {formatearDuracion(incidencia.fecha_creacion, incidencia.fecha_asignacion)}
         </p>
       )}
 
       {incidencia.detalles_adicionales && (
-        <p className="mt-2 rounded-lg bg-gray-50 p-2 text-sm text-gray-600">{incidencia.detalles_adicionales}</p>
+        <p className="mt-2 rounded-lg bg-slate-50 p-2 text-sm text-tinta">{incidencia.detalles_adicionales}</p>
       )}
 
       {!incidencia.es_anonimo && (incidencia.nombre_ciudadano || incidencia.contacto_ciudadano) && (
@@ -154,7 +154,7 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
       <ListaSeguimientos incidenciaId={incidencia.id} />
 
       {error && (
-        <div className="mt-4 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+        <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">
           <AlertTriangle size={18} className="mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>
@@ -162,16 +162,16 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
 
       {incidencia.estado === 'Pendiente' && (
         <div className="mt-5">
-          <label className="mb-1 block text-sm font-medium text-gray-700">Cuadrilla asignada</label>
+          <label className="mb-1 block text-sm font-medium text-tinta">Cuadrilla asignada</label>
           {cuadrillas.length === 0 ? (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-tinta-tenue">
               Tu municipalidad todavía no tiene cuadrillas configuradas. Contacta al administrador.
             </p>
           ) : (
             <select
               value={cuadrilla}
               onChange={(e) => setCuadrilla(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 p-2.5"
+              className="w-full rounded-lg border border-borde p-2.5"
             >
               <option value="">Selecciona una cuadrilla</option>
               {cuadrillas.map((c) => (
@@ -193,7 +193,7 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
 
       {incidencia.estado === 'En Proceso' && (
         <div className="mt-5">
-          <p className="text-xs font-medium uppercase text-gray-400">Cuadrilla: {incidencia.cuadrilla_asignada}</p>
+          <p className="text-xs font-medium uppercase text-tinta-tenue">Cuadrilla: {incidencia.cuadrilla_asignada}</p>
 
           <div className="mt-1">
             {ubicacionCuadrilla?.coordenadas && !editandoUbicacion && (
@@ -210,7 +210,7 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
             )}
             {editandoUbicacion && (
               <div className="mt-2">
-                <p className="mb-1 text-xs text-gray-500">Toca el mapa donde está trabajando la cuadrilla ahora.</p>
+                <p className="mb-1 text-xs text-tinta-suave">Toca el mapa donde está trabajando la cuadrilla ahora.</p>
                 <MapaSeleccionUbicacion
                   coordenadas={ubicacionCuadrilla?.coordenadas}
                   centroPorDefecto={incidencia.coordenadas}
@@ -219,7 +219,7 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
                 <button
                   onClick={() => setEditandoUbicacion(false)}
                   disabled={guardandoUbicacion}
-                  className="mt-1 text-xs text-gray-500 hover:underline"
+                  className="mt-1 text-xs text-tinta-suave hover:underline"
                 >
                   {guardandoUbicacion ? 'Guardando...' : 'Listo'}
                 </button>
@@ -236,10 +236,10 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
 
       {incidencia.estado === 'Resuelto' && (
         <div className="mt-5">
-          <div className="rounded-xl bg-green-50 p-4 text-center text-green-800">
+          <div className="rounded-xl bg-emerald-50 p-4 text-center text-emerald-800">
             Esta incidencia ya fue marcada como resuelta.
           </div>
-          <div className="mt-3 rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
+          <div className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-tinta">
             {trabajadoresAsignados.length > 0 && (
               <p>
                 Personal ({trabajadoresAsignados.length}): {trabajadoresAsignados.map((t) => t.nombre).join(', ')}
@@ -257,7 +257,7 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
                 </p>
                 {incidencia.gasto_real.materiales_usados?.length > 0 ? (
                   <div className="mt-1">
-                    <p className="font-medium text-gray-700">Materiales usados:</p>
+                    <p className="font-medium text-tinta">Materiales usados:</p>
                     <ul className="ml-3 list-disc">
                       {incidencia.gasto_real.materiales_usados.map((m, i) => (
                         <li key={i}>
@@ -279,7 +279,7 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
                     <Receipt size={12} /> Ver comprobante
                   </a>
                 )}
-                <p className="mt-1 border-t border-gray-200 pt-1 text-sm font-semibold text-gray-900">
+                <p className="mt-1 border-t border-borde pt-1 text-sm font-semibold text-tinta-fuerte">
                   Costo final total: {formatoCLP.format(incidencia.gasto_real.costo_final)}
                 </p>
                 {incidencia.gasto_real.requiere_revision && (
@@ -291,7 +291,7 @@ export default function PanelGestionDepartamento({ incidencia, incidencias = [],
                   </div>
                 )}
                 {incidencia.gasto_real.cerrado_por && (
-                  <p className="mt-1 text-gray-400">Cerrado por: {incidencia.gasto_real.cerrado_por}</p>
+                  <p className="mt-1 text-tinta-tenue">Cerrado por: {incidencia.gasto_real.cerrado_por}</p>
                 )}
               </>
             )}

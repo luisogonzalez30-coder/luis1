@@ -11,10 +11,10 @@ function formatearHoras(horas) {
 // mismo contrato de "stat tile" que el resto del panel, en miniatura.
 function Dato({ etiqueta, valor, apoyo }) {
   return (
-    <div className="rounded-xl bg-gray-50 px-3 py-2">
-      <p className="text-[11px] text-gray-500">{etiqueta}</p>
-      <p className="mt-0.5 text-base font-semibold leading-none text-gray-900">{valor}</p>
-      {apoyo && <p className="mt-1 text-[11px] leading-snug text-gray-400">{apoyo}</p>}
+    <div className="rounded-xl bg-slate-50 px-3 py-2">
+      <p className="text-[11px] text-tinta-suave">{etiqueta}</p>
+      <p className="mt-0.5 text-base font-semibold leading-none text-tinta-fuerte">{valor}</p>
+      {apoyo && <p className="mt-1 text-[11px] leading-snug text-tinta-tenue">{apoyo}</p>}
     </div>
   )
 }
@@ -25,8 +25,8 @@ function Contacto({ persona, etiqueta }) {
 
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-      <span className="text-gray-500">{etiqueta}:</span>
-      <span className="font-medium text-gray-900">{persona.nombre}</span>
+      <span className="text-tinta-suave">{etiqueta}:</span>
+      <span className="font-medium text-tinta-fuerte">{persona.nombre}</span>
       {persona.correo && (
         <a
           href={`mailto:${persona.correo}`}
@@ -76,13 +76,13 @@ export default function FichaTrabajador({
 
   return (
     <div className="mt-3 space-y-3 border-t border-black/5 pt-3">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-tinta">
         <span className="inline-flex items-center gap-1.5">
-          <Building2 size={13} className="text-gray-400" />
+          <Building2 size={13} className="text-tinta-tenue" />
           {departamento}
         </span>
         {trabajador.tarifa_hora > 0 && (
-          <span className="text-gray-500">
+          <span className="text-tinta-suave">
             ${trabajador.tarifa_hora.toLocaleString('es-CL')}/hora
           </span>
         )}
@@ -90,11 +90,11 @@ export default function FichaTrabajador({
 
       {/* Jefatura: dos niveles distintos, y el Alcalde necesita los dos. */}
       <div className="space-y-1.5 rounded-xl border border-black/5 px-3 py-2.5">
-        <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+        <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-tinta-suave">
           <UserCog size={12} /> Jefatura directa
         </p>
         {!jefeDepartamento && !jefeCuadrilla ? (
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-tinta-tenue">
             Este departamento no tiene un jefe con cuenta creada todavía.
           </p>
         ) : (
@@ -107,12 +107,12 @@ export default function FichaTrabajador({
 
       {/* Terreno: si está designado, la dirección exacta y el enlace para llegar. */}
       <div className="space-y-2 rounded-xl border border-black/5 px-3 py-2.5">
-        <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+        <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-tinta-suave">
           <MapPin size={12} /> En terreno
         </p>
 
         {!enTerreno ? (
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-tinta-tenue">
             {trabajador.disponible
               ? 'Disponible, sin trabajos en ejecución.'
               : trabajador.asignado_a
@@ -123,11 +123,11 @@ export default function FichaTrabajador({
           <ul className="space-y-2">
             {trabajosEnCurso.map((inc) => (
               <li key={inc.id} className="text-xs">
-                <p className="font-medium text-gray-900">
+                <p className="font-medium text-tinta-fuerte">
                   {etiquetaCategoria(inc.categoria)}
-                  <span className="ml-1.5 font-normal text-gray-400">{inc.numero_ticket}</span>
+                  <span className="ml-1.5 font-normal text-tinta-tenue">{inc.numero_ticket}</span>
                 </p>
-                <p className="text-gray-600">
+                <p className="text-tinta">
                   {inc.direccion_texto || 'Sin dirección de referencia'}
                 </p>
                 {inc.coordenadas?.lat && (
@@ -149,7 +149,7 @@ export default function FichaTrabajador({
 
       {/* Horas. Tres cifras que responden preguntas distintas — ver equipo.js. */}
       <div>
-        <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+        <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-tinta-suave">
           <Clock size={12} /> Carga de trabajo
         </p>
         <div className="grid grid-cols-3 gap-2">
@@ -169,7 +169,7 @@ export default function FichaTrabajador({
             apoyo={`${horas.trabajosCerrados} trabajo${horas.trabajosCerrados === 1 ? '' : 's'} cerrado${horas.trabajosCerrados === 1 ? '' : 's'}`}
           />
         </div>
-        <p className="mt-1.5 text-[11px] leading-snug text-gray-400">
+        <p className="mt-1.5 text-[11px] leading-snug text-tinta-tenue">
           No se muestran horas del día porque la asistencia registra la fecha, no la hora de entrada.
         </p>
       </div>

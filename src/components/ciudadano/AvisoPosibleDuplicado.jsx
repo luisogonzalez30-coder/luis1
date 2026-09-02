@@ -14,7 +14,7 @@ export default function AvisoPosibleDuplicado({ ticket, votando, onSumarme, onCr
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">¿Ya reportado?</h2>
+        <h2 className="text-lg font-semibold text-tinta-fuerte">¿Ya reportado?</h2>
       </div>
 
       <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
@@ -22,8 +22,8 @@ export default function AvisoPosibleDuplicado({ ticket, votando, onSumarme, onCr
         <span>Parece que alguien ya reportó esto cerca de aquí. ¿Quieres sumarte al reporte existente o crear uno nuevo?</span>
       </div>
 
-      <div className="rounded-xl border border-gray-200 p-3">
-        <strong className="text-sm text-gray-900">{etiquetaCategoria(ticket.categoria)}</strong>
+      <div className="rounded-xl border border-borde p-3">
+        <strong className="text-sm text-tinta-fuerte">{etiquetaCategoria(ticket.categoria)}</strong>
         <div className="mt-1 flex gap-1.5">
           <BadgeEstado estado={ticket.estado} />
           <BadgeGravedad nivel={ticket.nivel_gravedad} />
@@ -35,7 +35,7 @@ export default function AvisoPosibleDuplicado({ ticket, votando, onSumarme, onCr
             className="mt-2 h-32 w-full rounded-lg object-cover"
           />
         )}
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-tinta-suave">
           {upvotes} {upvotes === 1 ? 'persona reportó esto' : 'personas reportaron esto'}
         </p>
       </div>

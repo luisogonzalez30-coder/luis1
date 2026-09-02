@@ -28,7 +28,7 @@ export default function CuadrillaPage() {
 
   if (noEncontrado) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4 text-center text-gray-500">
+      <div className="flex min-h-screen items-center justify-center px-4 text-center text-tinta-suave">
         Tu usuario no tiene una municipalidad válida asociada (municipio_id). Contacta al administrador.
       </div>
     )
@@ -41,18 +41,18 @@ export default function CuadrillaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <header className="flex items-center justify-between bg-white px-4 py-3 shadow-sm">
         <div>
-          <h1 className="font-bold text-gray-900">Mis Tareas — {municipio.nombre}</h1>
-          {perfil && <p className="text-xs text-gray-400">{perfil.nombre}</p>}
+          <h1 className="font-bold text-tinta-fuerte">Mis Tareas — {municipio.nombre}</h1>
+          {perfil && <p className="text-xs text-tinta-tenue">{perfil.nombre}</p>}
         </div>
         <button onClick={cerrarSesion} className="text-sm text-primary hover:underline">Cerrar sesión</button>
       </header>
 
       <div className="flex flex-col gap-3 p-4">
         {tareas.length === 0 && (
-          <p className="mt-8 text-center text-sm text-gray-400">No tienes tareas asignadas por ahora.</p>
+          <p className="mt-8 text-center text-sm text-tinta-tenue">No tienes tareas asignadas por ahora.</p>
         )}
         {tareas.map((t) => (
           <TarjetaTarea key={t.id} incidencia={t} onClick={() => setTareaSeleccionadaId(t.id)} />

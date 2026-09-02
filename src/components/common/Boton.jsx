@@ -56,7 +56,7 @@ export default function Boton({
   // muchas veces con sol directo en la pantalla.
   const estilos = {
     primario: 'bg-gradient-to-b from-primary to-primary-dark text-white shadow-md shadow-primary/25 hover:brightness-110',
-    secundario: 'bg-tinta-fuerte/[0.06] text-tinta hover:bg-tinta-fuerte/[0.1]',
+    secundario: 'border border-borde bg-white text-tinta shadow-tarjeta hover:bg-slate-50',
     peligro: 'bg-gradient-to-b from-estado-critico to-[#a32e2e] text-white shadow-md shadow-estado-critico/25 hover:brightness-110',
   }
 
@@ -68,7 +68,7 @@ export default function Boton({
       // aria-busy: un lector de pantalla anuncia que la acción está en curso,
       // que es la única señal que tiene quien no ve el spinner.
       aria-busy={enEspera}
-      className={`flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-medium
+      className={`flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-semibold
         transition-all duration-150 active:scale-[0.98]
         disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none disabled:active:scale-100
         ${estilos[variante]} ${className}`}

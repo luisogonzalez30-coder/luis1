@@ -2029,3 +2029,139 @@ pin puesto por la app se ve idéntico a uno puesto a mano.
 > `configurar-sectores.mjs` y `preparar-demo.mjs`. Si la del pedido era a propósito (la
 > municipalidad, otro hito), hay que cambiarla en los tres lugares a la vez.
 
+---
+
+## 51. Rediseño visual: sistema de diseño GovTech (02-sep-2026)
+
+No es un cambio de colores: es pasar de "cada pantalla decide su gris" a un sistema
+con tokens. El síntoma que lo motivó era medible — 39 archivos usaban la escala
+`gray` de Tailwind directamente, con `border-gray-300` en un formulario y
+`border-gray-200` en el de al lado, y radios de 12, 16 y 24 px mezclados sin criterio.
+
+### 51.1 Tokens globales
+
+| Token | Valor | Para qué |
+| --- | --- | --- |
+| `--superficie` | `#FFFFFF` | tarjetas |
+| `--superficie-hundida` | `#F8FAFC` (slate-50) | el fondo del que salen |
+| `--borde` | `#E2E8F0` (slate-200) | separadores |
+| `tinta-fuerte` / `tinta` / `tinta-suave` / `tinta-tenue` | slate 900/700/500/400 | jerarquía completa de texto |
+
+La escala pasó de neutra cálida (zinc) a **fría (slate)**. El motivo es contraste
+simultáneo: un gris cálido bajo un primario azul se percibe amarillento, y era buena
+parte de por qué la app "se veía vieja" sin que se pudiera señalar qué.
+
+**Radios: dos y solo dos.** `rounded-2xl` (16 px) para superficies que CONTIENEN
+—tarjetas, hojas, mapas, avisos— y `rounded-xl` (12 px) para controles que se TOCAN
+—inputs, botones, píldoras—. El control más cerrado que su contenedor es una
+corrección óptica: con el mismo radio el input se ve pegado a la pared de la tarjeta.
+
+**Clases de componente nuevas** en `index.css`, para que un campo de texto se defina
+una vez y no quince: `.campo`, `.campo-error`, `.etiqueta-campo`, `.barra-superior`.
+
+### 51.2 El primario sigue siendo del municipio, no del rediseño
+
+El azul eléctrico `#2563EB` (hover `#1D4ED8`) entró **como valor por defecto en
+`utils/tema.js`**, no como clase fija.
+
+Es la decisión de fondo del rediseño y conviene que quede escrita: `primary` se lee
+de una variable CSS que escribe `tema.js` según `color_primario` del documento de la
+municipalidad. Fijar `#2563EB` en las clases —que es lo que pediría una lectura
+literal de "paleta azul"— habría roto el multi-tenant: una comuna con identidad
+verde vería botones azules. Todo lo que debe tomar el color del municipio usa
+`primary`; el azul literal vive en un solo lugar, como respaldo.
+
+### 51.3 Píldoras de estado con punto indicador
+
+`BadgeEstado` pasó a píldoras con punto: Pendiente rosa, En Proceso ámbar, Resuelto
+esmeralda. Es un semáforo de **avance**, no de gravedad.
+
+`BadgeGravedad` se rediseñó **distinto a propósito** —contorno neutro sobre blanco,
+no píldora rellena— porque conviven en la misma tarjeta y son dos escalas
+independientes. El caso concreto que lo obliga: un reporte "Resuelto" de "Gravedad
+Alta" mostraría una píldora verde junto a una roja, que parece una contradicción y
+no lo es.
+
+**El color de gravedad va en el punto, no en el texto.** Se intentó al revés y no se
+puede: el amarillo de "Media" (`#fab219`) sobre blanco da ~1,8:1 de contraste, o sea
+ilegible. Es además la regla de la skill `dataviz` — el texto usa tokens de texto,
+nunca el color de la serie. El valor sale de `utils/gravedad.js`, así que el rojo del
+badge y el del pin del mapa son literalmente el mismo.
+
+### 51.4 Flujo ciudadano
+
+**Barra de progreso segmentada** (`BarraProgresoPasos.jsx`, componente nuevo). Antes
+eran tres barritas iguales sin etiqueta: decían "vas por algún lado" pero no cuántos
+pasos faltaban. Ahora cada segmento lleva su nombre, el paso hecho muestra ✓, y el
+relleno es un `scale-x` sobre un hijo absoluto —no un cambio de ancho— para que el
+texto de abajo no salte y el pulgar no pierda el punto donde iba.
+
+> **El orden de los pasos NO se cambió.** El pedido decía "Foto → Ubicación →
+> Detalles"; el orden real es **Ubicación → El problema → Foto y datos**, y se
+> mantuvo. La foto va al final porque es lo que permite que la IA revise una
+> categoría YA elegida en vez de adivinar en el vacío (§48), y la ubicación va
+> primera porque es el paso que más falla en terreno (GPS, señal) y conviene
+> resolverlo con el vecino todavía fresco. Cambiar el orden habría roto §48.
+
+**Paso Foto**: mientras no hay ninguna foto, la zona de captura ocupa el ancho
+completo con ícono de cámara en disco blanco. Un cuadrito de 1/3 de pantalla no se
+lee como "toca acá" en un celular al sol. Con una foto ya cargada vuelve a la
+cuadrícula de miniaturas, donde el botón de agregar sí puede ser chico.
+
+**Paso Ubicación**: el mapa pasó a superficie con marco, sombra y `overflow-hidden`
+—las esquinas cuadradas de Leaflet asomando bajo un contenedor redondeado era de lo
+que más delataba "web hecha rápido"—. **El botón de GPS se movió adentro del mapa**,
+flotando con glassmorphism (`bg-white/90` + `backdrop-blur`). Antes era un botón
+primario a ancho completo arriba de todo: competía con "Siguiente" (dos botones
+azules grandes en una pantalla) y estaba lejos de lo que modifica. El botón de capa
+satelital se movió a la esquina opuesta para que no se encimen.
+
+**Selector de categoría: dos niveles.** Nivel 1 = los 9 grupos como cuadrícula de 2
+columnas, con ícono en disco del color del grupo (`utils/iconosGrupo.js`, nuevo).
+Nivel 2 = las categorías de ese grupo. La búsqueda corta transversalmente: escribir
+"bache" salta directo a los resultados.
+
+> Se hizo en dos niveles y **no** como cuadrícula plana de las 58 categorías, que es
+> lo que saldría de la instrucción literal: 58 tarjetas en 2 columnas son 29 filas de
+> scroll — exactamente el problema que la hoja vino a resolver cuando reemplazó al
+> `<select>` (§29). Con 9 grupos la cuadrícula cabe casi entera en pantalla, que es
+> cuando una cuadrícula sirve de algo.
+
+También se quitó el autofoco del buscador al abrir: con el nivel 1 siendo una
+cuadrícula, abrir el teclado la taparía justo cuando se quiere que el vecino la vea.
+
+### 51.5 Encabezados
+
+`.barra-superior` (fija, `bg-white/80` + `backdrop-blur-md`) en el formulario
+ciudadano, con `-mx-4 px-4` para que el desenfoque llegue de borde a borde.
+
+`EncabezadoMunicipio` suma un badge "Municipalidad" con ícono verificado. No es
+decorativo: esta app pide nombre y teléfono, y lo primero que hay que responder es
+"¿a quién le estoy dando mis datos?". El dato ya estaba cargado, así que es gratis.
+
+### 51.6 Panel administrativo
+
+Tarjetas de indicador con el número en `text-3xl font-extrabold` contra una etiqueta
+chica en mayúsculas, ícono de apoyo arriba a la derecha y punto de color del estado.
+La versión anterior usaba `text-2xl` sobre una etiqueta del mismo peso visual: a un
+metro las cuatro tarjetas se leían como un bloque gris parejo, y un panel de gestión
+se mira de reojo.
+
+**El número va en tinta, nunca en el color del estado.** Además de ser la regla de
+`dataviz`, resuelve un problema real: "0 pendientes" en rojo se lee como alarma
+cuando es la mejor noticia posible.
+
+Grilla y ejes del gráfico de gravedad pasaron a slate (antes `#e1e0d9`/`#52514e`,
+grises cálidos que contra superficies frías se veían verdosos). **Las barras no se
+tocaron**: conservan la paleta validada de `utils/gravedad.js`.
+
+### 51.7 Barrida de la paleta
+
+39 archivos usaban `gray-*`, `red-*` y `green-*` de Tailwind directamente. Se
+migraron en bloque a los tokens (`tinta-*`, `borde`, `slate-*`) y a la familia fría
+(`rose`, `emerald`). No queda ninguna clase `gray-` en `src/`.
+
+Fue una sustitución mecánica 1:1 de clases de color, sin tocar lógica ni estructura.
+Se hizo completa y no solo en los archivos del pedido a propósito: una paleta migrada
+a medias —tarjetas frías junto a tarjetas cálidas— se ve peor que no haber migrado.
+

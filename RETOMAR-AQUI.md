@@ -1,9 +1,14 @@
 # Dónde quedamos — 2 de septiembre de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (50 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (51 secciones).
 
-**Lo más nuevo (02-sep): tanda de correcciones de seguridad, rendimiento y UX.** Reglas de
+**Lo más nuevo (02-sep, segunda tanda): rediseño visual completo.** La app pasó a tener
+un sistema de diseño con tokens (superficies slate, dos radios, clases de campo), píldoras
+de estado con punto, barra de progreso segmentada, selector de categorías en dos niveles y
+tarjetas de indicador tipo panel SaaS. Detalle en §51 y en "La sesión del 02-sep" abajo.
+
+**Antes (02-sep): tanda de correcciones de seguridad, rendimiento y UX.** Reglas de
 Firestore y Storage endurecidas, la cola offline pasó a IndexedDB (ahora sí guarda las fotos),
 los lotes del script de asignaciones se dividen en bloques de 400, y el Paso 1 del formulario
 pide un punto de referencia rural. Detalle en §50 y en "La sesión del 02-sep" al final de este
@@ -537,4 +542,54 @@ Volvió a estar bloqueada: `npm run revisar` dejó los 5 sistemas web "sin revis
 certificados, que no pasan por el proxy, salieron bien). No es una caída — es lo que describe el
 apartado "Un muro que estuvo puesto" de `CLAUDE.md`. El estado real se mira en la última corrida
 de `vigilar.yml` en GitHub Actions.
+
+---
+
+## El rediseño visual del 02-sep (§51)
+
+Segunda tanda del mismo día. Todo el detalle está en **§51**; acá va lo necesario para
+retomar.
+
+### Qué cambió
+
+| Área | Cambio |
+| --- | --- |
+| Tokens | Superficies slate (`#F8FAFC` fondo / blanco tarjeta), borde `#E2E8F0`, tinta en 4 pasos, **dos radios** (16 px contiene / 12 px se toca) |
+| Clases nuevas | `.campo`, `.campo-error`, `.etiqueta-campo`, `.barra-superior` en `index.css` |
+| Badges | Estado como píldora con punto (rosa/ámbar/esmeralda); gravedad como contorno neutro, distinto a propósito |
+| Formulario | Barra de progreso segmentada con etiquetas y ✓; encabezado fijo con desenfoque |
+| Paso Foto | Zona de captura a ancho completo cuando no hay fotos |
+| Paso Ubicación | Mapa con marco y sombra; **botón de GPS flotando sobre el mapa** con glassmorphism |
+| Categorías | Hoja de **dos niveles**: 9 grupos en cuadrícula 2×N con ícono en disco de color → categorías del grupo |
+| Panel | Tarjetas con número `text-3xl extrabold`, ícono de apoyo y punto de estado |
+| Paleta | 39 archivos migrados de `gray/red/green` a los tokens. **No queda ninguna clase `gray-` en `src/`** |
+
+Verificado: `npm run build` limpio.
+
+### Tres cosas que se hicieron distinto a lo pedido
+
+1. **El azul `#2563EB` quedó como valor por defecto en `utils/tema.js`, no como clase
+   fija.** `primary` se lee de una variable CSS que escribe `tema.js` según
+   `color_primario` de cada municipalidad. Fijar el azul en las clases habría roto el
+   multi-tenant: una comuna con identidad verde vería botones azules.
+2. **El orden de los pasos NO se cambió.** El pedido decía "Foto → Ubicación →
+   Detalles"; el orden real es **Ubicación → El problema → Foto y datos**. La foto va al
+   final porque es lo que permite que la IA revise una categoría ya elegida en vez de
+   adivinar (§48); cambiarlo habría roto esa función. La barra de progreso muestra el
+   orden real.
+3. **Las categorías no quedaron como cuadrícula plana de 58 tarjetas.** Serían 29 filas
+   de scroll, o sea el problema que la hoja vino a resolver (§29). Quedó en dos niveles:
+   la cuadrícula táctil con íconos es la de los 9 grupos.
+
+Además, el color de gravedad quedó en el **punto** y no en el texto: el amarillo de
+"Media" (`#fab219`) sobre blanco da ~1,8:1 de contraste, ilegible.
+
+### Lo que falta mirar
+
+El rediseño **no se pudo ver en un navegador desde la sesión** (la red del contenedor
+bloquea el dominio). Está compilado y desplegado en la vista previa del PR, pero nadie lo
+ha mirado con ojos todavía. Vale la pena abrirlo en un celular antes de fusionar,
+sobre todo el Paso 1: el botón de GPS flotante y el de capa satelital comparten el borde
+inferior del mapa y quedaron en esquinas opuestas — conviene confirmar que no se pisan en
+pantallas angostas.
 

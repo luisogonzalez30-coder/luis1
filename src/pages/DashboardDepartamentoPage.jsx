@@ -47,7 +47,7 @@ export default function DashboardDepartamentoPage() {
 
   if (noEncontrado) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4 text-center text-gray-500">
+      <div className="flex min-h-screen items-center justify-center px-4 text-center text-tinta-suave">
         Tu usuario no tiene una municipalidad válida asociada (municipio_id). Contacta al administrador.
       </div>
     )
@@ -73,14 +73,14 @@ export default function DashboardDepartamentoPage() {
 
   return (
     // Scroll natural, igual que el Dashboard General (ver el comentario allá).
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur">
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-borde bg-white/95 px-4 py-3 backdrop-blur">
         <div>
           <EncabezadoMunicipio municipio={municipio} tituloDefecto="Dashboard Departamento" />
-          <p className="text-sm text-gray-500">{perfil.departamento}</p>
+          <p className="text-sm text-tinta-suave">{perfil.departamento}</p>
         </div>
         {perfil && (
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-tinta-suave">
             <button
               onClick={() => setMostrarEquipo(true)}
               className="flex items-center gap-1 text-primary hover:underline"
@@ -103,13 +103,13 @@ export default function DashboardDepartamentoPage() {
           />
         </div>
 
-        <div className="flex-1 overflow-y-auto border-t border-gray-200 bg-gray-50 md:h-full md:w-[40%] md:border-l md:border-t-0">
-          <div className="border-b border-gray-200 p-3">
+        <div className="flex-1 overflow-y-auto border-t border-borde bg-slate-50 md:h-full md:w-[40%] md:border-l md:border-t-0">
+          <div className="border-b border-borde p-3">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="font-semibold text-gray-700">Por hacer ({porHacer.length})</h2>
+              <h2 className="font-semibold text-tinta">Por hacer ({porHacer.length})</h2>
               <button
                 onClick={() => exportarIncidenciasCsv(incidenciasFiltradas, `incidencias-${perfil.departamento}.csv`)}
-                className="flex items-center gap-1 rounded-lg border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100"
+                className="flex items-center gap-1 rounded-lg border border-borde px-2 py-1 text-xs font-medium text-tinta hover:bg-slate-100"
                 title="Exportar las incidencias filtradas a CSV (Excel)"
               >
                 <Download size={13} /> Exportar CSV
@@ -117,13 +117,13 @@ export default function DashboardDepartamentoPage() {
             </div>
 
             <div className="relative mt-2">
-              <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-tinta-tenue" />
               <input
                 type="text"
                 value={filtroTexto}
                 onChange={(e) => setFiltroTexto(e.target.value)}
                 placeholder="Buscar por ticket, dirección, categoría..."
-                className="w-full rounded-lg border border-gray-300 py-1.5 pl-8 pr-2 text-xs"
+                className="w-full rounded-lg border border-borde py-1.5 pl-8 pr-2 text-xs"
               />
             </div>
 
@@ -133,7 +133,7 @@ export default function DashboardDepartamentoPage() {
                   key={nivel}
                   onClick={() => setFiltroGravedad(nivel)}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition-colors
-                    ${filtroGravedad === nivel ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                    ${filtroGravedad === nivel ? 'bg-primary text-white' : 'bg-slate-100 text-tinta hover:bg-slate-200'}`}
                 >
                   {nivel}
                 </button>
@@ -144,7 +144,7 @@ export default function DashboardDepartamentoPage() {
               <select
                 value={filtroCategoria}
                 onChange={(e) => setFiltroCategoria(e.target.value)}
-                className="flex-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs"
+                className="flex-1 rounded-lg border border-borde px-2 py-1.5 text-xs"
               >
                 <option value="Todas">Todas las categorías</option>
                 {GRUPOS_CATEGORIAS.map((grupo) => (
@@ -159,7 +159,7 @@ export default function DashboardDepartamentoPage() {
               <select
                 value={filtroCuadrilla}
                 onChange={(e) => setFiltroCuadrilla(e.target.value)}
-                className="flex-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs"
+                className="flex-1 rounded-lg border border-borde px-2 py-1.5 text-xs"
               >
                 <option value="Todas">Todas las cuadrillas</option>
                 {cuadrillasMunicipio.map((c) => (

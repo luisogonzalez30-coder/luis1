@@ -138,12 +138,12 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
 
   return (
     <Modal titulo="Presupuesto estimado" onCerrar={onCancelar}>
-      <p className="mb-3 text-sm text-gray-500">
+      <p className="mb-3 text-sm text-tinta-suave">
         Completa esto antes de asignar la cuadrilla — el ticket pasa a "En Proceso" recién cuando guardes.
       </p>
 
       {promedioCategoria && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg bg-gray-50 p-2 text-xs text-gray-600">
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-slate-50 p-2 text-xs text-tinta">
           <TrendingUp size={14} className="mt-0.5 shrink-0" />
           <span>
             Los últimos {promedioCategoria.muestras} trabajos de esta categoría costaron en promedio{' '}
@@ -153,30 +153,30 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
       )}
 
       <form onSubmit={manejarSubmit}>
-        <label className="mb-1 block text-sm font-medium text-gray-700">
+        <label className="mb-1 block text-sm font-medium text-tinta">
           Personal asignado {seleccionados.length > 0 && `(${seleccionados.length})`}
         </label>
         {trabajadores.length === 0 ? (
-          <p className="mb-3 text-sm text-gray-400">
+          <p className="mb-3 text-sm text-tinta-tenue">
             Tu departamento todavía no tiene trabajadores cargados — agrégalos primero en "Mi equipo".
           </p>
         ) : (
-          <div className="mb-3 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-2">
+          <div className="mb-3 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-borde p-2">
             {trabajadores.map((t) => (
-              <label key={t.id} className="flex items-center gap-2 rounded p-1 text-sm hover:bg-gray-50">
+              <label key={t.id} className="flex items-center gap-2 rounded p-1 text-sm hover:bg-slate-50">
                 <input
                   type="checkbox"
                   checked={seleccionados.includes(t.id)}
                   onChange={() => alternarSeleccion(t.id)}
                 />
-                <span className="flex-1">{t.nombre} <span className="text-gray-400">— {t.cargo}</span></span>
-                <span className="text-xs text-gray-400">${(t.tarifa_hora || 0).toLocaleString('es-CL')}/h</span>
+                <span className="flex-1">{t.nombre} <span className="text-tinta-tenue">— {t.cargo}</span></span>
+                <span className="text-xs text-tinta-tenue">${(t.tarifa_hora || 0).toLocaleString('es-CL')}/h</span>
               </label>
             ))}
           </div>
         )}
 
-        <label className="toque mb-3 flex items-start gap-2 rounded-xl bg-gray-50 p-3 text-sm ring-1 ring-gray-200">
+        <label className="toque mb-3 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm ring-1 ring-borde">
           <input
             type="checkbox"
             checked={sinPresupuesto}
@@ -184,8 +184,8 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
             className="mt-0.5"
           />
           <span>
-            <span className="font-medium text-gray-800">N/A — no se puede estimar el costo</span>
-            <span className="mt-0.5 block text-xs text-gray-500">
+            <span className="font-medium text-tinta-fuerte">N/A — no se puede estimar el costo</span>
+            <span className="mt-0.5 block text-xs text-tinta-suave">
               Para cuando todavía no se sabe el alcance del trabajo. La cuadrilla se asigna igual y el
               presupuesto queda sin estimar, en vez de anotar una cifra inventada.
             </span>
@@ -199,15 +199,15 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
           </div>
         )}
 
-        <label className="mb-1 block text-sm font-medium text-gray-700">
-          Horas estimadas {sinPresupuesto && <span className="font-normal text-gray-400">(opcional)</span>}
+        <label className="mb-1 block text-sm font-medium text-tinta">
+          Horas estimadas {sinPresupuesto && <span className="font-normal text-tinta-tenue">(opcional)</span>}
         </label>
         <input
           type="number"
           min="1"
           value={form.horas_estimadas}
           onChange={(e) => setForm((f) => ({ ...f, horas_estimadas: e.target.value }))}
-          className="mb-3 w-full rounded-lg border border-gray-300 p-2.5"
+          className="mb-3 w-full rounded-lg border border-borde p-2.5"
         />
 
         {!sinPresupuesto && costoManoObra > 0 && (
@@ -218,8 +218,8 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
 
         {!sinPresupuesto && (
         <>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Materiales estimados</label>
-        <p className="mb-2 text-xs text-gray-400">
+        <label className="mb-1 block text-sm font-medium text-tinta">Materiales estimados</label>
+        <p className="mb-2 text-xs text-tinta-tenue">
           Uno por línea. Si ya se usó antes en otro trabajo, aparece su último precio real como referencia.
         </p>
         <div className="mb-2 space-y-1">
@@ -234,7 +234,7 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
                     placeholder="Ej: 2 sacos de asfalto frío"
                     value={m.descripcion}
                     onChange={(e) => actualizarMaterial(i, 'descripcion', e.target.value)}
-                    className="flex-1 rounded-lg border border-gray-300 p-2 text-sm"
+                    className="flex-1 rounded-lg border border-borde p-2 text-sm"
                   />
                   <input
                     type="number"
@@ -242,13 +242,13 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
                     placeholder="$"
                     value={m.costo}
                     onChange={(e) => actualizarMaterial(i, 'costo', e.target.value)}
-                    className="w-24 rounded-lg border border-gray-300 p-2 text-sm"
+                    className="w-24 rounded-lg border border-borde p-2 text-sm"
                   />
                   {materiales.length > 1 && (
                     <button
                       type="button"
                       onClick={() => quitarMaterial(i)}
-                      className="shrink-0 text-gray-400 hover:text-estado-critico"
+                      className="shrink-0 text-tinta-tenue hover:text-estado-critico"
                       aria-label="Quitar material"
                     >
                       <Trash2 size={18} />
@@ -277,7 +277,7 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
           <Plus size={14} /> Agregar material
         </button>
 
-        <div className="mb-4 rounded-lg bg-gray-50 p-2 text-xs text-gray-700">
+        <div className="mb-4 rounded-lg bg-slate-50 p-2 text-xs text-tinta">
           Costo aproximado total: <strong>{formatoCLP.format(costoTotal)}</strong> (mano de obra + materiales)
         </div>
         </>
@@ -285,14 +285,14 @@ export default function ModalPresupuesto({ municipioId, departamento, categoria,
 
         {sinPresupuesto && (
           <>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Por qué no se puede estimar <span className="font-normal text-gray-400">(opcional)</span>
+            <label className="mb-1 block text-sm font-medium text-tinta">
+              Por qué no se puede estimar <span className="font-normal text-tinta-tenue">(opcional)</span>
             </label>
             <textarea
               value={motivoSinPresupuesto}
               onChange={(e) => setMotivoSinPresupuesto(e.target.value)}
               rows={2}
-              className="mb-4 w-full rounded-lg border border-gray-300 p-2 text-sm"
+              className="mb-4 w-full rounded-lg border border-borde p-2 text-sm"
               placeholder="Ej: hay que abrir el pavimento para saber qué se rompió"
             />
           </>

@@ -21,7 +21,7 @@ export default function TerminosPage() {
     >
       {(municipio) => (
         <>
-          <div className="mt-6 rounded-2xl border-2 border-red-200 bg-red-50 p-4">
+          <div className="mt-6 rounded-2xl border-2 border-red-200 bg-rose-50 p-4">
             <h2 className="flex items-center gap-2 text-base font-bold text-red-900">
               <Phone size={18} /> Esto no es un canal de emergencias
             </h2>

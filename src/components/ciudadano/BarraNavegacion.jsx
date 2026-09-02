@@ -35,7 +35,7 @@ export default function BarraNavegacion({ municipioSlug }) {
 
   return (
     <nav
-      className="no-imprimir fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-white/90 backdrop-blur-md"
+      className="no-imprimir fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-white/85 shadow-barra backdrop-blur-md"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-label="Navegación principal"
     >
