@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  super_admin
+  admin_municipal
+  encargado_transparencia
+  auditor
+
+  @@map("rol")
+}
+
+enum EstadoRevision {
+  cumple
+  no_cumple
+  desactualizada
+  resuelta_pendiente_verificacion
+
+  @@map("estado_revision")
+}
+
+enum EstadoSolicitud {
+  en_plazo
+  por_vencer
+  vencida
+  respondida
+
+  @@map("estado_solicitud")
+}
+
+model Municipio {
+  id       String   @id @default(uuid())
+  nombre   String   @unique
+  comuna   String
+  region   String
+  plan     String   @default("piloto")
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  usuarios    Usuario[]
+  revisiones  Revision[]
+  enlaces     Enlace[]
+  solicitudes SolicitudAcceso[]
+  informes    InformeCumplimiento[]
+  auditLogs   AuditLog[]
+
+  @@map("municipio")
+}
+
+model Usuario {
+  id            String    @id @default(uuid())
+  municipioId   String    @map("municipio_id")
+  email         String    @unique
+  nombre        String
+  rol           Rol
+  hashPassword  String    @map("hash_password")
+  mfaHabilitado Boolean   @default(false) @map("mfa_habilitado")
+  activo        Boolean   @default(true)
+  ultimoLogin   DateTime? @map("ultimo_login")
+  creadoEn      DateTime  @default(now()) @map("creado_en")
+
+  municipio           Municipio  @relation(fields: [municipioId], references: [id])
+  revisionesResueltas Revision[] @relation("ResueltoPor")
+  auditLogs           AuditLog[]
+
+  @@index([municipioId])
+  @@map("usuario")
+}
+
+model SeccionTransparencia {
+  id               String  @id @default(uuid())
+  codigoLey        String  @unique @map("codigo_ley")
+  nombre           String
+  periodicidadDias Int     @map("periodicidad_dias")
+  obligatoria      Boolean @default(true)
+
+  revisiones Revision[]
+  enlaces    Enlace[]
+
+  @@map("seccion_transparencia")
+}
+
+model Revision {
+  id            String         @id @default(uuid())
+  municipioId   String         @map("municipio_id")
+  seccionId     String         @map("seccion_id")
+  estado        EstadoRevision
+  detalle       String?
+  evidenciaUrl  String?        @map("evidencia_url")
+  revisadoEn    DateTime       @default(now()) @map("revisado_en")
+  resueltoPorId String?        @map("resuelto_por")
+
+  municipio   Municipio             @relation(fields: [municipioId], references: [id])
+  seccion     SeccionTransparencia  @relation(fields: [seccionId], references: [id])
+  resueltoPor Usuario?              @relation("ResueltoPor", fields: [resueltoPorId], references: [id])
+
+  @@index([municipioId])
+  @@index([municipioId, estado])
+  @@map("revision")
+}
+
+model Enlace {
+  id                 String    @id @default(uuid())
+  municipioId        String    @map("municipio_id")
+  seccionId          String    @map("seccion_id")
+  url                String
+  ultimoStatusHttp   Int?      @map("ultimo_status_http")
+  ultimaVerificacion DateTime? @map("ultima_verificacion")
+  caidoDesde         DateTime? @map("caido_desde")
+  // Selector CSS para ubicar el indicador de "última actualización" en la
+  // página del portal municipal — cada municipio publica con una plantilla
+  // distinta, así que esto se configura por enlace, no es un scraper único
+  // para todos (ver riesgo técnico documentado en el diseño). Null =
+  // todavía sin configurar para ese enlace; el chequeo de sección lo salta.
+  selectorFecha      String?   @map("selector_fecha")
+
+  municipio Municipio            @relation(fields: [municipioId], references: [id])
+  seccion   SeccionTransparencia @relation(fields: [seccionId], references: [id])
+
+  @@unique([municipioId, seccionId])
+  @@index([municipioId])
+  @@map("enlace")
+}
+
+model SolicitudAcceso {
+  id                       String          @id @default(uuid())
+  municipioId              String          @map("municipio_id")
+  folio                    String
+  solicitanteNombreCifrado String          @map("solicitante_nombre_cifrado")
+  fechaIngreso             DateTime        @map("fecha_ingreso") @db.Date
+  fechaLimite              DateTime        @map("fecha_limite") @db.Date
+  estado                   EstadoSolicitud @default(en_plazo)
+  respuestaUrl             String?         @map("respuesta_url")
+  creadoEn                 DateTime        @default(now()) @map("creado_en")
+
+  municipio Municipio @relation(fields: [municipioId], references: [id])
+
+  @@index([municipioId])
+  @@index([municipioId, estado])
+  @@map("solicitud_acceso")
+}
+
+model InformeCumplimiento {
+  id                     String   @id @default(uuid())
+  municipioId            String   @map("municipio_id")
+  periodo                DateTime @db.Date
+  porcentajeCumplimiento Decimal  @map("porcentaje_cumplimiento") @db.Decimal(5, 2)
+  generadoEn             DateTime @default(now()) @map("generado_en")
+
+  municipio Municipio @relation(fields: [municipioId], references: [id])
+
+  // Un snapshot por municipio y periodo — permite que el job mensual sea
+  // idempotente (upsert) en vez de acumular duplicados si se re-ejecuta.
+  @@unique([municipioId, periodo])
+  @@index([municipioId])
+  @@map("informe_cumplimiento")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  municipioId String   @map("municipio_id")
+  usuarioId   String?  @map("usuario_id")
+  accion      String
+  entidad     String
+  entidadId   String?  @map("entidad_id")
+  ip          String?
+  ocurridoEn  DateTime @default(now()) @map("ocurrido_en")
+
+  municipio Municipio @relation(fields: [municipioId], references: [id])
+  usuario   Usuario?  @relation(fields: [usuarioId], references: [id])
+
+  @@index([municipioId])
+  @@map("audit_log")
+}

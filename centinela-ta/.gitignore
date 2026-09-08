@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.next/
+out/
+*.tsbuildinfo
+
+# Cliente Prisma generado (binario + código regenerable con `prisma generate`,
+# no corresponde versionarlo — ver packages/database/package.json "generate").
+packages/database/src/generated/
+
+# Secretos y config local — usar .env.example como plantilla.
+.env
+.env.local
+.env.*.local
+
+*.log
+.DS_Store
