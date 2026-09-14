@@ -1,4 +1,4 @@
-// Catálogo de categorías de TuCondoAquí: qué puede reportar un residente.
+// Catálogo de categorías de CondominioAquí: qué puede reportar un residente.
 //
 // 84 categorías en 9 grupos, salidas del estudio de mercado (docs/ESTUDIO-MERCADO.md):
 // los problemas que de verdad ocurren en un condominio chileno, más las

@@ -40,13 +40,13 @@ export default function TerminosPage() {
 
           <Seccion titulo="Qué es esta plataforma">
             <p>
-              TuCondoAquí es el canal por el que la administración de <strong>{condominio.nombre}</strong>
+              CondominioAquí es el canal por el que la administración de <strong>{condominio.nombre}</strong>
               recibe las solicitudes de sus residentes: filtraciones, ascensores detenidos, luces
               quemadas, ruidos molestos, aseo y similares. No requiere registrarse ni instalar nada.
             </p>
             <p>
               El servicio lo presta la administración del condominio. La plataforma tecnológica la
-              provee TuCondoAquí.
+              provee CondominioAquí.
             </p>
           </Seccion>
 
@@ -113,7 +113,7 @@ export default function TerminosPage() {
               conexión, pero eso <strong>no reemplaza a los teléfonos de emergencia</strong>.
             </p>
             <p>
-              Ni el condominio ni TuCondoAquí responden por daños derivados de la
+              Ni el condominio ni CondominioAquí responden por daños derivados de la
               indisponibilidad del servicio, ni por el contenido que publiquen los propios usuarios.
               Esto no limita la responsabilidad que la ley imponga a el condominio por el
               ejercicio de sus funciones.

@@ -10,7 +10,7 @@ import PaginaLegal, { Seccion, ContactoDatos } from '../components/common/Pagina
 // datos recogemos" Y la fecha en ULTIMA_ACTUALIZACION.
 //
 // Reparto de roles bajo la Ley 21.719: el condominio es la RESPONSABLE del
-// tratamiento (decide para qué se usan los datos de sus residentes) y TuCondoAquí
+// tratamiento (decide para qué se usan los datos de sus residentes) y CondominioAquí
 // es el ENCARGADO (solo los trata siguiendo sus instrucciones). Por eso el
 // contacto para ejercer derechos es el del condominio, no el nuestro.
 export default function PrivacidadPage() {
@@ -42,7 +42,7 @@ export default function PrivacidadPage() {
               personales: es quien decide para qué se usan y quien responde ante ti por ellos.
             </p>
             <p>
-              TuCondoAquí es la plataforma tecnológica que el condominio contrató para gestionar
+              CondominioAquí es la plataforma tecnológica que el condominio contrató para gestionar
               los reportes. Actuamos como <em>encargado del tratamiento</em>: tratamos tus datos
               únicamente siguiendo las instrucciones del condominio, y no los usamos para ningún fin
               propio.

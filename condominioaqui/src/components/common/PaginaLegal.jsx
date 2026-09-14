@@ -86,7 +86,7 @@ export default function PaginaLegal({ condominioSlug, titulo, bajada, children }
           <Link to={`/${condominioSlug}/terminos`} className="underline">Términos de servicio</Link>
           <Link to={`/${condominioSlug}/transparencia`} className="underline">Transparencia</Link>
         </div>
-        <p className="mt-2">TuCondoAquí — plataforma de gestión de solicitudes para condominios.</p>
+        <p className="mt-2">CondominioAquí — plataforma de gestión de solicitudes para condominios.</p>
       </div>
     </div>
  )

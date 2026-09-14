@@ -1,4 +1,4 @@
-# TuCondoAquí — arquitectura y plan
+# CondominioAquí — arquitectura y plan
 
 **Fecha:** 14 de septiembre de 2026
 **Documento hermano:** `docs/ESTUDIO-MERCADO.md` (por qué se hace esto)
@@ -139,19 +139,13 @@ El residente **no tiene cuenta**. Reporta y consulta con su número de ticket.
 
 ### Antes del primer condominio real
 
-1. **Crear el proyecto de Firebase** y desplegar `firestore.rules`
-   (`npm run desplegar:reglas`). Ver la advertencia de `LEEME.md` sobre no
-   compartir proyecto con otro producto: las reglas se despliegan completas y se
-   pisan entre sí.
-2. **Sembrar el demo**: `npm run demo -- --aplicar` (requiere
-   `serviceAccountKey.json`). Deja el condominio `demo` con 3 torres, 144
-   unidades, 14 espacios comunes, 18 solicitudes y el calendario de mantenciones
-   a medio cumplir — abre en 31% de cumplimiento con 3 obligaciones vencidas, a
-   propósito: un demo donde todo está al día no muestra para qué sirve el módulo.
-3. **Crear a mano el usuario `ADMINISTRADOR`** del condominio demo (Auth +
-   documento en `usuarios_condominio`).
-4. **Habilitar PDF en el preset de Cloudinary** (ver §5).
-5. **Verificar `tucondoaqui.cl`** en NIC Chile y la marca en INAPI.
+1. **Puesta en marcha completa: `DESPLEGAR.md`.** Crear el proyecto de Firebase,
+   encender Firestore/Auth/Hosting, copiar la configuración, crear la clave de
+   servicio, cargar los secretos en GitHub, desplegar las reglas, sembrar el demo
+   y crear el usuario administrador. Es todo clics en la consola: no se puede
+   hacer desde una sesión de Claude.
+2. **Habilitar PDF en el preset de Cloudinary** (ver §5).
+3. **Verificar `condominioaqui.cl`** en NIC Chile y la marca en INAPI.
 
 ### Para que sea vendible
 
@@ -174,7 +168,38 @@ El residente **no tiene cuenta**. Reporta y consulta con su número de ticket.
 11. Votaciones y asambleas.
 12. Landing comercial.
 
-## 8. Lo que no se ha verificado
+## 8. Publicación automática
+
+`.github/workflows/desplegar-condominioaqui.yml`. Es gemelo del de TuMuniAquí
+pero apunta a otro producto y a otro proyecto de Firebase; conviven en el mismo
+repositorio sin pisarse porque cada uno filtra por carpeta:
+
+| Evento | Qué pasa |
+|---|---|
+| PR que toca `condominioaqui/**` | Vista previa en URL temporal, comentada en el PR (7 días) |
+| Merge a `main` | Publica el sitio real |
+| Cambio en TuMuniAquí | Este workflow **no corre** |
+| Cambio solo en un `.md` de esta carpeta | Tampoco corre |
+
+Tres decisiones del workflow que conviene no deshacer:
+
+- **Comprueba los 8 secretos `VITE_*` ANTES de compilar** y falla nombrando el
+  que falta. Vite no falla cuando falta uno: lo reemplaza por `undefined` y
+  compila igual, el sitio se publica, y `firebase.js` revienta con
+  `auth/invalid-api-key` al cargar. Build verde, app muerta — ya pasó en el otro
+  producto.
+- **Los secretos llevan sufijo `_CONDOMINIO`.** Si se llamaran igual que los de
+  TuMuniAquí, un workflow compilaría con la configuración del otro y publicaría
+  una app que escribe en la base de datos equivocada.
+- **En un PR, la falta de credencial avisa y sigue; en `main`, falla.** Omitir en
+  silencio en producción deja creyendo que el sitio se actualizó cuando no pasó
+  nada.
+
+Las reglas de Firestore **no** se despliegan solas, a propósito: una regla mal
+escrita abre la base entera, y eso no debe salir sin que alguien lo mire. Van a
+mano con `npm run desplegar:reglas`.
+
+## 9. Lo que no se ha verificado
 
 `npm run build` queda verde y el dominio está probado (catálogo, triage,
 derivación, plan de cumplimiento y modelo de unidades), pero **nada de esto se ha

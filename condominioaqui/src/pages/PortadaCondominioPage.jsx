@@ -76,7 +76,7 @@ export default function PortadaCondominioPage() {
        ) : (
           <MapPin size={40} className="text-primary" />
        )}
-        <h1 className="text-lg font-bold text-gray-900">TuCondoAquí</h1>
+        <h1 className="text-lg font-bold text-gray-900">CondominioAquí</h1>
         <p className="max-w-sm text-sm text-gray-500">{condominio.nombre}</p>
       </div>
 

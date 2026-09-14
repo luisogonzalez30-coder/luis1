@@ -28,10 +28,16 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
+      # CondominioAquí es otro producto, con su propio proyecto de Firebase y su
+      # propio workflow (desplegar-condominioaqui.yml). Sin esta línea, tocar un
+      # archivo de esa carpeta republicaría el sitio del municipio sin que nada
+      # suyo hubiera cambiado.
+      - 'condominioaqui/**'
   pull_request:
     paths-ignore:
       - '**.md'
       - 'docs/**'
+      - 'condominioaqui/**'
 
 # Si se empujan dos commits seguidos, cancela el despliegue viejo en vez de
 # encolar los dos: publicar una versión ya superada solo confunde.

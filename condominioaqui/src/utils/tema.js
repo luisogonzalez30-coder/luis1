@@ -4,7 +4,7 @@ const VAR_PRIMARIO = '--color-primary-rgb'
 const VAR_PRIMARIO_OSCURO = '--color-primary-dark-rgb'
 const DEFAULT_PRIMARIO = '29 78 216' // #1D4ED8
 const DEFAULT_PRIMARIO_OSCURO = '30 58 138' // #1E3A8A
-const TITULO_DEFECTO = 'TuCondoAquí'
+const TITULO_DEFECTO = 'CondominioAquí'
 const COLOR_DEFECTO = '#1D4ED8'
 
 function hexARgbTriple(hex) {
@@ -22,7 +22,7 @@ export function aplicarTema(condominio) {
     VAR_PRIMARIO_OSCURO,
     hexARgbTriple(condominio?.color_primario_oscuro) || DEFAULT_PRIMARIO_OSCURO
  )
-  document.title = condominio?.nombre ? `TuCondoAquí — ${condominio.nombre}` : TITULO_DEFECTO
+  document.title = condominio?.nombre ? `CondominioAquí — ${condominio.nombre}` : TITULO_DEFECTO
 
   const meta = document.querySelector('meta[name="theme-color"]')
   if (meta) meta.setAttribute('content', condominio?.color_primario || COLOR_DEFECTO)

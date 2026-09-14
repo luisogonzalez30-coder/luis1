@@ -1,6 +1,6 @@
 {
-  "name": "TuCondoAquí",
-  "short_name": "TuCondo",
+  "name": "CondominioAquí",
+  "short_name": "Condominio",
   "description": "Reporta lo que pasa en tu condominio y sigue en qué va, sin instalar nada.",
   "scope": "/",
   "display": "standalone",

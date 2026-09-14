@@ -407,7 +407,7 @@ export default function PanelAdministracionPage() {
           </div>
         </div>
         <p className="mt-3 text-[11px] text-tinta-tenue">
-          Los datos se actualizan solos, en tiempo real. TuCondoAquí.
+          Los datos se actualizan solos, en tiempo real. CondominioAquí.
         </p>
       </footer>
 

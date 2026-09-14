@@ -5,7 +5,7 @@ El detalle técnico completo está en `ESTADO_PROYECTO.md` (49 secciones).
 
 ---
 
-## 🏢 14-sep-2026: nació un producto aparte — TuCondoAquí (`tucondoaqui/`)
+## 🏢 14-sep-2026: nació un producto aparte — CondominioAquí (`condominioaqui/`)
 
 **No es parte de TuMuniAquí y no lo toca.** Es una plataforma para **condominios y
 edificios**, con su propio código, su propio `package.json`, su propia base de datos y su
@@ -13,12 +13,12 @@ propio `firestore.rules`. Nació de este motor, pero desde el día uno son dos c
 **TuMuniAquí quedó exactamente como estaba** (se comprobó: el código es idéntico al del
 commit anterior, salvo esta nota y una fila en `LEEME.md`).
 
-Todo lo suyo se lee ahí adentro, empezando por **`tucondoaqui/LEEME.md`**:
+Todo lo suyo se lee ahí adentro, empezando por **`condominioaqui/LEEME.md`**:
 
-- `tucondoaqui/docs/ESTUDIO-MERCADO.md` — la competencia real en Chile (ComunidadFeliz,
+- `condominioaqui/docs/ESTUDIO-MERCADO.md` — la competencia real en Chile (ComunidadFeliz,
   Edifito, Kastor, Swappi, ComunIA…), sus falencias verificadas y el hueco del mercado: todos
   están construidos alrededor del dinero, y nadie lleva el cumplimiento de la Ley 21.442.
-- `tucondoaqui/docs/ARQUITECTURA.md` — cómo está hecho y qué falta, en orden.
+- `condominioaqui/docs/ARQUITECTURA.md` — cómo está hecho y qué falta, en orden.
 
 Lo único que importa saber desde acá: **ese proyecto necesita su propio proyecto de
 Firebase.** Desplegar sus reglas sobre el proyecto de TuMuniAquí borraría las de acá —

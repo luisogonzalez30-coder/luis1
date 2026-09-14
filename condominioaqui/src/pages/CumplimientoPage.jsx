@@ -12,7 +12,7 @@ import ResumenCumplimiento from '../components/cumplimiento/ResumenCumplimiento'
 import TarjetaObligacion from '../components/cumplimiento/TarjetaObligacion'
 import ModalRegistroMantencion from '../components/cumplimiento/ModalRegistroMantencion'
 
-// Panel de Cumplimiento de la Ley 21.442 — el diferenciador de TuCondoAquí.
+// Panel de Cumplimiento de la Ley 21.442 — el diferenciador de CondominioAquí.
 //
 // El software de condominios que existe en Chile está construido alrededor del
 // dinero (gasto común, recaudación, conciliación). El vencimiento de una

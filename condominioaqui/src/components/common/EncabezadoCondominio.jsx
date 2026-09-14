@@ -1,6 +1,6 @@
 // Muestra el logo y nombre de la administración activa (tenant), o el título genérico
 // de la app si aún no hay condominio cargado (ej. mientras carga, o en la landing).
-export default function EncabezadoCondominio({ condominio, tituloDefecto = 'TuCondoAquí' }) {
+export default function EncabezadoCondominio({ condominio, tituloDefecto = 'CondominioAquí' }) {
   if (!condominio) {
     return <h1 className="text-xl font-bold text-gray-900">{tituloDefecto}</h1>
   }

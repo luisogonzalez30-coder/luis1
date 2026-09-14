@@ -1,5 +1,5 @@
 // Calendario de mantenciones y certificaciones obligatorias de un condominio
-// (vertical TuCondoAquí).
+// (vertical CondominioAquí).
 //
 // POR QUÉ ESTO ES EL NÚCLEO DEL PRODUCTO Y NO UN ACCESORIO
 //

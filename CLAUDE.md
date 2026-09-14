@@ -26,7 +26,7 @@ Lo que **no** entra: los otros frentes del usuario (la API de ChatGPT, log-inspa
 kpop). Viven en sus propios espacios y no deben mezclarse acá — mezclarlos es lo que hacía que
 cada conversación arrancara sin saber de qué se estaba hablando.
 
-**Tampoco entra `tucondoaqui/`**, aunque esté en esta misma carpeta. Es **TuCondoAquí**, un
+**Tampoco entra `condominioaqui/`**, aunque esté en esta misma carpeta. Es **CondominioAquí**, un
 producto aparte para condominios y edificios: su propio código, su propia base de datos, su
 propio `package.json`, su propio `firestore.rules` y su propio `LEEME.md`. Nació el
 14-sep-2026 a partir de este motor, pero desde entonces son dos cosas distintas y **un cambio

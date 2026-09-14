@@ -39,7 +39,7 @@ export default function LandingPage() {
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 px-6 py-10 text-center">
       <div className="flex flex-col items-center gap-2">
         <MapPin size={40} className="text-primary" />
-        <h1 className="text-xl font-bold text-gray-900">TuCondoAquí</h1>
+        <h1 className="text-xl font-bold text-gray-900">CondominioAquí</h1>
         <p className="max-w-sm text-sm text-gray-500">Condominio Demo</p>
       </div>
 

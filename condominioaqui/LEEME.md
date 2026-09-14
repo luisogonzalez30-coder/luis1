@@ -1,4 +1,4 @@
-# TuCondoAquí
+# CondominioAquí
 
 Plataforma de gestión de solicitudes y cumplimiento legal para condominios y
 edificios chilenos.
@@ -40,12 +40,23 @@ npm run dev
 | `npm run build` | Compila a `dist/` |
 | `npm run demo` | **Simula** la creación del condominio de demostración, sin escribir |
 | `npm run demo -- --aplicar` | Lo crea de verdad (necesita `serviceAccountKey.json`) |
-| `npm run desplegar` | Compila y publica en Firebase Hosting |
-| `npm run desplegar:reglas` | Publica `firestore.rules` y los índices |
+| `npm run desplegar` | Compila y publica en Firebase Hosting (a mano; normalmente lo hace solo el workflow) |
+| `npm run desplegar:reglas` | Publica `firestore.rules` y los índices — **esto sí es a mano siempre** |
 
-## Firebase: un proyecto propio
+## Lo primero: crear el proyecto de Firebase
 
-> ⚠️ **Usa un proyecto de Firebase distinto del de TuMuniAquí.**
+**Todavía no existe.** Sin él no hay base de datos, ni login, ni sitio: la app
+compila pero no puede hacer nada. Los pasos son clics en la consola de Firebase
+y están, uno por uno, en **`DESPLEGAR.md`**.
+
+Cuando esté listo, publicar es automático: `.github/workflows/desplegar-condominioaqui.yml`
+saca una vista previa en cada PR que toque esta carpeta y publica el sitio real
+al fusionar a `main`. Lo único que nunca es automático son las reglas de
+Firestore — se despliegan a mano con `npm run desplegar:reglas`, a propósito:
+una regla mal escrita abre la base entera, y eso no debe salir sin que alguien
+lo mire.
+
+> ⚠️ **Tiene que ser un proyecto distinto del de TuMuniAquí.**
 >
 > Los dos proyectos tienen su propio `firestore.rules`, y las reglas de Firestore
 > se despliegan **completas**: publicar las de acá sobre el proyecto del otro
@@ -104,9 +115,13 @@ una app que usarán dos veces al año es cómo se pierde la adopción.
 
 ## Lo que falta
 
-En `docs/ARQUITECTURA.md`, sección "Qué falta — en orden". Lo primero:
+Los pasos de puesta en marcha están en **`DESPLEGAR.md`**. Lo que falta del
+producto, en `docs/ARQUITECTURA.md`, sección "Qué falta — en orden":
 
-1. Crear el proyecto de Firebase y desplegar `firestore.rules`.
-2. `npm run demo -- --aplicar` y crear a mano el usuario `ADMINISTRADOR`.
-3. Habilitar PDF en el preset de Cloudinary (`resource_type: auto`).
-4. WhatsApp: el bot todavía no está portado a este producto.
+1. Crear el proyecto de Firebase, desplegar las reglas, sembrar el demo y crear
+   el usuario administrador (todo en `DESPLEGAR.md`).
+2. Habilitar PDF en el preset de Cloudinary (`resource_type: auto`).
+3. WhatsApp: el bot todavía no está portado a este producto, y no es copiar y
+   pegar — las plantillas de Meta se aprueban por texto y las existentes nombran
+   a una municipalidad.
+4. Informe de cumplimiento en PDF para la rendición al comité.

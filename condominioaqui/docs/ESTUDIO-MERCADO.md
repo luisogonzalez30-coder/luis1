@@ -1,4 +1,4 @@
-# Estudio de mercado — TuCondoAquí
+# Estudio de mercado — CondominioAquí
 
 **Fecha:** 14 de septiembre de 2026
 **Pregunta que responde:** ¿tiene sentido llevar el motor de TuMuniAquí al mercado de
@@ -201,30 +201,30 @@ fallando.
 
 ---
 
-## 5. El producto: TuCondoAquí
+## 5. El producto: CondominioAquí
 
 ### 5.1 El nombre
 
-**TuCondoAquí**, siguiendo la construcción de TuMuniAquí: `Tu` + entidad abreviada + `Aquí`.
+**CondominioAquí**, siguiendo la construcción de TuMuniAquí: `Tu` + entidad abreviada + `Aquí`.
 
 | Candidato | Veredicto |
 |---|---|
-| **TuCondoAquí** | **Elegido.** Mismo patrón, misma cadencia, 11 caracteres. "Condo" es el diminutivo que la gente ya usa. No se encontró marca ni app chilena usando el nombre |
-| TuCondominioAquí | Correcto pero largo; se rompe en un ícono de app y en un QR |
+| **CondominioAquí** | **Elegido.** Mismo patrón, misma cadencia, 11 caracteres. "Condo" es el diminutivo que la gente ya usa. No se encontró marca ni app chilena usando el nombre |
+| CondominioAquíminioAquí | Correcto pero largo; se rompe en un ícono de app y en un QR |
 | MiCondoAquí | "Mi" pierde el paralelismo con la familia de productos |
 | TuComuniAquí | Ambiguo: "comuna" y "comunidad" chocan justo en este rubro |
 | TuEdificioAquí | Deja fuera a los conjuntos de casas, que son la mitad del mercado |
 
-Ventaja de familia: **TuMuniAquí** y **TuCondoAquí** se presentan juntos como una misma casa de
+Ventaja de familia: **TuMuniAquí** y **CondominioAquí** se presentan juntos como una misma casa de
 software. Para un municipio que ya es cliente, el segundo producto no es un proveedor nuevo.
 
-> Pendiente antes de comprometer el nombre: verificar disponibilidad de `tucondoaqui.cl` en
+> Pendiente antes de comprometer el nombre: verificar disponibilidad de `condominioaqui.cl` en
 > NIC Chile y hacer la búsqueda de marca en INAPI. No se pudo hacer desde la sesión (la
 > política de red del contenedor bloquea esos dominios).
 
 ### 5.2 Posicionamiento
 
-> **El software de administración lleva la plata del condominio. TuCondoAquí lleva lo que
+> **El software de administración lleva la plata del condominio. CondominioAquí lleva lo que
 > pasa adentro — y la prueba de que se hizo.**
 
 No competimos de frente con ComunidadFeliz en gasto común y conciliación bancaria: son años de
@@ -232,7 +232,7 @@ ventaja y es su fortaleza. Competimos en operación, cumplimiento y evidencia, d
 tienen un módulo y nosotros tenemos el producto entero.
 
 **Convivencia, no reemplazo.** Un condominio puede tener ComunidadFeliz para el dinero y
-TuCondoAquí para la operación. Eso baja la barrera de entrada de manera decisiva: no hay que
+CondominioAquí para la operación. Eso baja la barrera de entrada de manera decisiva: no hay que
 convencer a nadie de migrar su contabilidad.
 
 ### 5.3 El canal que nadie más tiene
@@ -276,7 +276,7 @@ condominio, la unidad identifica al hogar.** "Torre B · 402 reportó ruidos mol
 colección de lectura pública es publicar quién acusó a quién, entre vecinos que se cruzan en el
 ascensor todos los días.
 
-Por eso, en TuCondoAquí:
+Por eso, en CondominioAquí:
 
 - La **torre y el número de unidad nunca salen** de la incidencia, que solo ve la
   administración. No viajan a `tickets_publicos`, que es de lectura pública.

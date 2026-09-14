@@ -1,6 +1,6 @@
 import { normalizarTexto } from './busqueda'
 
-// Ubicación dentro de un condominio (vertical TuCondoAquí).
+// Ubicación dentro de un condominio (vertical CondominioAquí).
 //
 // En un condominio la ubicación es una coordenada: el problema puede estar en
 // cualquier punto de un condominio de 300 km². En un condominio el terreno
