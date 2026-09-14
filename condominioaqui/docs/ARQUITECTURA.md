@@ -200,13 +200,43 @@ Las reglas de Firestore **no** se despliegan solas, a propósito: una regla mal
 escrita abre la base entera, y eso no debe salir sin que alguien lo mire. Van a
 mano con `npm run desplegar:reglas`.
 
-## 9. Lo que no se ha verificado
+## 9. Los índices de Firestore
 
-`npm run build` queda verde y el dominio está probado (catálogo, triage,
-derivación, plan de cumplimiento y modelo de unidades), pero **nada de esto se ha
-visto funcionando en un navegador**: no hay proyecto de Firebase creado todavía,
-así que la app no ha hablado con una base de datos real ni una sola vez.
+`firestore.indexes.json` **no se puede copiar del producto municipal**, y eso ya
+costó un susto: la copia inicial traía cinco índices sobre `incidencias`,
+`tickets_publicos` y `municipio_id` — tres nombres que en este producto no
+existen. Desplegarla habría creado cinco índices inútiles y **ninguno** de los
+que las consultas necesitan, así que cada panel habría fallado con "The query
+requires an index" en el primer uso.
 
-Lo primero que se descubra al conectarla probablemente sea un campo que falta en
-las reglas o un índice de Firestore que Firebase pide crear. Es lo normal, pero
-hay que decirlo: esto está compilado, no probado.
+Los cinco que están ahora salen de leer las consultas reales de `src/services/`:
+
+| Colección | Campos | Para qué |
+|---|---|---|
+| `solicitudes` | `condominio_id` + `fecha_creacion ↓` | Panel completo y el informe por período (el rango de fechas va sobre el mismo campo que ordena, así que este índice lo cubre) |
+| `solicitudes` | `condominio_id` + `estado` + `fecha_creacion ↓` | Panel filtrado por estado |
+| `tickets_condominio` | `condominio_id` + `fecha_creacion ↓` | "Últimos reportes" del residente |
+| `tickets_condominio` | `condominio_id` + `estado` + `fecha_creacion ↓` | Tickets activos |
+| `tickets_condominio` | `condominio_id` + `estado` + `categoria` + `fecha_creacion ↓` | Detección de duplicados |
+
+Las consultas de solo igualdades (`personal` por `condominio_id` + `area`,
+`usuarios_condominio` por `condominio_id`) **no llevan índice compuesto**:
+Firestore las resuelve con los índices automáticos de campo único. Es el mismo
+criterio que sigue el producto municipal, que lleva meses en producción sin
+índice para ese caso.
+
+Si se agrega una consulta con dos filtros distintos y un `orderBy`, hay que
+agregar su índice acá **antes** de publicarla: en producción el error aparece
+recién cuando alguien abre esa pantalla.
+
+## 10. Lo que no se ha verificado
+
+`npm run build` queda verde, el dominio está probado (catálogo, triage,
+derivación, plan de cumplimiento y modelo de unidades) y los índices salen de las
+consultas reales — pero **nada de esto se ha visto funcionando en un navegador**.
+El proyecto de Firebase existe (`condominioaqui-7be45`) y todavía no se le han
+desplegado las reglas ni sembrado datos, así que la app no ha hablado con una
+base de datos real ni una sola vez.
+
+Lo que falta para conectarla está en `DESPLEGAR.md`, y necesita credenciales que
+solo tiene el usuario.

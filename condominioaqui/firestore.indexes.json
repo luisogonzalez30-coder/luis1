@@ -1,89 +1,47 @@
 {
   "indexes": [
     {
-      "collectionGroup": "incidencias",
+      "collectionGroup": "solicitudes",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "municipio_id",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "fecha_creacion",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "condominio_id", "order": "ASCENDING" },
+        { "fieldPath": "fecha_creacion", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "incidencias",
+      "collectionGroup": "solicitudes",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "municipio_id",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "estado",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "fecha_creacion",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "condominio_id", "order": "ASCENDING" },
+        { "fieldPath": "estado", "order": "ASCENDING" },
+        { "fieldPath": "fecha_creacion", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "tickets_publicos",
+      "collectionGroup": "tickets_condominio",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "municipio_id",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "fecha_creacion",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "condominio_id", "order": "ASCENDING" },
+        { "fieldPath": "fecha_creacion", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "tickets_publicos",
+      "collectionGroup": "tickets_condominio",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "municipio_id",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "estado",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "fecha_creacion",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "condominio_id", "order": "ASCENDING" },
+        { "fieldPath": "estado", "order": "ASCENDING" },
+        { "fieldPath": "fecha_creacion", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "tickets_publicos",
+      "collectionGroup": "tickets_condominio",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "municipio_id",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "estado",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "categoria",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "fecha_creacion",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "condominio_id", "order": "ASCENDING" },
+        { "fieldPath": "estado", "order": "ASCENDING" },
+        { "fieldPath": "categoria", "order": "ASCENDING" },
+        { "fieldPath": "fecha_creacion", "order": "DESCENDING" }
       ]
     }
   ],
