@@ -81,11 +81,15 @@ externo. `serviceAccountKey.json` y `backups/` viven fuera del repositorio y ah�
 
 ## Un muro que estuvo puesto: la red de las sesiones
 
-> **Levantado desde el 30-ago-2026.** Comprobado corriendo el código, no leyendo esto:
-> producción, la landing, el bot, Nominatim y `api.mercadopublico.cl` responden todos, y el
-> proxy reporta `"selective": false` (sin lista blanca). **`npm run revisar` y los scripts de
-> `mp:*` funcionan desde acá.** Lo que sigue es el diagnóstico de cuando estaba puesto, que
-> se conserva porque el bloqueo se define por entorno y puede volver en una sesión nueva.
+> **Volvió a estar puesto — comprobado el 14-sep-2026.** El 30-ago se había levantado, pero
+> en las sesiones de hoy `curl` a `app-incidencias-urbanas.web.app`, `tumuniaqui.web.app` y
+> `proyectomuni.onrender.com` devuelve código `000` con `connect_rejected` del proxy. O sea
+> que **el bloqueo se define por entorno y va y viene**: no hay que dar por buena ninguna de
+> las dos versiones sin comprobarla en la sesión que se está usando.
+>
+> Lo que sí funciona desde acá: GitHub (va por otro proxy) y npm. Para saber el estado real
+> de producción, mirar la última corrida de `vigilar.yml` en GitHub Actions, que sí alcanza
+> los sitios.
 >
 > Antes de dar por caído un servicio, comprobar cuál de los dos mundos es: `curl` a un
 > dominio del proyecto. Código `000` o 403 del proxy = la red de la sesión. Cualquier otra

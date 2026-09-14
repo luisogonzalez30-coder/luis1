@@ -8,10 +8,13 @@
 #   1. Pull Request → vista previa en URL temporal, comentada en el PR (7 días).
 #   2. Merge a main → sitio real.
 #
-# Mientras la configuración inicial no esté hecha, en un PR este workflow avisa
-# qué falta y termina en VERDE: que el proyecto de Firebase todavía no exista no
-# es un error del código, y un rojo que miente entrena a ignorar la CI. En main
-# sí falla, porque ahí significa que el sitio no se publicó.
+# Mientras la configuración inicial no esté hecha —ningún secreto cargado— este
+# workflow avisa qué falta y termina en VERDE, también en main: que el proyecto
+# de Firebase todavía no exista no es un error del código, y no hay ningún sitio
+# que se haya dejado de actualizar. Un rojo permanente entrena a ignorar la CI.
+#
+# Distinto es que falten ALGUNOS: ahí la configuración existe y está rota, hay un
+# sitio publicado que se quedó atrás, y el workflow falla.
 #
 # Requisitos (todos se crean una sola vez, ver condominioaqui/DESPLEGAR.md):
 #   - El proyecto de Firebase, que NO es el de TuMuniAquí.
@@ -109,10 +112,12 @@ jobs:
         shell: bash
         run: |
           faltan=""
+          total=0
           for v in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN \
                    VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET \
                    VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID \
                    VITE_CLOUDINARY_CLOUD_NAME VITE_CLOUDINARY_UPLOAD_PRESET; do
+            total=$((total + 1))
             # Expansión indirecta: se comprueba el VALOR sin imprimirlo nunca,
             # al registro solo llega el nombre. El //[[:space:]]/ descarta un
             # secreto que quedó con un salto de línea pegado al copiar, que para
@@ -140,12 +145,30 @@ jobs:
               echo "Por eso no se compila en vez de publicar algo inservible."
             } >> "$GITHUB_STEP_SUMMARY"
 
-            if [ "${{ github.event_name }}" = "push" ]; then
-              echo "::error::No se publicó nada: faltan secretos de configuración:$faltan"
+            # Cuántos faltan decide si esto es un error o simplemente trabajo
+            # que todavía no se ha hecho, y la diferencia importa:
+            #
+            #   - Faltan TODOS  → el producto nunca se configuró. No hay sitio
+            #     que actualizar, así que no hay nada que se haya dejado de
+            #     publicar. Avisar y seguir en verde. Fallar acá dejaría `main`
+            #     rojo para siempre hasta que alguien haga la configuración
+            #     inicial, y un rojo permanente entrena a ignorar la CI, que es
+            #     justo lo contrario de para qué existe esta comprobación.
+            #   - Faltan ALGUNOS → la configuración existe y está rota o
+            #     incompleta. Eso sí es un error: hay un sitio publicado que se
+            #     quedó sin actualizar, y hay que enterarse.
+            cuantos=$(echo $faltan | wc -w)
+
+            if [ "$cuantos" -lt "$total" ]; then
+              echo "::error::Configuración incompleta, no se publicó nada. Faltan:$faltan"
               exit 1
             fi
 
-            echo "::warning::Falta la configuración inicial; se omite el build en este PR."
+            if [ "${{ github.event_name }}" = "push" ]; then
+              echo "::warning::CondominioAquí todavía no está configurado; no hay nada que publicar."
+            else
+              echo "::warning::Falta la configuración inicial; se omite el build en este PR."
+            fi
             exit 0
           fi
 

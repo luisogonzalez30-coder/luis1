@@ -5,6 +5,34 @@ El detalle técnico completo está en `ESTADO_PROYECTO.md` (49 secciones).
 
 ---
 
+## 🔴 El bot de WhatsApp está caído desde el 11-sep — es lo primero
+
+**Render suspendió el servicio.** `https://proyectomuni.onrender.com/salud` devuelve
+**HTTP 503** con una página que dice *"This service has been suspended"*. Lleva así tres
+días: el issue [#17](https://github.com/luisogonzalez30-coder/luis1/issues/17) se abrió el
+11-sep y `vigilar.yml` viene fallando en cada corrida desde entonces.
+
+**Qué significa para Licantén, que es un cliente real:**
+
+- El vecino reporta y **no recibe el WhatsApp** de confirmación ni el de resuelto.
+- **"Mis reportes" por WhatsApp no responde.**
+- La app web y la landing **sí funcionan** — el detalle de la vigilancia solo nombra al bot.
+  Los reportes se siguen registrando y el funcionario los sigue viendo.
+
+**Qué NO es.** No es el "dormir" del plan Free de Render: eso da un arranque lento, no un 503
+permanente con esa página. "Suspended" es una acción de Render — impago, límite del plan
+gratuito excedido, o algo administrativo de la cuenta.
+
+**Qué hay que hacer, y solo lo puedes hacer tú**: entrar al panel de Render y ver por qué está
+suspendido. Desde una sesión de Claude no se alcanza ese dominio (ver el muro de red en
+`CLAUDE.md`) y tampoco hay acceso a la cuenta.
+
+Esto es exactamente el riesgo que estaba anotado más abajo como pendiente desde el 11-ago —
+"el bot corre en plan Free sin SLA y ahora hay un municipio dependiendo de él"— materializado.
+Cuando se resuelva, el issue se cierra solo en la siguiente corrida de la vigilancia.
+
+---
+
 ## 🏢 14-sep-2026: nació un producto aparte — CondominioAquí (`condominioaqui/`)
 
 **No es parte de TuMuniAquí y no lo toca.** Es una plataforma para **condominios y
@@ -27,6 +55,23 @@ advertido en su `LEEME.md`, pero vale repetirlo donde se lee primero.
 
 El costo de haberlo separado, dicho para que nadie se sorprenda después: **una mejora al
 flujo de reportes hay que hacerla dos veces.** Fue una decisión explícita del usuario.
+
+**Lo que quedó esperándote a ti**, en orden, todo dentro de `condominioaqui/DESPLEGAR.md`:
+
+1. Crear el proyecto de Firebase de CondominioAquí — **tiene que ser uno nuevo**, distinto del
+   de TuMuniAquí: las reglas de Firestore se despliegan completas y publicar las de allá sobre
+   este proyecto borraría las que protegen los datos de Licantén.
+2. Cargar los 9 secretos en GitHub (todos con sufijo `_CONDOMINIO`).
+3. `npm run desplegar:reglas`, sembrar el demo y crear el usuario administrador.
+4. Habilitar PDF en el preset de Cloudinary (`resource_type: auto`).
+
+Mientras eso no esté, su workflow avisa qué falta y **termina en verde** — no hay sitio que
+se haya dejado de publicar. Si algún día faltan *algunos* secretos en vez de todos, ahí sí
+falla: eso significa configuración rota, no configuración pendiente.
+
+**Lo que nunca se probó:** el producto entero está compilado pero jamás habló con una base de
+datos real. Lo primero que aparezca al conectarlo será probablemente un campo que falta en las
+reglas o un índice que Firestore pide crear. Es lo normal, pero no está verificado.
 
 ---
 
