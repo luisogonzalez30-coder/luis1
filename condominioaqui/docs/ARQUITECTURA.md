@@ -191,9 +191,10 @@ Tres decisiones del workflow que conviene no deshacer:
 - **Los secretos llevan sufijo `_CONDOMINIO`.** Si se llamaran igual que los de
   TuMuniAquí, un workflow compilaría con la configuración del otro y publicaría
   una app que escribe en la base de datos equivocada.
-- **En un PR, la falta de credencial avisa y sigue; en `main`, falla.** Omitir en
-  silencio en producción deja creyendo que el sitio se actualizó cuando no pasó
-  nada.
+- **En un PR, la falta de credencial o de secretos avisa y termina en VERDE; en
+  `main`, falla.** Que el proyecto de Firebase todavía no exista no es un error
+  del código, y un rojo que miente entrena a ignorar la CI. En `main` sí importa:
+  ahí significa que el sitio no se publicó.
 
 Las reglas de Firestore **no** se despliegan solas, a propósito: una regla mal
 escrita abre la base entera, y eso no debe salir sin que alguien lo mire. Van a
