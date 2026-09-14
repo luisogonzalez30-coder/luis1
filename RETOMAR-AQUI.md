@@ -1,7 +1,7 @@
 # Dónde quedamos — 14 de septiembre de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (50 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (51 secciones).
 
 ## 🔴 URGENTE — el bot de WhatsApp está suspendido desde el 11-sep
 
@@ -40,6 +40,33 @@ reconectarse (§50).
 otra vez**. Los tres dominios dan `000` desde una sesión, y eso no dice nada del servicio.
 `npm run revisar` solo alcanzó a comprobar los certificados. La fuente real es `vigilar.yml`
 en GitHub Actions, que corre fuera de esa red.
+
+---
+
+## Condominios y juntas de vecinos: evaluado el 14-sep, la respuesta es "todavía no"
+
+Preguntaste si el software se puede adaptar. **Se puede** —la arquitectura multi-tenant ya
+está y `licanten` no está incrustado en el código—, pero el análisis completo está en **§51**
+y la conclusión es que no es el momento.
+
+Lo que hay que saber sin leer la sección entera:
+
+- **Las juntas de vecinos no son cliente, son canal.** No compran software y su función es
+  justamente canalizar reportes hacia la municipalidad. Darles acceso gratis presiona al
+  Alcalde vecino: vale más como palanca de venta que como suscripción.
+- **Los condominios sí pagan** (gasto común, y el decisor es la administradora, no el
+  edificio), pero el mercado está tomado por actores cuyo ancla es el gasto común, o sea la
+  plata. Entrar con solo reportes es pelear por el complemento.
+- **Lo que costaría**: 847 apariciones de vocabulario municipal en 66 de los 101 archivos de
+  `src/`, las 58 categorías (que son todas de vía pública y no sirven), el mapa dejando de ser
+  el eje —un condominio tiene torre y piso, no coordenadas— y un padrón cerrado de residentes,
+  que hoy no existe y es construcción nueva, no adaptación.
+- **El orden recomendado**: pagar Render → parametrizar las plantillas (§44.4, que habilita el
+  municipio 2) → municipios 2 y 3 → recién ahí condominios. Hay 345 comunas y el guion de venta
+  ya ganó una vez.
+- **Si algún día se hace: no forkear.** Un campo `tipo_organizacion` en el documento del
+  tenant, vocabulario y categorías como configuración. El día que exista un repositorio
+  separado, la decisión ya se tomó mal.
 
 ---
 

@@ -1924,3 +1924,105 @@ Se define por entorno y por sesión, así que conviene comprobarlo cada vez en l
 en lo que diga el documento. El diagnóstico de esta sección no sale de `npm run revisar` —que
 solo pudo verificar los certificados— sino de los registros de `vigilar.yml` en GitHub Actions,
 que corre fuera de esa red.
+
+## 51. Adaptar el producto a condominios y juntas de vecinos: qué aguanta y qué no (14-sep-2026)
+
+El usuario preguntó si el software se puede adaptar a **condominios** y **juntas de vecinos**.
+Se puede, pero no son el mismo negocio y no cuestan lo mismo. Esta sección queda escrita para
+no volver a evaluarlo desde cero, y sobre todo para no empezarlo en el momento equivocado.
+
+### 51.1 Lo que el código ya aguanta (medido, no estimado)
+
+| Capa | Estado | Por qué |
+|---|---|---|
+| Multi-tenant | ✅ real | `municipalidades/{id}` con `municipio_id` en usuarios e incidencias |
+| Listeners del bot | ✅ sirven tal cual | `server.js` escucha `incidencias` sin filtrar por tenant (§44.2) |
+| Sectores | ✅ estructura reutilizable | Viven en el documento del tenant, no en el código |
+| Reglas de Firestore | ✅ | Aíslan por `municipio_id` |
+| `licanten` en el código | ✅ no está incrustado | Solo aparece como argumento de scripts y un default de URL en `webhook.js:29` |
+
+**La parte cara ya está construida.** Cambiar de "municipalidad" a "condominio" no toca la
+arquitectura: toca el contenido del documento del tenant y los textos.
+
+### 51.2 Lo que falta, con el tamaño real
+
+Los dos primeros se midieron sobre el repositorio, no se estimaron a ojo:
+
+| # | Trabajo | Tamaño medido | Nota |
+|---|---|---|---|
+| 1 | Vocabulario | **847 apariciones en 66 de los 101 archivos de `src/`** | `municipio`, `municipalidad`, `alcalde`, `comuna`, `vecino`, `funcionario` |
+| 2 | Categorías | **58, en dos catálogos** | `src/utils/categorias.js` (agrupado por dirección municipal) y `whatsapp-api-oficial/categorias.js` (plano, duplicado a propósito) |
+| 3 | Plantillas de WhatsApp | Obligatorio igual | Dicen "Municipalidad de Licantén" fijo. Ya estaba pendiente para el municipio 2 (§44.4): se paga una vez y sirve para todo |
+| 4 | Geografía → jerarquía | Rediseño | — |
+| 5 | Roles | Medio | Alcalde/funcionario/vecino → comité/administrador/copropietario |
+| 6 | Padrón cerrado | **Grande, y es construcción nueva** | — |
+
+**Las 58 categorías son de vía pública.** Baches, semáforos, ciclovías, luminaria pública,
+contenedores. En un condominio casi ninguna aplica: ahí se reporta ascensor detenido,
+filtración, portón, bomba de agua, ruido molesto, estacionamiento de visita, áreas comunes. No
+es traducir el catálogo, es escribir otro.
+
+**El punto 4 rompe el eje del producto.** Un condominio no tiene sectores con coordenadas:
+tiene torre, piso y departamento. El mapa —que en la reunión con el Alcalde es lo que más
+vende (§36)— deja de ser el centro y pasa a ser accesorio. El panel se reordena entero.
+
+**El punto 6 es el que se subestima siempre.** Un municipio es **abierto**: cualquiera reporta
+un bache sin registrarse, y esa fricción cero es parte de por qué funciona. Un condominio es
+**cerrado**: solo residentes verificados, porque el reporte toca propiedad privada y gasto
+común. Eso cambia la autenticación, las reglas de Firestore y el flujo del bot. No es
+adaptación, es una pieza que hoy no existe.
+
+### 51.3 Juntas de vecinos: no son cliente, son canal
+
+No compran software. Presupuesto cercano a cero, directiva que rota cada dos o tres años —el
+contacto que firmó se va— y, sobre todo, **su función es canalizar reportes hacia la
+municipalidad**, que es exactamente lo que este producto ya hace.
+
+Conviene tratarlas al revés de como se ven: **darles acceso gratis y usarlas como canal de
+adquisición**. La junta de vecinos es quien presiona al Alcalde. Una junta usando el portal en
+una comuna vecina vale más como palanca de venta que cualquier suscripción que pudiera pagar.
+
+### 51.4 Condominios: pagan, con dos advertencias serias
+
+A favor: **el presupuesto ya existe** (gasto común), la Ley 21.442 de copropiedad les exige
+trazabilidad formal ante el comité, y —lo más importante— **el decisor es la administradora,
+no el condominio**. Una empresa que administra 40 edificios es un contrato, no 40.
+
+En contra:
+
+- **El mercado está tomado.** Hay actores instalados en Chile cuyo ancla es el **gasto común**,
+  o sea la plata. Para ellos el módulo de reportes es un añadido. Entrar de frente con solo
+  reportes es pelear por el complemento mientras el otro tiene el núcleo.
+- **Ticket bajo y soporte alto.** Muchos tenants chicos, cada uno con su comité, cada uno
+  pidiendo cosas. El costo de atención no escala como el de un municipio.
+
+### 51.5 La decisión: no ahora, y en qué orden sí
+
+El multiplicador está en el municipio 2, no en un mercado nuevo. La situación al escribir esto
+es un solo cliente, el bot caído hace tres días por falta de pago (§50), las plantillas todavía
+sin parametrizar —o sea que el municipio 2 **aún no puede entrar**— y Firebase en Spark.
+Abrir un vertical nuevo sobre esa base es la forma conocida de perder el cliente que ya se
+tiene.
+
+Hay **345 comunas en Chile** y el guion de venta ya ganó una vez
+(`docs/PAUTA-REUNION-ALCALDE.md`). El de condominios no existe y habría que escribirlo,
+probarlo y perder las primeras reuniones aprendiendo.
+
+El orden que se recomienda:
+
+1. Pagar Render y levantar el bot (§50).
+2. **Parametrizar las plantillas** (§44.4). Habilita el municipio 2 y de paso es buena parte
+   del trabajo de cualquier vertical nuevo.
+3. Municipios 2 y 3, repitiendo lo que ya funcionó.
+4. Recién ahí condominios, **vendiendo a administradoras**, no a edificios sueltos.
+
+### 51.6 La regla de arquitectura para cuando llegue el momento
+
+**No forkear el repositorio.** Un fork duplica el mantenimiento, y con una sola persona
+sosteniendo los dos, ambos se degradan. Cada arreglo del bot habría que hacerlo dos veces, y
+la segunda se olvida.
+
+Lo correcto es un campo **`tipo_organizacion`** en el documento del tenant, con el vocabulario
+y el catálogo de categorías como **configuración**, no como código bifurcado: mismo
+repositorio, mismo bot, mismo despliegue, misma plantilla de WhatsApp parametrizada. El día
+que aparezca un `luis1-condominios` separado, la decisión ya se tomó mal.
