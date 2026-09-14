@@ -219,17 +219,17 @@ jobs:
       # `entryPoint` le dice a la acción dónde está el firebase.json — sin eso
       # leería el de TuMuniAquí y publicaría su carpeta dist/.
       #
-      # El projectId sale de la variable si existe; si no, del valor por defecto.
-      # Existe porque Firebase le pega un sufijo al ID cuando el que pediste está
-      # tomado, y en ese caso se arregla creando la variable en GitHub sin tener
-      # que tocar este archivo (ver DESPLEGAR.md paso 6).
+      # El projectId por defecto es el real del proyecto creado el 14-sep-2026:
+      # `condominioaqui` estaba tomado y Firebase le puso el sufijo -7be45.
+      # La variable de GitHub se mantiene como escape por si algún día el
+      # proyecto cambia, sin tener que tocar este archivo.
       - name: Publicar vista previa
         if: github.event_name == 'pull_request' && steps.config.outputs.completa == 'si' && steps.credencial.outputs.hay == 'si'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CONDOMINIOAQUI }}
-          projectId: ${{ vars.FIREBASE_PROJECT_ID_CONDOMINIO || 'condominioaqui' }}
+          projectId: ${{ vars.FIREBASE_PROJECT_ID_CONDOMINIO || 'condominioaqui-7be45' }}
           entryPoint: condominioaqui
           expires: 7d
 
@@ -259,7 +259,7 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CONDOMINIOAQUI }}
-          projectId: ${{ vars.FIREBASE_PROJECT_ID_CONDOMINIO || 'condominioaqui' }}
+          projectId: ${{ vars.FIREBASE_PROJECT_ID_CONDOMINIO || 'condominioaqui-7be45' }}
           entryPoint: condominioaqui
           channelId: live
 

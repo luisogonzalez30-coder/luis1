@@ -236,7 +236,7 @@ async function main() {
   }
 
   console.log(`✓ ${REPORTES.length} reportes sembrados`)
-  console.log(`\nListo. Abre: https://<tu-proyecto>.web.app/${ID}`)
+  console.log(`\nListo. Abre: https://condominioaqui-7be45.web.app/${ID}`)
   console.log('Falta crear a mano el usuario ADMINISTRADOR de este condominio (ver LEEME.md).')
 }
 
