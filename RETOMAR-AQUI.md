@@ -536,3 +536,36 @@ cinco.
   de solo lectura y ofertar es un acto comercial con login.
 - **Si quieres verificar la inscripción automáticamente**, hace falta el RUT de la SpA, que a
   propósito no está en el repositorio.
+
+---
+
+## Skill de las APIs de ClickBank (1-sep-2026)
+
+Se agregó `.claude/skills/clickbank-api/`: el catálogo completo de la API REST v1.3 de ClickBank
+(54 endpoints en 11 grupos), autenticación, límites, el Instant Notification Service y dos clientes
+listos para producción (Python y Node, sin dependencias).
+
+**Aviso de alcance:** esto **no es TuMuniAquí**. Vive aquí porque la rama asignada a esa
+conversación (`claude/clickbank-apis-extraction-ta2pnz`) es de este repositorio, no porque el
+proyecto lo necesite. Si en algún momento hay un repositorio propio para el frente de e-commerce
+y afiliación, la carpeta se mueve entera y se borra de aquí — no tiene ninguna dependencia con
+la app, el bot ni la landing.
+
+Contenido:
+
+| Archivo | Qué tiene |
+|---|---|
+| `SKILL.md` | Resumen operativo: auth, límites, los 11 grupos, reglas que evitan bugs |
+| `references/endpoints.md` | Los 54 endpoints con parámetros, permisos y respuestas |
+| `references/schemas.md` | Enums y objetos del esquema (valores válidos de cada parámetro) |
+| `references/auth-y-limites.md` | Claves, permisos reales, cuotas, paginación, códigos de estado |
+| `references/ins-webhooks.md` | Webhooks INS v6+: descifrado AES-256-CBC, payload, tipos de transacción |
+| `references/recetas.md` | 12 tareas resueltas: reportes, churn, reembolsos, fulfillment, backfill |
+| `scripts/clickbank.py`, `scripts/clickbank.mjs` | Clientes con throttling, reintentos y paginación |
+| `assets/open-clickbank.yaml` | Especificación OpenAPI 3.0.1 para generar clientes en otros lenguajes |
+
+La documentación oficial de ClickBank está bloqueada por la política de red de estos contenedores
+(`support.clickbank.com` devuelve 403 en el proxy). El contenido se reconstruyó desde la
+especificación OpenAPI comunitaria de [OcelliSolutions/OpenClickBank](https://github.com/OcelliSolutions/OpenClickBank)
+(MIT) contrastada con búsquedas web. Si alguna vez se levanta el bloqueo, vale la pena verificar
+contra `support.clickbank.com/en/articles/10535400-clickbank-apis`.
