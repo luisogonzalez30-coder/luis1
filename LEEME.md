@@ -58,7 +58,7 @@ Eso mismo corre **solo, todos los días a las 9:00 de la mañana** (`.github/wor
 | `whatsapp-api-oficial/` | Integración con la API oficial de WhatsApp |
 | `scripts/` | Scripts de mantención: sectores, respaldos, crear cuentas, configurar el WhatsApp del alcalde |
 | `public/` y `dist/` | Archivos estáticos y el build ya compilado |
-| `docs/` | Propuesta comercial, kit de difusión, pauta para la reunión con el alcalde e informe de costos |
+| `docs/` | Propuesta comercial, kit de difusión, pauta para la reunión con el alcalde, informe de costos, y el estudio de mercado + arquitectura de TuCondoAquí (la vertical de condominios) |
 | `landing/` | La landing comercial de TuMuniAquí (proyecto de hosting aparte) |
 | `entrega-2026-08-02/` | Foto congelada de la entrega del 2 de agosto: las carpetas `1-App-General` y `2-App-Licanten` tal como estaban. Es material viejo, el código vivo es el de esta carpeta |
 
@@ -69,7 +69,7 @@ Léela apuntando a secciones, no entera — `ESTADO_PROYECTO.md` son ~34 mil tok
 | Archivo | Para qué |
 |---|---|
 | `RETOMAR-AQUI.md` | Dónde quedó el trabajo y qué está bloqueado esperándote |
-| `ESTADO_PROYECTO.md` | El detalle técnico completo, por secciones (§1 a §34) |
+| `ESTADO_PROYECTO.md` | El detalle técnico completo, por secciones (§1 a §50) |
 | `DESPLEGAR.md` | Cómo publicar cambios |
 
 ## Sobre la carpeta original

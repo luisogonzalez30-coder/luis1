@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { DEPARTAMENTOS } from '../../utils/departamento'
+
 import { esDelMesActual } from '../../utils/tiempo'
 import ModalDetalleGasto from './ModalDetalleGasto'
 
@@ -12,7 +13,10 @@ const formatoCLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency:
 // mismo patrón que MetricasPorDepartamento. El filtro de departamento (31-jul-2026)
 // es propio de esta tarjeta — a propósito independiente del filtro de
 // departamento del mapa/lista de abajo, mismo criterio que MetricasPorDepartamento.
-export default function ResumenGastoMensual({ incidencias }) {
+// `areas` son las áreas responsables de la vertical del tenant (departamentos
+// municipales o áreas del condominio). Por defecto, las municipales: es lo que
+// había antes de que existieran las verticales.
+export default function ResumenGastoMensual({ incidencias, areas = DEPARTAMENTOS }) {
   const [departamento, setDepartamento] = useState('Todos')
   const [mostrarDetalle, setMostrarDetalle] = useState(false)
 
@@ -39,7 +43,7 @@ export default function ResumenGastoMensual({ incidencias }) {
           className="min-h-[36px] rounded-xl bg-tinta-fuerte/[0.04] px-2.5 py-1.5 text-xs text-tinta ring-1 ring-borde transition-colors hover:bg-tinta-fuerte/[0.07] focus:outline-none focus:ring-2 focus:ring-primary/30"
         >
           <option value="Todos">Todos los departamentos</option>
-          {DEPARTAMENTOS.map((dep) => (
+          {areas.map((dep) => (
             <option key={dep} value={dep}>{dep}</option>
           ))}
         </select>

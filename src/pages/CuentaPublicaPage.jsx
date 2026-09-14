@@ -4,7 +4,7 @@ import { ArrowLeft, Printer } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useMunicipio } from '../hooks/useMunicipio'
 import { obtenerIncidenciasPorPeriodo } from '../services/incidenciasService'
-import { DEPARTAMENTOS } from '../utils/departamento'
+import { verticalDe } from '../verticales'
 import { etiquetaCategoria } from '../utils/categorias'
 import { COLOR_POR_GRAVEDAD } from '../utils/gravedad'
 import { promedioHoras } from '../utils/tiempo'
@@ -163,7 +163,7 @@ export default function CuentaPublicaPage() {
   }, [incidencias])
 
   const porDepartamento = useMemo(() => {
-    return DEPARTAMENTOS.map((dep) => {
+    return verticalDe(municipio).areas.map((dep) => {
       const delDep = incidencias.filter((i) => i.departamento === dep)
       const resueltas = delDep.filter((i) => i.estado === 'Resuelto')
       return {

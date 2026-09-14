@@ -18,8 +18,7 @@ import {
 import { db, COLECCIONES } from '../firebase/firebase'
 import { subirImagen } from './storageService'
 import { generarNumeroTicket } from '../utils/ticket'
-import { calcularGravedad } from '../utils/gravedad'
-import { calcularDepartamento } from '../utils/departamento'
+import { VERTICALES, VERTICAL_POR_DEFECTO } from '../verticales'
 import {
   agregarTicketPublicoAlLote,
   obtenerTicketPublico,
@@ -66,6 +65,15 @@ export async function crearIncidencia({
   idDocumento,
   numeroTicketExistente,
   dispositivoId,
+  // Vertical del tenant, como STRING y no como objeto: este mismo payload se
+  // guarda en localStorage cuando el reporte se encola sin señal (§10), y un
+  // objeto con funciones no sobrevive a JSON.stringify. Si falta —reportes
+  // encolados antes de que existiera la vertical de condominios— cae a
+  // municipio, que es lo que esos reportes eran.
+  verticalId,
+  // Solo en la vertical de condominios: { tipo, torre, unidad, espacio_comun }
+  // (ver utils/unidades.js). En la municipal va undefined y no se escribe.
+  ubicacionCondominio,
 }) {
   if (!municipioId) {
     throw new Error('Falta el identificador de la municipalidad.')
@@ -75,8 +83,13 @@ export async function crearIncidencia({
   }
 
   const docRef = idDocumento ? doc(db, COLECCIONES.INCIDENCIAS, idDocumento) : doc(incidenciasRef)
-  const { nivel_gravedad, color_pin } = calcularGravedad(categoria)
-  const departamento = calcularDepartamento(categoria)
+
+  // El triage y la derivación los define la vertical: la misma palabra
+  // "Filtracion_..." significa un departamento municipal en una comuna y un
+  // área de mantención en un condominio, con plazos distintos.
+  const vertical = VERTICALES[verticalId] || VERTICAL_POR_DEFECTO
+  const { nivel_gravedad, color_pin } = vertical.calcularGravedad(categoria)
+  const departamento = vertical.calcularArea(categoria)
 
   let numeroTicket = numeroTicketExistente || generarNumeroTicket()
   const esRetry = Boolean(numeroTicketExistente)
@@ -86,6 +99,12 @@ export async function crearIncidencia({
     coordenadas,
     direccion_texto: direccionTexto || '',
     detalles_adicionales: detallesAdicionales || '',
+    // El campo se llama `departamento` en las dos verticales y guarda el área
+    // responsable. No se renombró a propósito: está escrito en firestore.rules,
+    // en el RBAC y en los 6 reportes de Licantén que ya existen — cambiarlo
+    // obligaba a migrar datos y reglas en producción a cambio de una palabra.
+    vertical: vertical.id,
+    ...(ubicacionCondominio ? { ubicacion_condominio: ubicacionCondominio } : {}),
     numero_ticket: numeroTicket,
     municipio_id: municipioId,
     nivel_gravedad,
@@ -172,6 +191,11 @@ export async function crearIncidencia({
       nivelGravedad: nivel_gravedad,
       coordenadas,
       direccionTexto,
+      // Solo el espacio común viaja al ticket público; la torre y el número de
+      // departamento se quedan en la incidencia, que solo ve la administración
+      // (ver datosTicketPublico en ticketsPublicosService.js).
+      ubicacionPublica:
+        ubicacionCondominio?.tipo === 'espacio_comun' ? ubicacionCondominio.espacio_comun : '',
     })
     lote.set(docRef, datosIncidencia(numeroTicket))
     lote.set(doc(db, COLECCIONES.DISPOSITIVOS, dispositivoId), { ultimo_reporte: serverTimestamp() })

@@ -16,7 +16,8 @@
     "mp:verificar": "node scripts/mercado-publico.mjs verificar",
     "mp:activas": "node scripts/mercado-publico.mjs activas",
     "mp:historico": "node scripts/mercado-publico.mjs historico",
-    "mp:directas": "node scripts/mp-directas.mjs"
+    "mp:directas": "node scripts/mp-directas.mjs",
+    "condo:demo": "node scripts/crear-condominio-demo.mjs"
   },
   "dependencies": {
     "browser-image-compression": "^2.0.2",

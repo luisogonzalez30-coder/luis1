@@ -41,7 +41,15 @@ function hoyISO() {
 // ESTADO_PROYECTO.md. Además muestra headcount/asistencia de un vistazo (sin
 // abrir el modal), calculado sobre una única suscripción a todos los
 // trabajadores del municipio (agrupados en memoria por departamento).
-export default function MetricasPorDepartamento({ incidencias, municipioId, funcionarios = [] }) {
+// `areas` y `lexico`: ver src/verticales/. Los valores por defecto reproducen
+// exactamente el comportamiento municipal previo.
+export default function MetricasPorDepartamento({
+  incidencias,
+  municipioId,
+  funcionarios = [],
+  areas = DEPARTAMENTOS,
+  lexico = null,
+}) {
   const [departamentoAbierto, setDepartamentoAbierto] = useState(null)
   const [trabajadores, setTrabajadores] = useState([])
 
@@ -53,7 +61,7 @@ export default function MetricasPorDepartamento({ incidencias, municipioId, func
 
   const hoy = hoyISO()
 
-  const conteos = DEPARTAMENTOS.map((dep) => {
+  const conteos = areas.map((dep) => {
     const delDepartamento = incidencias.filter((inc) => inc.departamento === dep)
     const pendientes = delDepartamento.filter((inc) => inc.estado === 'Pendiente').length
     const enProceso = delDepartamento.filter((inc) => inc.estado === 'En Proceso')
@@ -96,7 +104,7 @@ export default function MetricasPorDepartamento({ incidencias, municipioId, func
 
   return (
     <div className="px-4 pb-5 sm:px-6">
-      <h2 className="mb-3 text-sm font-semibold text-tinta-fuerte">Tickets sin resolver por departamento</h2>
+      <h2 className="mb-3 text-sm font-semibold text-tinta-fuerte">Tickets sin resolver por {lexico?.area || 'departamento'}</h2>
 
       {totalVencidasSla > 0 && (
         <div className="mb-3 flex items-center gap-2 rounded-xl bg-estado-critico/[0.07] px-3.5 py-2.5 text-sm text-estado-critico ring-1 ring-estado-critico/20">

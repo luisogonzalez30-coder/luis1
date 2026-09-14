@@ -1,3 +1,5 @@
+import { CATEGORIAS_CONDOMINIO } from '../verticales/condominio'
+
 // Catálogo de categorías de incidencias urbanas, agrupadas por área municipal
 // (Tránsito, Aseo y Ornato, Medio Ambiente, etc. — la división habitual entre
 // direcciones dentro de una municipalidad chilena). Centralizado para que el
@@ -90,8 +92,19 @@ export const CATEGORIAS = [
 // 12-ago-2026, QA previo a la reunión con el Alcalde). Centralizado acá.
 export const CATEGORIA_POR_VALOR = Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c]))
 
+// Diccionario SOLO para mostrar: junta las etiquetas de todas las verticales.
+// Es distinto de CATEGORIAS, que es el catálogo elegible y sigue siendo el
+// municipal — un vecino nunca debe poder elegir "Ascensor detenido". Pero un
+// panel que renderiza una incidencia ya creada tiene que poder ponerle nombre
+// venga de donde venga, y sin esto mostraría el valor crudo
+// ("Ascensor_detenido"), que es exactamente el bug que se arregló el 12-ago.
+const ETIQUETA_POR_VALOR = {
+  ...Object.fromEntries(CATEGORIAS.map((c) => [c.valor, c.etiqueta])),
+  ...Object.fromEntries(CATEGORIAS_CONDOMINIO.map((c) => [c.valor, c.etiqueta])),
+}
+
 export function etiquetaCategoria(valor) {
-  return CATEGORIA_POR_VALOR[valor]?.etiqueta || valor
+  return ETIQUETA_POR_VALOR[valor] || valor
 }
 
 // Agrupa el catálogo plano por "grupo" (Vialidad, Alumbrado, etc.) preservando el

@@ -3,8 +3,6 @@ import { Search, ChevronDown, X, Check } from 'lucide-react'
 import { CATEGORIAS, agruparCategorias } from '../../utils/categorias'
 import { colorDeGrupo } from '../../utils/coloresGrupo'
 
-const GRUPOS = agruparCategorias(CATEGORIAS)
-
 // Quita tildes y pasa a minúscula: el vecino escribe "arbol" o "semaforo" sin
 // acentos, y igual tiene que encontrar "Árbol caído" y "Semáforo con falla".
 function normalizar(texto) {
@@ -18,12 +16,17 @@ function normalizar(texto) {
 // ajena a la app y obligaba a leer las 58 categorías de corrido. Acá el vecino
 // puede escribir para buscar su problema, y cada grupo tiene su color (ver
 // utils/coloresGrupo.js) para ubicarse sin leerlo todo.
-export default function SelectorCategoria({ categoria, onCambiar }) {
+// `categorias` llega por prop en vez de leerse del catálogo municipal global:
+// el mismo selector sirve para la vertical de condominios (TuCondoAquí), que
+// tiene su propio catálogo. Por defecto es el municipal, así que las llamadas
+// que ya existían siguen funcionando sin cambiar nada.
+export default function SelectorCategoria({ categoria, onCambiar, categorias = CATEGORIAS, titulo = '¿Qué problema encontraste?', ejemplosBusqueda = 'bache, luz, basura' }) {
   const [abierto, setAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const campoBusqueda = useRef(null)
 
-  const seleccionada = CATEGORIAS.find((c) => c.valor === categoria)
+  const seleccionada = categorias.find((c) => c.valor === categoria)
+  const GRUPOS = useMemo(() => agruparCategorias(categorias), [categorias])
 
   useEffect(() => {
     if (abierto) campoBusqueda.current?.focus()
@@ -52,7 +55,7 @@ export default function SelectorCategoria({ categoria, onCambiar }) {
         return { ...grupo, items }
       })
       .filter((grupo) => grupo.items.length > 0)
-  }, [busqueda])
+  }, [busqueda, GRUPOS])
 
   const totalResultados = gruposFiltrados.reduce((n, g) => n + g.items.length, 0)
 
@@ -105,7 +108,7 @@ export default function SelectorCategoria({ categoria, onCambiar }) {
             <div className="mx-auto mt-2.5 h-1 w-9 shrink-0 rounded-full bg-tinta-tenue/40 sm:hidden" />
 
             <div className="flex items-center justify-between gap-2 border-b border-borde px-4 pb-3 pt-3">
-              <h3 className="text-base font-semibold text-tinta-fuerte">¿Qué problema encontraste?</h3>
+              <h3 className="text-base font-semibold text-tinta-fuerte">{titulo}</h3>
               <button
                 type="button"
                 onClick={() => setAbierto(false)}
@@ -124,7 +127,7 @@ export default function SelectorCategoria({ categoria, onCambiar }) {
                   type="text"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
-                  placeholder="Escribe tu problema: bache, luz, basura..."
+                  placeholder={`Escribe tu problema: ${ejemplosBusqueda}...`}
                   className="w-full rounded-2xl border border-gray-300 py-3 pl-10 pr-3 text-base focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>

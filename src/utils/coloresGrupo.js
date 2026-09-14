@@ -14,7 +14,14 @@
 //
 // "Otros" no lleva color de la paleta a propósito: son 8 slots categóricos y un
 // noveno grupo, y la regla es que el noveno cae en "Other" con un neutro.
+//
+// La vertical de condominios (TuCondoAquí) repite exactamente la misma
+// estructura: 8 grupos con color + un noveno neutro. Los colores se asignan en
+// el MISMO orden fijo de la paleta, no por afinidad semántica — el orden es lo
+// que está validado para daltonismo, así que "agua = azul" es coincidencia y no
+// un criterio que se pueda seguir en el siguiente grupo.
 const COLOR_POR_GRUPO = {
+  // Vertical municipal (TuMuniAquí)
   'Vialidad y Tránsito': '#2a78d6',
   'Alumbrado Público': '#eb6834',
   'Aseo y Ornato': '#1baf7a',
@@ -24,6 +31,17 @@ const COLOR_POR_GRUPO = {
   'Seguridad y Convivencia': '#4a3aa7',
   'Espacios Públicos': '#e34948',
   Otros: '#898781',
+
+  // Vertical condominios (TuCondoAquí) — ver src/verticales/condominio.js
+  'Agua y Filtraciones': '#2a78d6',
+  'Electricidad e Iluminación': '#eb6834',
+  'Ascensores y Accesos': '#1baf7a',
+  'Gas e Incendios': '#eda100',
+  'Aseo y Áreas Verdes': '#e87ba4',
+  'Convivencia y Estacionamientos': '#008300',
+  'Estructura y Espacios Comunes': '#4a3aa7',
+  Seguridad: '#e34948',
+  'Administración y Cuentas': '#898781',
 }
 
 const COLOR_NEUTRO = '#898781'

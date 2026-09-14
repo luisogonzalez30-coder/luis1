@@ -18,9 +18,13 @@ práctica.
 
 ## Alcance — qué entra aquí y qué no
 
-Este repositorio es **solo TuMuniAquí**: la app, el bot de WhatsApp, la landing, los scripts
-y el material comercial con el que se vende a municipalidades (propuesta, informes, Mercado
-Público, ChileCompra). Todo eso es el mismo producto y comparte este contexto.
+Este repositorio es **el motor y sus dos verticales**: la app, el bot de WhatsApp, la landing,
+los scripts y el material comercial. Todo eso es el mismo producto y comparte este contexto.
+
+- **TuMuniAquí** — comunas. Licantén en producción.
+- **TuCondoAquí** — condominios y edificios (desde el 14-sep-2026). Misma base de código, misma
+  base de datos; el tenant trae un campo `vertical` y, si no lo trae, es `'municipio'`.
+  Ver `docs/ESTUDIO-MERCADO-CONDOMINIOS.md`, `docs/TUCONDOAQUI-ARQUITECTURA.md` y §50.
 
 Lo que **no** entra: los otros frentes del usuario (la API de ChatGPT, log-inspa.cl, MundoGol,
 kpop). Viven en sus propios espacios y no deben mezclarse acá — mezclarlos es lo que hacía que
@@ -31,7 +35,7 @@ cada conversación arrancara sin saber de qué se estaba hablando.
 1. **`RETOMAR-AQUI.md`** — siempre, entero. Es corto y dice dónde quedó el trabajo y qué
    está bloqueado esperando al usuario.
 2. **`LEEME.md`** — qué hay en cada carpeta y cómo se corre el proyecto.
-3. **`ESTADO_PROYECTO.md`** — el detalle técnico, 47 secciones numeradas (§1 a §47).
+3. **`ESTADO_PROYECTO.md`** — el detalle técnico, 50 secciones numeradas (§1 a §50).
    **No lo leas entero: son ~34 mil tokens.** Busca la sección con
    `grep -n "^## " ESTADO_PROYECTO.md` y lee solo el rango que necesitas con `sed -n`.
 4. **`DESPLEGAR.md`** — antes de publicar cualquier cambio.
