@@ -36,29 +36,6 @@ service cloud.firestore {
           perfilFuncionario().departamento == incidenciaData.departamento);
     }
 
-    // Áreas responsables válidas para el campo `departamento` de una incidencia.
-    // La lista depende de la vertical del tenant, pero las reglas no pueden
-    // importar JS ni leer el documento del tenant sin un get() extra por
-    // escritura (que se cobra), así que se aceptan las de ambas verticales: el
-    // valor no lo elige el usuario, lo calcula la app desde la categoría — esta
-    // validación existe para que nadie escriba basura en el campo llamando a
-    // Firestore directo, no para decidir el ruteo.
-    //
-    // Si cambias una lista acá, cambia también src/utils/departamento.js
-    // (municipal) o src/verticales/condominio.js (condominios).
-    function areaResponsableValida(area) {
-      return area in [
-        // Vertical municipal — TuMuniAquí (src/utils/departamento.js)
-        'Dirección de Obras (DOM)', 'Tránsito', 'Operaciones',
-        'Aseo y Ornato', 'Medio Ambiente', 'Seguridad Ciudadana',
-        'Oficina de Partes',
-        // Vertical condominios — TuCondoAquí (src/verticales/condominio.js)
-        'Administración', 'Conserjería', 'Mantención y Obras',
-        'Aseo y Áreas Verdes', 'Seguridad', 'Convivencia y Reglamento',
-        'Proveedor Externo'
-      ];
-    }
-
     // --- Control de gasto real (FormularioCierreGasto.jsx) ---
     // Mismo umbral que UMBRAL_DESVIACION en utils/costeo.js: si cambias uno,
     // cambia el otro. Se repite acá porque las reglas no pueden importar JS.
@@ -248,10 +225,14 @@ service cloud.firestore {
                       // uno de los 3 valores válidos (evita que alguien mande basura ahí).
                       (!('nivel_gravedad' in request.resource.data) ||
                         request.resource.data.nivel_gravedad in ['Alta', 'Media', 'Baja']) &&
-                      // Derivación automática al área responsable: mismo criterio de
-                      // validación que nivel_gravedad (ver areaResponsableValida()).
+                      // Derivación automática por departamento: mismo criterio de
+                      // validación que nivel_gravedad (ver utils/departamento.js).
                       (!('departamento' in request.resource.data) ||
-                        areaResponsableValida(request.resource.data.departamento)) &&
+                        request.resource.data.departamento in [
+                          'Dirección de Obras (DOM)', 'Tránsito', 'Operaciones',
+                          'Aseo y Ornato', 'Medio Ambiente', 'Seguridad Ciudadana',
+                          'Oficina de Partes'
+                        ]) &&
                       // Anti-spam (ver arriba): exige ID de dispositivo y que el
                       // mismo lote selle dispositivos/{id} respetando el enfriamiento.
                       textosDeTamanoRazonable(request.resource.data) &&

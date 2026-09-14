@@ -1,44 +1,32 @@
 # Dónde quedamos — 14 de septiembre de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (50 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (49 secciones).
 
 ---
 
-## 🏢 Lo más nuevo (14-sep): nació la segunda vertical — TuCondoAquí
+## 🏢 14-sep-2026: nació un producto aparte — TuCondoAquí (`tucondoaqui/`)
 
-El mismo motor ahora atiende **dos mercados**: comunas (TuMuniAquí, Licantén en producción) y
-**condominios y edificios (TuCondoAquí)**. No se copió el proyecto: el tenant trae un campo
-`vertical` y, si no lo trae, es `'municipio'` — por eso no se migró ni un documento de
-Licantén.
+**No es parte de TuMuniAquí y no lo toca.** Es una plataforma para **condominios y
+edificios**, con su propio código, su propio `package.json`, su propia base de datos y su
+propio `firestore.rules`. Nació de este motor, pero desde el día uno son dos cosas separadas:
+**TuMuniAquí quedó exactamente como estaba** (se comprobó: el código es idéntico al del
+commit anterior, salvo esta nota y una fila en `LEEME.md`).
 
-Dos documentos nuevos, y conviene leerlos en este orden:
+Todo lo suyo se lee ahí adentro, empezando por **`tucondoaqui/LEEME.md`**:
 
-- **`docs/ESTUDIO-MERCADO-CONDOMINIOS.md`** — competencia real (ComunidadFeliz, Edifito,
-  Kastor, Swappi, Mi Casita, ComunIA…), sus falencias verificadas, los problemas típicos de un
-  condominio chileno, el nombre y el canal de venta. La conclusión que ordena todo: **el
-  software de condominios que existe está construido alrededor del dinero; el hueco está en la
-  operación y en el cumplimiento de la Ley 21.442.**
-- **`docs/TUCONDOAQUI-ARQUITECTURA.md`** — cómo se armó y qué falta, en orden.
+- `tucondoaqui/docs/ESTUDIO-MERCADO.md` — la competencia real en Chile (ComunidadFeliz,
+  Edifito, Kastor, Swappi, ComunIA…), sus falencias verificadas y el hueco del mercado: todos
+  están construidos alrededor del dinero, y nadie lleva el cumplimiento de la Ley 21.442.
+- `tucondoaqui/docs/ARQUITECTURA.md` — cómo está hecho y qué falta, en orden.
 
-**El detalle técnico está en §50.** Lo que no puede olvidarse de ahí:
+Lo único que importa saber desde acá: **ese proyecto necesita su propio proyecto de
+Firebase.** Desplegar sus reglas sobre el proyecto de TuMuniAquí borraría las de acá —
+`firebase deploy --only firestore:rules` publica el archivo completo, no un parche. Está
+advertido en su `LEEME.md`, pero vale repetirlo donde se lee primero.
 
-> ⚠️ **Hay que desplegar `firestore.rules` (`npm run desplegar:reglas`) antes de que la
-> vertical sirva para algo.** La regla de creación de incidencias validaba el campo
-> `departamento` contra la lista fija de los 7 departamentos municipales: hasta que se
-> despliegue la nueva `areaResponsableValida()`, **todo reporte de condominio es rechazado** y
-> parece que la app está rota.
-
-Después de eso: `npm run condo:demo -- --aplicar` siembra el condominio de demostración (3
-torres, 144 unidades, 18 reportes, calendario de mantenciones a medio cumplir a propósito).
-Sin `--aplicar` solo simula, y corre sin credenciales.
-
-**Lo que falta para que sea vendible**, en orden: el panel de Cumplimiento 21.442 en la UI (la
-lógica está probada, falta la pantalla — es el diferenciador principal, sin pantalla no existe
-comercialmente), el WhatsApp multi-tenant de §44, y el léxico en las pantallas de funcionario.
-
-**Nada de esto se vio funcionando en un navegador desde la sesión**: el build queda verde y la
-simulación corre, pero la comprobación visual sigue siendo tuya.
+El costo de haberlo separado, dicho para que nadie se sorprenda después: **una mejora al
+flujo de reportes hay que hacerla dos veces.** Fue una decisión explícita del usuario.
 
 ---
 

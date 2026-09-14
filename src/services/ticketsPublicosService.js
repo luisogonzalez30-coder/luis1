@@ -103,7 +103,7 @@ export async function obtenerTicketPublico(numeroTicket) {
   }
 }
 
-function datosTicketPublico({ incidenciaId, municipioId, categoria, nivelGravedad, coordenadas, direccionTexto, ubicacionPublica }) {
+function datosTicketPublico({ incidenciaId, municipioId, categoria, nivelGravedad, coordenadas, direccionTexto }) {
   return {
     incidencia_id: incidenciaId,
     municipio_id: municipioId,
@@ -117,17 +117,6 @@ function datosTicketPublico({ incidenciaId, municipioId, categoria, nivelGraveda
     // siguen FUERA a propósito — ese campo es texto libre y puede contener
     // referencias a personas; este solo describe un lugar.
     direccion_texto: direccionTexto || '',
-    // Vertical de condominios: nombre del ESPACIO COMÚN donde ocurre ("Piscina",
-    // "Ascensor Torre A"). Es lo que permite agrupar los 40 reportes del mismo
-    // ascensor detenido en un solo ticket con 40 votos, igual que el chequeo por
-    // proximidad hace en la vertical municipal.
-    //
-    // La torre y el número de departamento NUNCA llegan acá, y no es un olvido:
-    // en un condominio la unidad identifica al hogar. "Torre B · 402 reportó
-    // ruidos molestos" en una colección de lectura pública es publicar quién
-    // acusó a quién. Por eso solo viaja lo que ocurre en espacio común, donde no
-    // hay nadie a quien identificar (ver crearIncidencia).
-    ...(ubicacionPublica ? { ubicacion_publica: ubicacionPublica } : {}),
     upvotes: 1,
     fotos_antes_urls: [],
     estado: 'Pendiente',

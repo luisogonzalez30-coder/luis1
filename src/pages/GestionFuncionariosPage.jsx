@@ -5,8 +5,6 @@ import { useAuth } from '../context/AuthContext'
 import { crearFuncionario, eliminarFuncionario, suscribirFuncionarios } from '../services/funcionariosService'
 import { useAccionUnica } from '../hooks/useAccionUnica'
 import { DEPARTAMENTOS } from '../utils/departamento'
-import { useMunicipio } from '../hooks/useMunicipio'
-import { verticalDe } from '../verticales'
 import Boton from '../components/common/Boton'
 import Spinner from '../components/common/Spinner'
 
@@ -16,10 +14,11 @@ const MENSAJES_ERROR = {
   'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
 }
 
-// Nombre visible de cada rol. Los valores internos no cambian entre verticales
-// (están en firestore.rules y en los documentos ya escritos), solo la etiqueta:
-// "Jefe de Departamento" en un municipio, "Comité de Administración" en un
-// condominio — ver rolesUI en src/verticales/.
+const ETIQUETA_ROL = {
+  ALCALDE_ADMIN: 'Alcalde',
+  JEFE_DEPARTAMENTO: 'Jefe de Departamento',
+  TERRENO: 'Terreno',
+}
 
 const FORMULARIO_VACIO = { nombre: '', correo: '', contrasena: '', telefono: '', rol: 'JEFE_DEPARTAMENTO', departamento: DEPARTAMENTOS[0] }
 
@@ -30,25 +29,12 @@ const FORMULARIO_VACIO = { nombre: '', correo: '', contrasena: '', telefono: '',
 // cuenta.
 export default function GestionFuncionariosPage() {
   const { perfil } = useAuth()
-  const { municipio } = useMunicipio(perfil?.municipio_id)
-  const vertical = verticalDe(municipio)
-  const areas = vertical.areas
-  const ETIQUETA_ROL = vertical.rolesUI
-
   const [funcionarios, setFuncionarios] = useState([])
   const [cargandoLista, setCargandoLista] = useState(true)
   const [form, setForm] = useState(FORMULARIO_VACIO)
   const [error, setError] = useState(null)
   const [exito, setExito] = useState(null)
   const [eliminandoUid, setEliminandoUid] = useState(null)
-
-  // El formulario nace con el primer departamento municipal porque el tenant
-  // todavía no ha cargado. Cuando carga y resulta ser un condominio, ese valor
-  // ya no existe en la lista: hay que corregirlo o el <select> queda mostrando
-  // una opción que no está y se guardaría un área inválida.
-  useEffect(() => {
-    setForm((f) => (areas.includes(f.departamento) ? f : { ...f, departamento: areas[0] }))
-  }, [areas])
 
   useEffect(() => {
     if (!perfil?.municipio_id) return
@@ -167,21 +153,19 @@ export default function GestionFuncionariosPage() {
           onChange={(e) => setForm((f) => ({ ...f, rol: e.target.value }))}
           className="mb-4 w-full rounded-lg border border-gray-300 p-2.5"
         >
-          <option value="JEFE_DEPARTAMENTO">{ETIQUETA_ROL.JEFE_DEPARTAMENTO}</option>
-          <option value="TERRENO">{ETIQUETA_ROL.TERRENO}</option>
+          <option value="JEFE_DEPARTAMENTO">Jefe de Departamento</option>
+          <option value="TERRENO">Terreno</option>
         </select>
 
         {form.rol === 'JEFE_DEPARTAMENTO' && (
           <>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              {vertical.lexico.area.charAt(0).toUpperCase() + vertical.lexico.area.slice(1)}
-            </label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Departamento</label>
             <select
               value={form.departamento}
               onChange={(e) => setForm((f) => ({ ...f, departamento: e.target.value }))}
               className="mb-4 w-full rounded-lg border border-gray-300 p-2.5"
             >
-              {areas.map((dep) => (
+              {DEPARTAMENTOS.map((dep) => (
                 <option key={dep} value={dep}>{dep}</option>
               ))}
             </select>

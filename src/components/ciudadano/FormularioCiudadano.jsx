@@ -16,14 +16,11 @@ import {
   segundosParaPoderReportar,
 } from '../../utils/dispositivo'
 import { distanciaMetros } from '../../utils/distancia'
-import { verticalDe } from '../../verticales'
-import { ubicacionValida } from '../../utils/unidades'
 import { sugerirCategoria, esElMismoProblema } from '../../services/iaService'
 import { esWhatsappValido, normalizarWhatsapp } from '../../utils/telefono'
 import Boton from '../common/Boton'
 import EncabezadoMunicipio from '../common/EncabezadoMunicipio'
 import PasoUbicacion from './PasoUbicacion'
-import PasoUbicacionUnidad from '../condominio/PasoUbicacionUnidad'
 import PasoCategoria from './PasoCategoria'
 import PasoFoto from './PasoFoto'
 import TicketConfirmacion from './TicketConfirmacion'
@@ -36,14 +33,6 @@ const TOTAL_PASOS = 3
 const RADIO_DUPLICADO_METROS = 50
 
 export default function FormularioCiudadano({ municipio }) {
-  // Vertical del tenant: decide el catálogo de categorías, el léxico de las
-  // pantallas y —lo que más cambia acá— cómo se ubica el problema. Con
-  // `modo: 'unidad'` (condominios) el Paso 1 no es un mapa sino torre/unidad o
-  // espacio común: un condominio entero cabe dentro del error del GPS.
-  const vertical = verticalDe(municipio)
-  const porUnidad = vertical.ubicacion.modo === 'unidad'
-  const lexico = vertical.lexico
-
   const [paso, setPaso] = useState(1)
   const [categoria, setCategoria] = useState('')
   const [direccionTexto, setDireccionTexto] = useState('')
@@ -74,8 +63,6 @@ export default function FormularioCiudadano({ municipio }) {
   const fotoRevisadaRef = useRef(null)
 
   const [coordenadas, setCoordenadas] = useState(null)
-  // Solo en la vertical de condominios: { tipo, torre, unidad, espacio_comun }.
-  const [ubicacionCondominio, setUbicacionCondominio] = useState(null)
   // Dirección que el vecino eligió en el buscador del Paso 1 (ver
   // BuscadorDireccion.jsx). Se guarda aparte de la geocodificación inversa
   // porque le gana: si eligió "Los Aromos 320" de la lista, esa es la dirección
@@ -91,10 +78,7 @@ export default function FormularioCiudadano({ municipio }) {
   // toque en el mapa: si el vecino eligió la dirección de la lista, ya la
   // sabemos y preguntarla de nuevo sería gastar una petición al aire.
   const { direccion: direccionInversa, cargando: buscandoDireccion } = useDireccionInversa(coordenadas, {
-    // En un condominio la coordenada es el centro del conjunto, no el lugar del
-    // problema: preguntarle la calle a Nominatim devolvería la dirección del
-    // edificio en TODOS los reportes y la pondría como si fuera el lugar exacto.
-    activo: !direccionElegida && !porUnidad,
+    activo: !direccionElegida,
   })
   const direccionDelPunto = direccionElegida?.texto || direccionInversa
 
@@ -115,17 +99,6 @@ export default function FormularioCiudadano({ municipio }) {
   function fijarCoordenadasDesdeMapa(nuevas) {
     setCoordenadas(nuevas)
     setDireccionElegida(null)
-  }
-
-  // La coordenada del condominio es la misma para todos sus reportes (el centro
-  // del conjunto). Se guarda igual, y no es redundante: el mapa de calor, el
-  // mapa del panel y la regla de Firestore que exige `coordenadas.lat/lng is
-  // number` siguen funcionando sin ninguna excepción por vertical. El lugar real
-  // del problema vive en `ubicacion_condominio`.
-  function elegirUbicacionCondominio(nueva) {
-    setUbicacionCondominio(nueva)
-    if (nueva) setCoordenadas(municipio?.centro_mapa || { lat: 0, lng: 0 })
-    else setCoordenadas(null)
   }
 
   function elegirDireccionBuscada(resultado) {
@@ -201,7 +174,7 @@ export default function FormularioCiudadano({ municipio }) {
   const fotoLista = fotos.length > 0 || sinConexion
 
   const puedeAvanzar = {
-    1: porUnidad ? ubicacionValida(ubicacionCondominio) : Boolean(coordenadas),
+    1: Boolean(coordenadas),
     2: Boolean(categoria) && direccionTexto.trim().length >= 3 && detallesAdicionales.trim().length >= 5,
     3: fotoLista && datosCompletos,
   }[paso]
@@ -258,10 +231,6 @@ export default function FormularioCiudadano({ municipio }) {
       esAnonimo: false,
       idDocumento,
       dispositivoId: obtenerIdDispositivo(),
-      // Como string: este mismo objeto se serializa a localStorage cuando el
-      // reporte se encola sin señal (§10).
-      verticalId: vertical.id,
-      ...(porUnidad && ubicacionCondominio ? { ubicacionCondominio } : {}),
     }
 
     // Pre-chequeo rápido: si el dispositivo ya sabe que no tiene red, no vale la
@@ -320,7 +289,6 @@ export default function FormularioCiudadano({ municipio }) {
     setPendienteSincronizar(false)
     setFotoDescartadaOffline(false)
     setCoordenadas(null)
-    setUbicacionCondominio(null)
     setDireccionElegida(null)
     setSugerenciaCategoria(null)
     setRevisandoFoto(false)
@@ -414,30 +382,7 @@ export default function FormularioCiudadano({ municipio }) {
       .sort((a, b) => a.distancia - b.distancia)
   }
 
-  // Duplicados en un condominio: el chequeo por radio no sirve, porque todos
-  // los reportes comparten la misma coordenada (el centro del conjunto). Se
-  // compara por espacio común + categoría, que es el caso real y el que más
-  // ruido genera: el ascensor detenido lo reportan 40 personas en 10 minutos.
-  //
-  // Los reportes DENTRO de una unidad no se agrupan nunca, a propósito: la
-  // torre y el número no salen de la incidencia (ver datosTicketPublico), así
-  // que acá no hay con qué compararlos — y no debería haberlo: agrupar "ruidos
-  // molestos en Torre B · 402" con el de otro vecino sería contarle a un
-  // tercero, sin login, quién reclamó de quién.
-  async function buscarDuplicadoEnEspacioComun() {
-    if (ubicacionCondominio?.tipo !== 'espacio_comun') return null
-
-    const activos = await buscarActivosPorCategoria(municipio?.id, categoria)
-    if (!activos) return null
-
-    return (
-      activos.find((t) => t.ubicacion_publica === ubicacionCondominio.espacio_comun) || null
-    )
-  }
-
   async function buscarDuplicadoCercano() {
-    if (porUnidad) return buscarDuplicadoEnEspacioComun()
-
     const porCategoria = await buscarActivosPorCategoria(municipio?.id, categoria)
     const mismoNombre = masCercanoDentroDelRadio(porCategoria || incidenciasActivas)
     if (mismoNombre) return mismoNombre
@@ -556,10 +501,7 @@ export default function FormularioCiudadano({ municipio }) {
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-gradient-to-b from-primary/[0.04] to-transparent px-4 py-6">
       <header className="mb-6">
-        <EncabezadoMunicipio
-          municipio={municipio}
-          tituloDefecto={porUnidad ? 'Reportar un problema del condominio' : 'Reportar Incidencia Urbana'}
-        />
+        <EncabezadoMunicipio municipio={municipio} tituloDefecto="Reportar Incidencia Urbana" />
         <div className="mt-4 flex gap-1.5">
           {Array.from({ length: TOTAL_PASOS }).map((_, i) => (
             <div
@@ -582,14 +524,7 @@ export default function FormularioCiudadano({ municipio }) {
           />
         ) : (
           <>
-            {paso === 1 && porUnidad && (
-              <PasoUbicacionUnidad
-                condominio={municipio}
-                ubicacion={ubicacionCondominio}
-                onCambiar={elegirUbicacionCondominio}
-              />
-            )}
-            {paso === 1 && !porUnidad && (
+            {paso === 1 && (
               <PasoUbicacion
                 coordenadas={coordenadas}
                 cargando={cargando}
@@ -613,7 +548,6 @@ export default function FormularioCiudadano({ municipio }) {
                 direccionTexto={direccionTexto}
                 detallesAdicionales={detallesAdicionales}
                 direccionAutocompletada={direccionAutocompletada}
-                vertical={vertical}
                 onCambiarCategoria={setCategoria}
                 onCambiarDireccion={cambiarDireccionTexto}
                 onCambiarDetalles={setDetallesAdicionales}
@@ -669,7 +603,7 @@ export default function FormularioCiudadano({ municipio }) {
           ) : (
             <Boton className="flex-1" cargando={enviando} disabled={!puedeAvanzar} onClick={manejarEnvio}>
               <Send size={18} />
-              Enviar {lexico.reporte}
+              Enviar reporte
             </Boton>
           )}
         </footer>

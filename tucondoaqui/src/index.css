@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+   Tokens de diseño
+   ---------------------------------------------------------------------------
+   El color de acento por condominio (--color-primary-rgb) NO se define acá:
+   lo escribe src/utils/tema.js en tiempo de ejecución según el tenant activo, y
+   tailwind.config.js lo expone como `primary`. Cambiar el color de un condominio es
+   cambiar `color_primario` en su documento de Firestore, en un solo lugar.
+
+   Lo que sí vive acá son los tokens que NO cambian entre condominios: las
+   superficies, la tinta y los colores de estado. Están como variables para que
+   un ajuste de contraste se haga una vez y no archivo por archivo.
+   --------------------------------------------------------------------------- */
+:root {
+  /* Superficies */
+  --superficie: #ffffff;
+  --superficie-hundida: #f7f7f8;
+
+  /* IMPORTANTE: los colores van como tripleta RGB sin envolver, no como hex.
+     tailwind.config.js los consume con el patrón rgb(var(--x) / <alpha-value>),
+     que es lo único que permite seguir usando modificadores de opacidad
+     (bg-tinta-fuerte/5, ring-estado-critico/20). Con un var() de hex plano,
+     Tailwind 3 simplemente NO genera esas clases —falla en silencio, sin error
+     de build— y el estilo desaparece. Mismo motivo por el que `primary` ya
+     estaba definido así. */
+
+  /* Tinta */
+  --tinta-fuerte-rgb: 24 24 27;   /* #18181b */
+  --tinta-rgb: 63 63 70;          /* #3f3f46 */
+  --tinta-suave-rgb: 113 113 122; /* #71717a */
+  --tinta-tenue-rgb: 161 161 170; /* #a1a1aa */
+
+  /* Estados. Paleta fija de la skill dataviz — nunca se tematiza por condominio, y
+     nunca carga sola con el significado: siempre va con ícono + etiqueta. */
+  --estado-bueno-rgb: 12 163 12;    /* #0ca30c */
+  --estado-atencion-rgb: 250 178 25; /* #fab219 */
+  --estado-serio-rgb: 236 131 90;    /* #ec835a */
+  --estado-critico-rgb: 208 59 59;   /* #d03b3b */
+
+  /* Borde hairline. Se usa siempre sin modificador de opacidad (ya la trae),
+     así que puede ir como color completo. */
+  --borde: rgb(24 24 27 / 0.08);
+
+  /* Alto real de la barra inferior, para que el contenido no quede debajo */
+  --alto-barra-inferior: 4.5rem;
+}
+
+/* min-height (no height): las pantallas que crecen más que el viewport —los
+   dashboards, la cuenta pública— tienen que poder hacer scroll. Con height:100%
+   el contenido se desbordaba de la caja en vez de alargar la página. */
+html, body, #root {
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--superficie-hundida);
+  color: rgb(var(--tinta-rgb));
+  /* Sin webfont a propósito. La cara "nativa" de una app es la tipografía del
+     sistema —SF Pro en iOS, Roboto en Android—, así que cargar Inter desde un
+     CDN se vería MENOS nativo y además costaría ~100 kB en celulares de gama
+     baja con señal rural, que es justo el público que el resto de la app cuida.
+     Si el equipo tiene Inter instalada localmente, se usa; si no, cae al font
+     del sistema, que en cada plataforma ya es el correcto. */
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Evita el zoom por doble toque y el resaltado azul al tocar en móvil: las
+     dos cosas que más delatan que algo es una web y no una app. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Leaflet necesita que su contenedor tenga una altura explícita para renderizar el mapa correctamente */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+}
+
+@layer components {
+  /* Área táctil mínima de 44×44 px (guía de Apple; Material pide 48 y también
+     lo cumple con el padding de abajo). Se usa en botones de solo ícono, que es
+     donde el área real se queda corta: el ícono mide 16-20 px y sin esto el
+     área tocable es del tamaño del ícono. `grid place-items-center` mantiene el
+     ícono centrado sin importar cuánto crezca la caja. */
+  .toque {
+    @apply grid min-h-[44px] min-w-[44px] place-items-center;
+  }
+
+  /* Tarjeta estándar: una sola definición para que todas respiren igual. */
+  .tarjeta {
+    @apply rounded-2xl bg-white p-5 ring-1 ring-borde;
+  }
+}
+
+/* Respeta a quien pidió menos movimiento en su sistema. Sin esto, las
+   transiciones y el modal que entra desde abajo pueden provocar mareo. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Modales: entran desde abajo en móvil (hoja) y con un fundido en escritorio,
+   igual que una app nativa. */
+@keyframes hoja-entra {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes velo-entra {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animar-hoja { animation: hoja-entra 220ms cubic-bezier(0.32, 0.72, 0, 1); }
+.animar-velo { animation: velo-entra 180ms ease-out; }
+
+/* --- Impresión: la Cuenta Pública se guarda como PDF desde el navegador --- */
+@media print {
+  /* Que los fondos y las barras de color salgan impresos y no en blanco. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @page {
+    margin: 1.5cm;
+  }
+
+  /* Una sección no se parte entre dos hojas si puede evitarse. */
+  section {
+    break-inside: avoid;
+  }
+
+  /* Los encabezados no quedan solos al pie de una hoja. */
+  h1, h2, h3 {
+    break-after: avoid;
+  }
+
+  /* La barra inferior y los flotantes no se imprimen. */
+  .no-imprimir {
+    display: none !important;
+  }
+}

@@ -5,7 +5,7 @@ import { suscribirIncidencias } from '../services/incidenciasService'
 import { suscribirFuncionarios } from '../services/funcionariosService'
 import { useMunicipio } from '../hooks/useMunicipio'
 import { ORDEN_GRAVEDAD } from '../utils/gravedad'
-import { verticalDe } from '../verticales'
+import { DEPARTAMENTOS } from '../utils/departamento'
 import { CATEGORIAS, agruparCategorias } from '../utils/categorias'
 import { exportarIncidenciasCsv } from '../utils/exportarCsv'
 import { coincideTexto } from '../utils/busqueda'
@@ -52,11 +52,6 @@ export default function DashboardGeneralPage() {
   const [vista, setVista] = useState('mapa')
   const { perfil, cerrarSesion } = useAuth()
   const { municipio, cargando, noEncontrado } = useMunicipio(perfil?.municipio_id)
-  // Las áreas responsables dependen de la vertical del tenant: 7 departamentos
-  // municipales o 7 áreas del condominio (ver src/verticales/).
-  const vertical = verticalDe(municipio)
-  const areas = vertical.areas
-  const lexico = vertical.lexico
 
   useEffect(() => {
     if (!municipio) return
@@ -233,11 +228,9 @@ export default function DashboardGeneralPage() {
           <>
             <PanelEvolucion incidencias={incidencias} onSeleccionarIncidencia={seleccionarEnMapa} />
             <div className="pb-5">
-              <ResumenGastoMensual incidencias={incidencias} areas={areas} />
+              <ResumenGastoMensual incidencias={incidencias} />
             </div>
             <MetricasPorDepartamento
-              areas={areas}
-              lexico={lexico}
               incidencias={incidencias}
               municipioId={municipio.id}
               funcionarios={funcionarios}
@@ -307,7 +300,7 @@ export default function DashboardGeneralPage() {
 
                 <select value={filtroDepartamento} onChange={(e) => setFiltroDepartamento(e.target.value)} className={CLASE_SELECT}>
                   <option value="Todas">Todos los departamentos</option>
-                  {areas.map((dep) => (
+                  {DEPARTAMENTOS.map((dep) => (
                     <option key={dep} value={dep}>{dep}</option>
                   ))}
                 </select>

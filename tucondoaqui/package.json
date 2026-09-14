@@ -1,0 +1,35 @@
+{
+  "name": "tucondoaqui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "desplegar": "npm install && npm run build && firebase deploy --only hosting",
+    "desplegar:reglas": "firebase deploy --only firestore:rules,firestore:indexes",
+    "demo": "node scripts/crear-demo.mjs"
+  },
+  "dependencies": {
+    "browser-image-compression": "^2.0.2",
+    "firebase": "^10.12.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "lucide-react": "^0.399.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.24.0",
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "firebase-admin": "^12.3.0",
+    "firebase-tools": "^15.24.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "vite": "^5.3.1",
+    "vite-plugin-pwa": "^1.3.0"
+  }
+}

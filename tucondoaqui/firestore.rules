@@ -1,0 +1,408 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Perfil del usuario del condominio que hizo login (null si no hay sesión).
+    function perfilUsuario() {
+      return get(/databases/$(database)/documents/usuarios_condominio/$(request.auth.uid)).data;
+    }
+
+    function esUsuarioAutenticado() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/usuarios_condominio/$(request.auth.uid));
+    }
+
+    // RBAC (3 roles): ADMINISTRADOR ve/gestiona todo el municipio (antes se
+    // llamaba ADMIN); COMITE está acotado a su propio area;
+    // CONSERJERIA no tiene función de rol propia acá (se acota por equipo, a
+    // nivel de UI, igual que antes de este cambio).
+    function esAdministrador() {
+      return esUsuarioAutenticado() && perfilUsuario().rol == 'ADMINISTRADOR';
+    }
+
+    // Multi-tenant: el usuario solo puede operar sobre datos de SU PROPIA
+    // condominio, sin importar su rol.
+    function esDelMismoCondominio(condominioId) {
+      return esUsuarioAutenticado() && perfilUsuario().condominio_id == condominioId;
+    }
+
+    // Un Jefe de Area solo puede gestionar solicitudes de SU propio
+    // area (además de ser del mismo municipio); Administrador y Terreno no
+    // tienen esa restricción adicional.
+    function puedeGestionarSolicitud(solicitudData) {
+      return esDelMismoCondominio(solicitudData.condominio_id) &&
+        (perfilUsuario().rol != 'COMITE' ||
+          perfilUsuario().area == solicitudData.area);
+    }
+
+    // --- Control de gasto real (FormularioCierreGasto.jsx) ---
+    // Mismo umbral que UMBRAL_DESVIACION en utils/costeo.js: si cambias uno,
+    // cambia el otro. Se repite acá porque las reglas no pueden importar JS.
+    //
+    // La UI ya calcula esto y exige justificación cuando corresponde, pero un
+    // cliente que llame a Firestore directo (sin pasar por la app) podría
+    // mandar requiere_revision:false aunque los números estén disparados —
+    // por eso esta función NO confía en el campo que manda el cliente, lo
+    // vuelve a calcular comparando contra el presupuesto ya guardado
+    // (resource.data, que el cliente no controla en este request).
+    function desviacionSignificativa(presupuesto, gastoReal) {
+      let horasEst = presupuesto.get('horas_estimadas', 0);
+      let costoEst = presupuesto.get('costo_aprox', 0);
+      return (horasEst > 0 && gastoReal.horas_reales > horasEst * 1.4) ||
+        (costoEst > 0 && gastoReal.costo_final > costoEst * 1.4);
+    }
+
+    // Exige que horas_reales/costo_final tengan forma válida, y que si el
+    // cierre se desvía del presupuesto (según la función de arriba, no según
+    // lo que mande el cliente) venga con una justificación de texto no vacía.
+    // No valida el monto exacto de costo_final (sumaría tarifa_hora de cada
+    // trabajador, que las reglas no pueden recorrer con un loop) — es defensa
+    // en profundidad para la desviación y la justificación, no un recálculo
+    // completo del costeo.
+    function gastoRealValido(solicitudAntes, gastoReal) {
+      return gastoReal.horas_reales is number && gastoReal.horas_reales > 0 &&
+        gastoReal.costo_final is number && gastoReal.costo_final >= 0 &&
+        (!desviacionSignificativa(solicitudAntes.get('presupuesto_estimado', {}), gastoReal) ||
+          (gastoReal.get('justificacion', '') is string && gastoReal.justificacion.size() > 0));
+    }
+
+    // true si este update no toca gasto_real, o si lo toca con un valor válido.
+    function noTocaGastoRealOEsValido(solicitudAntes, datosNuevos) {
+      return !('gasto_real' in datosNuevos) ||
+        datosNuevos.gasto_real == null ||
+        gastoRealValido(solicitudAntes, datosNuevos.gasto_real);
+    }
+
+    // Roster de personal (Órdenes de Trabajo y Costeo, ver ESTADO_PROYECTO.md):
+    // a diferencia de solicitudes, acá SOLO el Jefe de Area de ESE
+    // area puede escribir (ni el Administrador ni otro Jefe) — es su propia
+    // planilla de asistencia. El Administrador igual puede leer (ver la tarjeta de
+    // cualquier area desde el Dashboard General).
+    function puedeGestionarTrabajador(trabajadorData) {
+      return esDelMismoCondominio(trabajadorData.condominio_id) &&
+        perfilUsuario().rol == 'COMITE' &&
+        perfilUsuario().area == trabajadorData.area;
+    }
+
+    // Voto residente ("+1", sin login): el update SOLO puede tocar upvotes y
+    // usuarios_afectados, y ambos deben avanzar en exactamente 1 — así un voto
+    // no puede además cambiar categoria/estado/equipo/etc. Se usa .get(campo,
+    // default) porque solicitudes creadas antes de este cambio no tienen estos
+    // campos todavía.
+    function esVotoValidoSolicitud(antes, despues) {
+      return request.auth == null &&
+        despues.diff(antes).affectedKeys().hasOnly(['upvotes', 'usuarios_afectados']) &&
+        despues.upvotes == antes.get('upvotes', 1) + 1 &&
+        despues.usuarios_afectados.size() == antes.get('usuarios_afectados', []).size() + 1;
+    }
+
+    // Calificación ciudadana ("¿quedó bien resuelto?", 1-5 estrellas, sin login):
+    // mismo espíritu que el voto — el update SOLO puede tocar calificacion_residente,
+    // solo si la solicitud ya está Resuelto, solo una vez (no se puede pisar una
+    // calificación ya puesta), y el valor debe ser un entero entre 1 y 5.
+    function esCalificacionValida(antes, despues) {
+      return request.auth == null &&
+        despues.diff(antes).affectedKeys().hasOnly(['calificacion_residente']) &&
+        antes.estado == 'Resuelto' &&
+        antes.get('calificacion_residente', null) == null &&
+        despues.calificacion_residente is int &&
+        despues.calificacion_residente >= 1 && despues.calificacion_residente <= 5;
+    }
+
+    // --- Foto del residente, que llega DESPUÉS de crear el reporte (09-ago-2026) ---
+    // La foto se sube a Cloudinary en segundo plano (ver crearSolicitud): el
+    // residente recibe su número de ticket al instante, sin esperar una subida que
+    // en zona rural puede tardar mucho. La consecuencia es que la URL entra en
+    // un update POSTERIOR, y el residente no tiene login.
+    //
+    // Sin esta cláusula ese update se rechazaba con permission-denied y la foto
+    // no llegaba nunca al usuario: la imagen quedaba en Cloudinary y el
+    // campo del reporte en []. Fue así desde la migración a fotos múltiples
+    // (§11) hasta el 09-ago-2026 — 30 de 30 reportes de producción sin foto.
+    //
+    // Se acota todo lo que se puede: solo toca el campo de fotos, solo agrega
+    // UNA URL al final, hasta 3 en total, y solo si es una URL de Cloudinary.
+    // La comparación con concat() es la que impide reordenar, pisar o borrar las
+    // fotos ya cargadas: obliga a que el arreglo nuevo sea exactamente el
+    // anterior más el elemento agregado, en ese orden.
+    //
+    // Límite conocido y aceptado (mismo criterio que §28): quien conozca un
+    // solicitud_id —que es público en tickets_condominio— puede colgarle hasta 3
+    // imágenes de Cloudinary. No se restringe a NUESTRA cuenta de Cloudinary
+    // porque el preset de subida es "unsigned" y público por diseño: cualquiera
+    // puede obtener una URL bajo nuestro cloud igual. Lo que sí queda cerrado es
+    // apuntar a cualquier otro host (un pixel de rastreo, un dominio propio).
+    function esFotoResidenteValida(antes, despues) {
+      let previas = antes.get('fotos_antes_urls', []);
+      let nuevas = despues.fotos_antes_urls;
+      let agregada = nuevas.size() > 0 ? nuevas[nuevas.size() - 1] : '';
+      return request.auth == null &&
+        despues.diff(antes).affectedKeys().hasOnly(['fotos_antes_urls']) &&
+        previas.size() < 3 &&
+        nuevas.size() == previas.size() + 1 &&
+        nuevas == previas.concat([agregada]) &&
+        agregada is string &&
+        agregada.size() <= 500 &&
+        agregada.matches('https://res[.]cloudinary[.]com/.+');
+    }
+
+    // --- Anti-spam de reportes residentes (02-ago-2026) ---
+    // La app ciudadana no tiene login, así que no hay usuario real que limitar.
+    // Se usa el ID de dispositivo (utils/dispositivo.js: un UUID aleatorio en
+    // localStorage, ya usado para los votos "+1") como identidad débil.
+    //
+    // Mecanismo: crear una solicitud SOLO se permite si en el MISMO lote
+    // atómico (writeBatch, ver crearSolicitud) se está sellando
+    // dispositivos_condominio/{id}.ultimo_reporte con la hora del servidor. getAfter() es
+    // lo que hace esto obligatorio — sin él, bastaría con no escribir nunca la
+    // marca para saltarse el límite. Además se exige que haya pasado el
+    // enfriamiento desde el reporte anterior de ESE dispositivo.
+    //
+    // Límite conocido y aceptado: quien borre su localStorage (o use incógnito)
+    // obtiene un ID nuevo y vuelve a cero — el mismo techo que ya tenía el
+    // sistema de votos. Esto frena el spam accidental, el doble-envío y los
+    // scripts ingenuos; NO a un atacante decidido. Para eso haría falta
+    // Firebase App Check (ver §28 en ESTADO_PROYECTO.md).
+    function rutaDispositivo(dispositivoId) {
+      return /databases/$(database)/documents/dispositivos_condominio/$(dispositivoId);
+    }
+
+    function respetaEnfriamiento(dispositivoId) {
+      return getAfter(rutaDispositivo(dispositivoId)).data.ultimo_reporte == request.time &&
+        (!exists(rutaDispositivo(dispositivoId)) ||
+          get(rutaDispositivo(dispositivoId)).data.ultimo_reporte < request.time - duration.value(60, 's'));
+    }
+
+    // Topes de tamaño: evitan que alguien infle la base de datos con textos
+    // gigantes. Son holgados respecto de lo que permite el formulario.
+    function textosDeTamanoRazonable(datos) {
+      return datos.get('direccion_texto', '').size() <= 500 &&
+        datos.get('detalles_adicionales', '').size() <= 2000 &&
+        datos.get('nombre_residente', '').size() <= 150 &&
+        datos.get('contacto_residente', '').size() <= 150 &&
+        datos.get('rut_residente', '').size() <= 20;
+    }
+
+    // dispositivos_condominio/{id}: solo guarda una marca de tiempo por dispositivo, nada
+    // más. No se lista (evita enumerar dispositivos_condominio) y no se borra: borrarlo
+    // sería justamente la forma de saltarse el enfriamiento.
+    match /dispositivos_condominio/{dispositivoId} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if request.auth == null &&
+                              request.resource.data.keys().hasOnly(['ultimo_reporte']) &&
+                              request.resource.data.ultimo_reporte == request.time;
+      allow delete: if false;
+    }
+
+    // --- Municipalidades (tenants) ---
+    // Catálogo público: la Vista Residente (sin login) necesita leerlo para resolver
+    // /:slug y aplicar el tema. Sin UI de creación todavía: se gestiona a mano desde
+    // la consola de Firebase.
+    match /condominios/{condominioId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // --- Cumplimiento Ley 21.442 ---
+    // Mantenciones y certificaciones obligatorias del condominio
+    // (src/utils/mantenciones.js). Subcolección del condominio: la ruta ya dice
+    // de quién es, así que la regla lo acota sin un get() extra por escritura.
+    //
+    // OJO: el documento del condominio de arriba es de lectura pública, pero
+    // esta subcolección NO — las reglas no se heredan hacia las subcolecciones,
+    // y acá hay nombres de proveedores y el detalle de qué obligaciones están
+    // vencidas. Eso último es justo lo que no debe leer cualquiera desde fuera.
+    //
+    // Quién escribe: SOLO la administración, que es quien responde por estas
+    // obligaciones ante la ley. El Comité lee pero no escribe: su rol es
+    // fiscalizar a la administración, y si pudiera registrar cumplimientos el
+    // panel dejaría de servir como control cruzado.
+    match /condominios/{condominioId}/mantenciones/{obligacionId} {
+      allow read: if esDelMismoCondominio(condominioId);
+
+      allow write: if esAdministrador() && esDelMismoCondominio(condominioId) &&
+                      request.resource.data.ultima_fecha is string &&
+                      request.resource.data.ultima_fecha.size() > 0 &&
+                      (!('periodicidad_meses' in request.resource.data) ||
+                        (request.resource.data.periodicidad_meses is number &&
+                          request.resource.data.periodicidad_meses >= 1 &&
+                          request.resource.data.periodicidad_meses <= 120));
+    }
+
+    // --- Solicitudes ---
+    // Cualquier residente (sin login) puede CREAR un reporte para su condominio.
+    // Solo usuarios autenticados de ESA MISMA condominio pueden leer/actualizar/borrar.
+    match /solicitudes/{solicitudId} {
+      allow read: if esDelMismoCondominio(resource.data.condominio_id);
+
+      allow create: if request.resource.data.keys().hasAll(
+                        ['categoria', 'ubicacion', 'estado', 'fecha_creacion', 'condominio_id']
+                      ) &&
+                      request.resource.data.estado == 'Pendiente' &&
+                      request.resource.data.categoria is string &&
+                      request.resource.data.condominio_id is string &&
+                      request.resource.data.condominio_id.size() > 0 &&
+                      exists(/databases/$(database)/documents/condominios/$(request.resource.data.condominio_id)) &&
+                      // Dónde ocurre: una unidad (torre + número) o un espacio
+                      // común. No hay coordenadas en este producto — un
+                      // condominio entero cabe dentro del error del GPS.
+                      request.resource.data.ubicacion.tipo in ['unidad', 'espacio_comun'] &&
+                      (request.resource.data.ubicacion.tipo != 'unidad' ||
+                        (request.resource.data.ubicacion.torre is string &&
+                          request.resource.data.ubicacion.torre.size() > 0 &&
+                          request.resource.data.ubicacion.unidad is string &&
+                          request.resource.data.ubicacion.unidad.size() > 0)) &&
+                      (request.resource.data.ubicacion.tipo != 'espacio_comun' ||
+                        (request.resource.data.ubicacion.espacio_comun is string &&
+                          request.resource.data.ubicacion.espacio_comun.size() > 0)) &&
+                      // Triage automático: si el cliente manda nivel_gravedad, debe ser
+                      // uno de los 3 valores válidos (evita que alguien mande basura ahí).
+                      (!('nivel_gravedad' in request.resource.data) ||
+                        request.resource.data.nivel_gravedad in ['Alta', 'Media', 'Baja']) &&
+                      // Derivación automática al área responsable: mismo criterio
+                      // de validación que nivel_gravedad. Si cambias esta lista,
+                      // cambia también AREAS en src/utils/categorias.js.
+                      //
+                      // El valor no lo elige el residente, lo calcula la app desde
+                      // la categoría: esto existe para que nadie escriba basura en
+                      // el campo llamando a Firestore directo, no para rutear.
+                      (!('area' in request.resource.data) ||
+                        request.resource.data.area in [
+                          'Administración', 'Conserjería', 'Mantención y Obras',
+                          'Aseo y Áreas Verdes', 'Seguridad', 'Convivencia y Reglamento',
+                          'Proveedor Externo'
+                        ]) &&
+                      // Anti-spam (ver arriba): exige ID de dispositivo y que el
+                      // mismo lote selle dispositivos_condominio/{id} respetando el enfriamiento.
+                      textosDeTamanoRazonable(request.resource.data) &&
+                      request.resource.data.dispositivo_id is string &&
+                      request.resource.data.dispositivo_id.size() > 0 &&
+                      respetaEnfriamiento(request.resource.data.dispositivo_id);
+
+      allow update: if (puedeGestionarSolicitud(resource.data) &&
+                          noTocaGastoRealOEsValido(resource.data, request.resource.data)) ||
+                      esVotoValidoSolicitud(resource.data, request.resource.data) ||
+                      esCalificacionValida(resource.data, request.resource.data) ||
+                      esFotoResidenteValida(resource.data, request.resource.data);
+
+      allow delete: if esAdministrador() && esDelMismoCondominio(resource.data.condominio_id);
+    }
+
+    // Seguimientos: comentario/foto que el residente agrega a un reporte YA
+    // creado, sin login (ver ConsultaTicketPage.jsx) — mismo criterio de acceso
+    // "a ciegas" que la calificación: el residente conoce solicitudId porque
+    // tickets_condominio.{numero}.solicitud_id es público, pero no tiene permiso
+    // de leer la solicitud ni esta subcolección (solo el usuario del mismo
+    // municipio puede leer, vía ListaSeguimientos.jsx en los paneles de gestión).
+    match /solicitudes/{solicitudId}/seguimientos/{seguimientoId} {
+      allow read: if esDelMismoCondominio(
+        get(/databases/$(database)/documents/solicitudes/$(solicitudId)).data.condominio_id
+      );
+
+      allow create: if request.auth == null &&
+                      request.resource.data.keys().hasOnly(['texto', 'foto_url', 'autor', 'fecha']) &&
+                      request.resource.data.autor == 'residente' &&
+                      request.resource.data.texto is string && request.resource.data.texto.size() <= 1000 &&
+                      request.resource.data.foto_url is string &&
+                      request.resource.data.fecha == request.time;
+
+      allow update, delete: if false;
+    }
+
+    // --- Tickets públicos ---
+    // Vista pública para que el residente vea el estado de su reporte sin login,
+    // Y alimenta el mapa tipo Waze (pines de reportes activos + chequeo de
+    // proximidad) — por eso SOLO tiene campos no sensibles (nada de
+    // nombre/contacto del residente, ni la torre ni el número de unidad, porque en
+    // un condominio la unidad identifica al hogar. Sí lleva el espacio común y la
+    // foto: ahí no hay a quién identificar).
+    // El ID de documento es el numero_ticket: como Firestore clasifica un setDoc
+    // sobre un doc ya existente como "update" (no "create") sin importar el método
+    // usado en el cliente, y aquí no hay "allow update" para anónimos fuera del
+    // voto (ver el allow update de abajo), un intento de crear un ticket con un número
+    // ya usado por OTRO reporte es rechazado con permission-denied — ese rechazo
+    // es el mecanismo real de unicidad (ver registrarTicketPublico en
+    // ticketsPublicosService.js, que regenera el número y reintenta cuando pasa esto).
+    match /tickets_condominio/{ticketId} {
+      allow get: if true;
+      // Antes era "if false" (evitar escanear todos los tickets) — ahora se
+      // necesita listar para pintar el mapa residente, y ya no hay nada sensible
+      // que proteger en este documento.
+      allow list: if true;
+
+      allow create: if request.resource.data.keys().hasAll(
+                        ['solicitud_id', 'condominio_id', 'categoria', 'estado', 'fecha_creacion']
+                      ) &&
+                      request.resource.data.estado == 'Pendiente' &&
+                      request.resource.data.categoria is string &&
+                      request.resource.data.condominio_id is string &&
+                      request.resource.data.condominio_id.size() > 0 &&
+                      exists(/databases/$(database)/documents/condominios/$(request.resource.data.condominio_id)) &&
+                      (!('nivel_gravedad' in request.resource.data) ||
+                        request.resource.data.nivel_gravedad in ['Alta', 'Media', 'Baja']) &&
+                      // `ubicacion_publica` es opcional y SOLO lleva el nombre de
+                      // un espacio común. La unidad nunca llega acá: esta
+                      // colección es de lectura pública y la unidad identifica al
+                      // hogar (ver datosTicketPublico en ticketsPublicosService.js).
+                      (!('ubicacion_publica' in request.resource.data) ||
+                        request.resource.data.ubicacion_publica is string);
+
+      // El usuario del mismo municipio refleja cambios de estado (asignar
+      // equipo / marcar resuelto); cualquier residente (sin login) puede votar
+      // "+1" (solo upvotes, +1 exacto), reflejar su calificación ya puesta en
+      // solicitudes/{id} (solo una vez, mismo criterio que esCalificacionValida),
+      // o agregar la URL de su foto cuando termina de subir (misma función que en
+      // solicitudes — así el pin del mapa residente también la muestra).
+      allow update: if esDelMismoCondominio(resource.data.condominio_id) ||
+                      esFotoResidenteValida(resource.data, request.resource.data) ||
+                      (request.auth == null &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes']) &&
+                        request.resource.data.upvotes == resource.data.get('upvotes', 1) + 1) ||
+                      (request.auth == null &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['calificacion_residente']) &&
+                        resource.data.get('calificacion_residente', null) == null &&
+                        request.resource.data.calificacion_residente is int &&
+                        request.resource.data.calificacion_residente >= 1 && request.resource.data.calificacion_residente <= 5);
+
+      allow delete: if false;
+    }
+
+    // --- Usuarios del condominioes ---
+    // Nadie puede crearse a sí mismo un perfil con rol (evita que un residente se
+    // autoasigne un rol). Los perfiles los crea un Administrador existente (de la MISMA
+    // condominio) o se cargan manualmente desde la consola de Firebase.
+    match /usuarios_condominio/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read: if esAdministrador() && esDelMismoCondominio(resource.data.condominio_id);
+
+      // En "create" el documento todavía no existe, así que no hay "resource.data":
+      // se valida contra el municipio del propio Administrador que está creando el perfil.
+      // No se permite crear otro ADMINISTRADOR desde esta vía (solo COMITE
+      // o CONSERJERIA) — evita que la UI de autogestión sirva para autoescalar privilegios;
+      // crear otro Administrador sigue siendo una acción manual desde la consola.
+      allow create: if esAdministrador()
+                      && request.resource.data.condominio_id == perfilUsuario().condominio_id
+                      && request.resource.data.rol in ['COMITE', 'CONSERJERIA'];
+
+      allow update, delete: if esAdministrador() && esDelMismoCondominio(resource.data.condominio_id);
+    }
+
+    // --- Trabajadores (roster de asistencia por area) ---
+    // Sin cuenta de acceso propia (a diferencia de usuarios_condominio) — es
+    // una lista simple que administra el Jefe de Area, similar a como
+    // "equipos" es hoy un array de strings en condominios/{slug}.
+    match /personal/{trabajadorId} {
+      allow read: if esDelMismoCondominio(resource.data.condominio_id);
+
+      allow create: if esUsuarioAutenticado()
+                      && request.resource.data.condominio_id == perfilUsuario().condominio_id
+                      && perfilUsuario().rol == 'COMITE'
+                      && perfilUsuario().area == request.resource.data.area;
+
+      allow update, delete: if puedeGestionarTrabajador(resource.data);
+    }
+
+  }
+}
