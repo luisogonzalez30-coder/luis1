@@ -1,7 +1,7 @@
 # Dónde quedamos — 14 de septiembre de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (49 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (50 secciones).
 
 ---
 
@@ -30,6 +30,20 @@ suspendido. Desde una sesión de Claude no se alcanza ese dominio (ver el muro d
 Esto es exactamente el riesgo que estaba anotado más abajo como pendiente desde el 11-ago —
 "el bot corre en plan Free sin SLA y ahora hay un municipio dependiendo de él"— materializado.
 Cuando se resuelva, el issue se cierra solo en la siguiente corrida de la vigilancia.
+
+**Lo que sí se arregló del corte (14-sep, ver §50):** las dos cosas que el corte dejó a la
+vista, porque la suspensión en sí no es código.
+
+- **La vigilancia ya distingue "Render lo suspendió" de "el bot está fallando".** Eran el
+  mismo HTTP 503 y el mismo título de issue, y se arreglan en pantallas completamente
+  distintas. Ahora cada tipo de falla tiene su título y su lista de "dónde mirar" — y si un
+  aviso abierto cambia de tipo, se le corrige el título.
+- **El aviso de creación ahora vence a las 24 h** (`whatsapp-api-oficial/frescura.js`). Al
+  reactivar el servicio ya no van a salir tres días de "recibimos tu reporte" atrasados de
+  golpe. El de "resuelto" no vence, a propósito. Ante cualquier duda se manda igual: 25
+  pruebas cuidan que el tope no se coma un aviso legítimo.
+
+Se puede afinar sin tocar código con `AVISO_CREACION_MAX_HORAS` en Render (0 lo apaga).
 
 ---
 

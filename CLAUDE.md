@@ -38,7 +38,7 @@ guía no aplica; si es de TuMuniAquí, no hay por qué abrir esa carpeta.
 1. **`RETOMAR-AQUI.md`** — siempre, entero. Es corto y dice dónde quedó el trabajo y qué
    está bloqueado esperando al usuario.
 2. **`LEEME.md`** — qué hay en cada carpeta y cómo se corre el proyecto.
-3. **`ESTADO_PROYECTO.md`** — el detalle técnico, 47 secciones numeradas (§1 a §47).
+3. **`ESTADO_PROYECTO.md`** — el detalle técnico, 50 secciones numeradas (§1 a §50).
    **No lo leas entero: son ~34 mil tokens.** Busca la sección con
    `grep -n "^## " ESTADO_PROYECTO.md` y lee solo el rango que necesitas con `sed -n`.
 4. **`DESPLEGAR.md`** — antes de publicar cualquier cambio.
