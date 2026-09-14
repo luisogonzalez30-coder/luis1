@@ -74,7 +74,13 @@ externo. `serviceAccountKey.json` y `backups/` viven fuera del repositorio y ah�
 
 ## Un muro que estuvo puesto: la red de las sesiones
 
-> **Levantado desde el 30-ago-2026.** Comprobado corriendo el código, no leyendo esto:
+> **Volvió a estar puesto el 14-sep-2026.** Los tres dominios del proyecto dan `000` con
+> `connect_rejected` del proxy, y `npm run revisar` solo alcanza a comprobar los certificados.
+> Se define **por entorno y por sesión**: comprobarlo cada vez con un `curl`, no confiar en
+> esta línea. Cuando esté puesto, la fuente real del estado de producción es `vigilar.yml` en
+> GitHub Actions, que corre fuera de esta red.
+>
+> **Lo que decía hasta el 30-ago-2026, cuando estuvo levantado:** comprobado corriendo el código, no leyendo esto:
 > producción, la landing, el bot, Nominatim y `api.mercadopublico.cl` responden todos, y el
 > proxy reporta `"selective": false` (sin lista blanca). **`npm run revisar` y los scripts de
 > `mp:*` funcionan desde acá.** Lo que sigue es el diagnóstico de cuando estaba puesto, que
@@ -131,9 +137,14 @@ con la que arrancaron.
 
 ## Vigilancia automática
 
-- `.github/workflows/vigilar.yml` — cada 30 minutos, avisa de una caída inmediata.
+- `.github/workflows/vigilar.yml` — programado cada 30 minutos, pero GitHub retrasa los
+  `schedule`: los huecos reales medidos llegan a **6 h 47**. No es detección inmediata.
+  Abre un issue con la etiqueta `servicio-caido`. Ojo: ese aviso **no está llegando al
+  usuario** —la caída de §50 estuvo tres días con el issue abierto y sin mirar—, así que al
+  empezar una sesión conviene revisar los issues abiertos antes que fiarse del correo.
 - `.github/workflows/revision-diaria.yml` — 9:00 AM, revisa el conjunto y abre un issue con
   la etiqueta `revision-diaria` si algo está mal. Se cierra solo cuando el día siguiente sale
   limpio.
 
-Si hay un issue abierto con esa etiqueta, atenderlo antes que lo que venga.
+Si hay un issue abierto con la etiqueta `revision-diaria` o `servicio-caido`, atenderlo antes
+que lo que venga.

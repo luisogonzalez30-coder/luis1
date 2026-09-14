@@ -1,7 +1,74 @@
-# Dónde quedamos — 30 de agosto de 2026
+# Dónde quedamos — 14 de septiembre de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (49 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (51 secciones).
+
+## 🔴 URGENTE — el bot de WhatsApp está suspendido desde el 11-sep
+
+**Lleva 81 horas caído y hay un municipio del otro lado.** `proyectomuni.onrender.com`
+devuelve HTTP 503 con la página de suspensión de **Render** (`This service has been
+suspended`): el servicio está apagado por la plataforma, no roto por código. Render está en
+plan **Starter pagado**, así que apunta a un cobro rechazado, no a horas agotadas.
+
+Mientras siga así: el vecino que reporta no recibe su WhatsApp, el que escribe al bot no
+recibe respuesta, y las cinco funciones de IA están abajo. La app web sigue funcionando.
+
+**Lo que te toca a ti, en este orden:**
+
+1. `dashboard.render.com` → `My project` → `Production` → `ProyectoMuni`. Leer por qué está
+   suspendido. Casi seguro es la tarjeta.
+2. Regularizar el pago y reanudar el servicio.
+3. Comprobar que `https://proyectomuni.onrender.com/salud` devuelva 200.
+4. En Meta, confirmar que el webhook sigue suscrito a `messages`: Meta desuscribe webhooks
+   que fallan de forma sostenida, y 81 horas es sostenido.
+5. El issue #17 se cierra solo cuando la siguiente revisión salga limpia.
+
+**No hay que reenviar nada a mano.** Los avisos atrasados salen solos al levantar el
+servicio: el listener consulta por `notificado_whatsapp_creacion == false` y los recoge al
+reconectarse (§50).
+
+**Dos cosas que esta caída dejó a la vista** y que valen más que el incidente mismo:
+
+- **El aviso no te llegó.** La vigilancia funcionó —abrió el issue #17 a los minutos— pero
+  pasaron tres días sin que nadie lo mirara. El correo de GitHub por issue abierto no está
+  llegando a tus ojos. Hace falta otro canal, o revisar los issues como parte de la rutina.
+- **La vigilancia no corre cada 30 minutos.** GitHub retrasa los `schedule`: las corridas
+  reales tuvieron huecos de hasta 6 h 47. Lo que `CLAUDE.md` promete como "aviso de una caída
+  inmediata" es, en el peor caso medido, casi siete horas.
+
+**Ojo con la red al diagnosticar:** el muro que se dio por levantado el 30-ago **está puesto
+otra vez**. Los tres dominios dan `000` desde una sesión, y eso no dice nada del servicio.
+`npm run revisar` solo alcanzó a comprobar los certificados. La fuente real es `vigilar.yml`
+en GitHub Actions, que corre fuera de esa red.
+
+---
+
+## Condominios y juntas de vecinos: evaluado el 14-sep, la respuesta es "todavía no"
+
+Preguntaste si el software se puede adaptar. **Se puede** —la arquitectura multi-tenant ya
+está y `licanten` no está incrustado en el código—, pero el análisis completo está en **§51**
+y la conclusión es que no es el momento.
+
+Lo que hay que saber sin leer la sección entera:
+
+- **Las juntas de vecinos no son cliente, son canal.** No compran software y su función es
+  justamente canalizar reportes hacia la municipalidad. Darles acceso gratis presiona al
+  Alcalde vecino: vale más como palanca de venta que como suscripción.
+- **Los condominios sí pagan** (gasto común, y el decisor es la administradora, no el
+  edificio), pero el mercado está tomado por actores cuyo ancla es el gasto común, o sea la
+  plata. Entrar con solo reportes es pelear por el complemento.
+- **Lo que costaría**: 847 apariciones de vocabulario municipal en 66 de los 101 archivos de
+  `src/`, las 58 categorías (que son todas de vía pública y no sirven), el mapa dejando de ser
+  el eje —un condominio tiene torre y piso, no coordenadas— y un padrón cerrado de residentes,
+  que hoy no existe y es construcción nueva, no adaptación.
+- **El orden recomendado**: pagar Render → parametrizar las plantillas (§44.4, que habilita el
+  municipio 2) → municipios 2 y 3 → recién ahí condominios. Hay 345 comunas y el guion de venta
+  ya ganó una vez.
+- **Si algún día se hace: no forkear.** Un campo `tipo_organizacion` en el documento del
+  tenant, vocabulario y categorías como configuración. El día que exista un repositorio
+  separado, la decisión ya se tomó mal.
+
+---
 
 **Lo más nuevo (30-ago): Mercado Público quedó operativo.** La red de las sesiones dejó de
 bloquear las APIs externas, la integración se fusionó a main después de una semana varada en
