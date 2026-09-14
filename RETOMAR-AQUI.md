@@ -1,7 +1,7 @@
 # Dónde quedamos — 14 de septiembre de 2026
 
 Resumen corto para retomar en una conversación nueva sin arrastrar historial.
-El detalle técnico completo está en `ESTADO_PROYECTO.md` (49 secciones).
+El detalle técnico completo está en `ESTADO_PROYECTO.md` (50 secciones).
 
 ---
 
@@ -31,6 +31,20 @@ Esto es exactamente el riesgo que estaba anotado más abajo como pendiente desde
 "el bot corre en plan Free sin SLA y ahora hay un municipio dependiendo de él"— materializado.
 Cuando se resuelva, el issue se cierra solo en la siguiente corrida de la vigilancia.
 
+**Lo que sí se arregló del corte (14-sep, ver §50):** las dos cosas que el corte dejó a la
+vista, porque la suspensión en sí no es código.
+
+- **La vigilancia ya distingue "Render lo suspendió" de "el bot está fallando".** Eran el
+  mismo HTTP 503 y el mismo título de issue, y se arreglan en pantallas completamente
+  distintas. Ahora cada tipo de falla tiene su título y su lista de "dónde mirar" — y si un
+  aviso abierto cambia de tipo, se le corrige el título.
+- **El aviso de creación ahora vence a las 24 h** (`whatsapp-api-oficial/frescura.js`). Al
+  reactivar el servicio ya no van a salir tres días de "recibimos tu reporte" atrasados de
+  golpe. El de "resuelto" no vence, a propósito. Ante cualquier duda se manda igual: 25
+  pruebas cuidan que el tope no se coma un aviso legítimo.
+
+Se puede afinar sin tocar código con `AVISO_CREACION_MAX_HORAS` en Render (0 lo apaga).
+
 ---
 
 ## 🏢 14-sep-2026: nació un producto aparte — CondominioAquí (`condominioaqui/`)
@@ -56,14 +70,32 @@ advertido en su `LEEME.md`, pero vale repetirlo donde se lee primero.
 El costo de haberlo separado, dicho para que nadie se sorprenda después: **una mejora al
 flujo de reportes hay que hacerla dos veces.** Fue una decisión explícita del usuario.
 
-**Lo que quedó esperándote a ti**, en orden, todo dentro de `condominioaqui/DESPLEGAR.md`:
+**El proyecto de Firebase ya existe** (14-sep): `condominioaqui-7be45`. El ID quedó con sufijo
+porque `condominioaqui` a secas estaba tomado, y ya está escrito en `.firebaserc` y en el
+workflow — no hay que configurar nada por eso.
 
-1. Crear el proyecto de Firebase de CondominioAquí — **tiene que ser uno nuevo**, distinto del
-   de TuMuniAquí: las reglas de Firestore se despliegan completas y publicar las de allá sobre
-   este proyecto borraría las que protegen los datos de Licantén.
-2. Cargar los 9 secretos en GitHub (todos con sufijo `_CONDOMINIO`).
-3. `npm run desplegar:reglas`, sembrar el demo y crear el usuario administrador.
-4. Habilitar PDF en el preset de Cloudinary (`resource_type: auto`).
+**Se corrigieron los índices de Firestore** (§50 de su propia arquitectura): el archivo se
+había copiado de TuMuniAquí y apuntaba a `incidencias`, `tickets_publicos` y `municipio_id`,
+que acá no existen. Desplegarlo habría creado cinco índices inútiles y ninguno de los
+necesarios: cada panel habría fallado con "The query requires an index" al abrirlo por primera
+vez. Los cinco que están ahora salen de leer las consultas reales.
+
+**Lo que quedó esperándote a ti**, en orden, todo dentro de `condominioaqui/DESPLEGAR.md`.
+Los cuatro pasos necesitan credenciales que solo tienes tú — desde una sesión de Claude no
+hay acceso a Render, ni a la consola de Firebase, ni forma de crear secretos en GitHub:
+
+1. **Descargar la clave de servicio** del proyecto (⚙️ → Cuentas de servicio → Generar nueva
+   clave privada). Sirve para dos cosas: el secreto de GitHub y sembrar el demo.
+2. **Cargar los 9 secretos en GitHub**, todos con sufijo `_CONDOMINIO`. Tres de los valores ya
+   están escritos hechos en `DESPLEGAR.md` paso 5.
+3. **`npm run desplegar:reglas`** desde `condominioaqui/`. Antes, `npx firebase use` tiene que
+   responder `condominioaqui-7be45`: si responde `app-incidencias-urbanas`, ese comando
+   **borra las reglas que protegen los datos de Licantén**.
+4. **`npm run demo -- --aplicar`** y crear a mano el usuario `ADMINISTRADOR` (Auth + documento
+   en `usuarios_condominio`, los campos están en `DESPLEGAR.md` paso 9).
+
+Y una quinta, opcional: habilitar PDF en el preset de Cloudinary (`resource_type: auto`). Sin
+eso el respaldo de las mantenciones solo acepta fotos, que igual sirven.
 
 Mientras eso no esté, su workflow avisa qué falta y **termina en verde** — no hay sitio que
 se haya dejado de publicar. Si algún día faltan *algunos* secretos en vez de todos, ahí sí

@@ -16,14 +16,13 @@ y al fusionar a `main` se publica el sitio real.
 
 ---
 
-## 1. Crear el proyecto
+## 1. Crear el proyecto — ✅ HECHO (14-sep-2026)
 
-1. Entra a <https://console.firebase.google.com> y toca **Agregar proyecto**.
-2. Nombre: **CondominioAquí**.
-3. Firebase propone un ID abajo del nombre. Intenta dejarlo en **`condominioaqui`**.
-   - Si está tomado, Firebase le pega un sufijo (`condominioaqui-a1b2c`). **Anótalo
-     tal cual**: es el que hay que usar en el paso 6.
-4. Google Analytics: **no hace falta**. Puedes desactivarlo.
+El proyecto existe y su ID es **`condominioaqui-7be45`** (`condominioaqui` a secas estaba
+tomado, así que Firebase le puso el sufijo). Ya está escrito en `.firebaserc` y en el
+workflow, así que **no hay que configurar nada más por el ID**.
+
+El sitio quedará en **<https://condominioaqui-7be45.web.app>**.
 
 ## 2. Encender las tres piezas
 
@@ -79,12 +78,12 @@ En el repositorio: **Settings → Secrets and variables → Actions → New repo
 | Secreto | Valor |
 |---|---|
 | `FIREBASE_SERVICE_ACCOUNT_CONDOMINIOAQUI` | El **contenido completo** del `.json` del paso 4 |
-| `VITE_FIREBASE_API_KEY_CONDOMINIO` | Del paso 3 |
-| `VITE_FIREBASE_AUTH_DOMAIN_CONDOMINIO` | Del paso 3 |
-| `VITE_FIREBASE_PROJECT_ID_CONDOMINIO` | Del paso 3 |
-| `VITE_FIREBASE_STORAGE_BUCKET_CONDOMINIO` | Del paso 3 |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID_CONDOMINIO` | Del paso 3 |
-| `VITE_FIREBASE_APP_ID_CONDOMINIO` | Del paso 3 |
+| `VITE_FIREBASE_API_KEY_CONDOMINIO` | `apiKey` del paso 3 |
+| `VITE_FIREBASE_AUTH_DOMAIN_CONDOMINIO` | `condominioaqui-7be45.firebaseapp.com` |
+| `VITE_FIREBASE_PROJECT_ID_CONDOMINIO` | `condominioaqui-7be45` |
+| `VITE_FIREBASE_STORAGE_BUCKET_CONDOMINIO` | `condominioaqui-7be45.firebasestorage.app` |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID_CONDOMINIO` | `messagingSenderId` del paso 3 |
+| `VITE_FIREBASE_APP_ID_CONDOMINIO` | `appId` del paso 3 |
 | `VITE_CLOUDINARY_CLOUD_NAME_CONDOMINIO` | El mismo de siempre, o uno nuevo |
 | `VITE_CLOUDINARY_UPLOAD_PRESET_CONDOMINIO` | Ídem |
 
@@ -93,15 +92,14 @@ En el repositorio: **Settings → Secrets and variables → Actions → New repo
 > compilaría con la configuración del otro. Ese error publica una app que
 > escribe en la base de datos equivocada, y no se nota hasta que es tarde.
 
-## 6. Si el ID del proyecto NO quedó en `condominioaqui`
+## 6. Si algún día el proyecto cambia de ID
 
-Solo si en el paso 1 Firebase le puso un sufijo. Dos archivos, un valor cada uno:
+No hace falta hoy. Si alguna vez se migra a otro proyecto, se cambia en dos lugares:
 
-- **`.firebaserc`** (en esta carpeta): cambia `"default": "condominioaqui"`.
+- **`.firebaserc`** (en esta carpeta): el valor de `"default"`.
 - **GitHub**: Settings → Secrets and variables → Actions → pestaña **Variables** →
   New repository variable → nombre `FIREBASE_PROJECT_ID_CONDOMINIO`, valor el ID
-  real. El workflow la prefiere por sobre el valor por defecto, así que con eso
-  basta y no hay que tocar el `.yml`.
+  nuevo. El workflow la prefiere por sobre el valor por defecto que trae escrito.
 
 ## 7. Publicar las reglas de Firestore
 
@@ -120,7 +118,9 @@ Comprueba antes que estás apuntando al proyecto correcto:
 npx firebase use
 ```
 
-Tiene que responder el ID de **CondominioAquí**, no el del municipio.
+Tiene que responder **`condominioaqui-7be45`**, no el del municipio
+(`app-incidencias-urbanas`). Si responde el del municipio, `npm run desplegar:reglas`
+**borraría las reglas que protegen los datos de Licantén**.
 
 ## 8. Sembrar el condominio de demostración
 
@@ -161,7 +161,7 @@ manual, a propósito: las reglas no permiten que un administrador se clone.
 | Cuándo | Qué hace |
 |---|---|
 | Abres o actualizas un PR que toca `condominioaqui/**` | Publica una vista previa en una URL temporal y la deja como comentario en el PR. Se borra sola a los 7 días |
-| Fusionas a `main` | Publica el sitio real en `https://<id-del-proyecto>.web.app` |
+| Fusionas a `main` | Publica el sitio real en <https://condominioaqui-7be45.web.app> |
 
 El workflow **solo corre cuando cambian archivos de esta carpeta**. Un cambio en
 TuMuniAquí no republica CondominioAquí, y al revés tampoco.

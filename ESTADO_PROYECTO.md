@@ -1187,7 +1187,7 @@ Diferencias que importan respecto del bot viejo:
 
 **Archivos**: `server.js` (los listeners de Firestore y el envío), `whatsapp.js` (cliente de la Graph API + traducción de códigos de error de Meta), `webhook.js` (consultas entrantes del vecino), `categorias.js` (copia de las etiquetas), `ver-plantillas.js` y `probar*.js` (utilidades de diagnóstico).
 
-**Variables de entorno** (viven en Render, no en el repo): `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_WABA_ID`, `WHATSAPP_TEMPLATE_LANG` (por defecto `es_CL`), `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, `FIREBASE_SERVICE_ACCOUNT`, `PORTAL_URL_ESTADO`.
+**Variables de entorno** (viven en Render, no en el repo): `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_WABA_ID`, `WHATSAPP_TEMPLATE_LANG` (por defecto `es_CL`), `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, `FIREBASE_SERVICE_ACCOUNT`, `PORTAL_URL_ESTADO`, y desde el 14-sep `AVISO_CREACION_MAX_HORAS` (opcional, por defecto 24 — ver §50.2).
 
 **Verificado el 10-ago-2026 contra la Graph API**: el `WHATSAPP_TOKEN` es de **usuario del sistema** (`TuMuniAqui-bot`) y **no expira** — la advertencia del `.env.example` sobre los tokens de 24 h ya no aplica a este servicio. El número es **+56 9 6540 0932** ("TumuniAqui"), con calidad **GREEN**. **Pero `WHATSAPP_WABA_ID` en Render está mal**: tiene el ID del *número de teléfono*, no el de la cuenta de WhatsApp Business. No rompe los envíos (`server.js` no lo usa; solo `ver-plantillas.js`), pero deja el diagnóstico ciego justo cuando se necesita. El valor correcto está en Meta for Developers → app → WhatsApp → Configuración de la API, como "Identificador de la cuenta de WhatsApp Business". Y el usuario del sistema **no tiene ninguna WABA asignada** (`me/assigned_whatsapp_business_accounts` devuelve vacío), así que hoy ese token puede enviar pero no puede listar plantillas.
 
@@ -1871,3 +1871,85 @@ se quiere automatizar, ese es el dato que falta.
 Compra Ágil y Convenio Marco. Rubro desactualizado = invisible para esos dos canales por
 mucho que el cazador encuentre la oportunidad. Es el requisito que hoy separa de poder
 postular al Convenio Marco, que es justamente la mejor oportunidad detectada.
+
+---
+
+## 50. El corte del 11-sep y las dos cosas que dejó (14-sep-2026)
+
+Render **suspendió** el servicio del bot el 11-sep y estuvo tres días sin correr. El issue
+[#17](https://github.com/luisogonzalez30-coder/luis1/issues/17) se abrió esa misma mañana y
+`vigilar.yml` falló en cada corrida desde entonces, pero nadie lo miró: el aviso decía "El
+servicio no está respondiendo bien", que es lo mismo que habría dicho si el proceso se
+hubiera caído, si Meta hubiera rechazado las plantillas o si se hubiera agotado Firestore.
+
+**La suspensión se arregla en la facturación de Render y en ningún otro lado.** Eso no se
+puede hacer desde una sesión de Claude —no hay credenciales ni salida de red hacia Render— y
+tampoco hay nada que cambiar en el código. Lo que sí se hizo son las dos cosas que el corte
+dejó a la vista.
+
+### 50.1 El diagnóstico: quién está respondiendo, el bot o Render
+
+`/salud` devuelve **503 con JSON** cuando el bot corre pero algo suyo está mal (ver
+`vigilancia.js`). Render devuelve **503 con HTML** cuando no deja arrancar el servicio. Mismo
+código, causas opuestas, y `vigilar.yml` los trataba igual.
+
+Ahora clasifica mirando **el cuerpo, no el código**, en este orden:
+
+| Qué trae el cuerpo | Categoría | Adónde manda el aviso |
+|---|---|---|
+| `"problemas"` (es nuestro JSON) | `bot_enfermo` | Plantillas en Meta, logs de Render, cuota de Firestore |
+| La palabra `suspend` | `suspendido` | **Facturación de Render**, banner del servicio, pestaña Events |
+| Cualquier otro HTML | `sin_arrancar` | Logs y Events de Render, variables de entorno |
+| Sin conexión (`000`) | `sin_conexion` | ¿está desplegado y despierto? |
+| `404` | `sin_salud` | La variable `URL_BOT` apunta mal |
+| El sitio de los vecinos caído | `sitio` | Gana a cualquier problema del bot |
+
+Cada categoría tiene **su propio título de issue y su propia lista de "dónde mirar"**. El
+título es lo único que se lee desde la lista de issues y desde el correo que manda GitHub, así
+que si un aviso abierto cambia de categoría —o venía con el título genérico de antes— **el
+título se corrige** en vez de dejarlo apuntando al problema equivocado.
+
+El HTML de la respuesta se limpia antes de pegarlo en el aviso. El del 11-sep entró con media
+página `<!DOCTYPE html>` adentro y eso es parte de por qué no se leyó.
+
+Probado contra los tres cuerpos reales (el HTML exacto que capturó el issue #17, un JSON de
+`/salud` enfermo y un 502 de Render), no solo razonado.
+
+### 50.2 El tope de antigüedad del aviso de creación (`frescura.js`)
+
+El listener escucha `notificado_whatsapp_creacion == false`, así que al reiniciar entra **todo
+lo pendiente de golpe** como `added`. Eso es deliberado y está bien —no se pierde ningún
+aviso— pero después de tres días caído significa mandar a un vecino "recibimos tu reporte" por
+un reporte del lunes, quizá ya resuelto, y pagarle a Meta una plantilla por cada uno.
+
+`frescura.js` decide si el aviso ya venció. Por defecto **24 h**, configurable en Render con
+`AVISO_CREACION_MAX_HORAS` (0 apaga la comprobación y vuelve al comportamiento anterior).
+
+**Solo aplica al aviso de creación.** El de "resuelto" no vence: enterarse tarde de que tu
+problema se arregló sigue siendo buena noticia, y ahí el WhatsApp puede ser la única forma de
+saberlo. El de creación sí vence, y el vecino no queda sin su número de ticket: se lo mostró
+la pantalla al enviar (`TicketConfirmacion.jsx`).
+
+**Ante cualquier duda, se manda.** Sin fecha de creación, con fecha ilegible, con el reloj
+desfasado al futuro, o con la variable mal escrita en Render: en todos esos casos el aviso
+sale igual. Un aviso de más molesta; uno de menos deja a un vecino creyendo que su reporte no
+entró. Hay 25 pruebas en `probar-frescura.js` y la mitad cuidan exactamente eso.
+
+### 50.3 Un agujero chico que salió de paso
+
+`registrarEnvioOk()` se llamaba también cuando **no se enviaba nada** (reporte anónimo, sin
+WhatsApp válido). Eso refresca `ultimoEnvioOk`, que es la medida de "hace cuánto que la cadena
+hacia Meta funciona de verdad". Con diez reportes anónimos seguidos durante una caída real,
+`/salud` habría seguido en verde.
+
+Ahora esos casos usan `registrarEnvioOmitido()`: saca el aviso de la cola de pendientes (ya no
+está esperando) pero **no toca** `ultimoEnvioOk`. `/salud` suma `totalOmitidos` y el motivo del
+último, para que un número que baja se pueda explicar sin abrir los logs.
+
+### 50.4 Lo que sigue en manos del usuario
+
+Reactivar el servicio en Render: panel → `My project` → `Production` → `ProyectoMuni`. Mirar
+el banner y la pestaña Events para el motivo, y la facturación si es un cobro rechazado.
+
+Al reactivarlo, los avisos pendientes de menos de 24 h salen solos; los más viejos se omiten y
+quedan anotados en los logs con su motivo.

@@ -24,6 +24,7 @@ const { crearRouter: crearRouterWebhook } = require('./webhook')
 const { crearRouter: crearRouterIa } = require('./rutas-ia')
 const ia = require('./ia')
 const vigilancia = require('./vigilancia')
+const { avisoDeCreacionVencido } = require('./frescura')
 const { diagnostico } = vigilancia
 
 const PORT = process.env.PORT || 3000
@@ -79,7 +80,26 @@ async function procesarNuevoTicket(id, incidencia) {
     // notificar. Se marca igual para no reevaluarlo en cada reconexión.
     console.log(`[server] ${incidencia.numero_ticket || id} (creación): sin WhatsApp válido, no se notifica.`)
     await ref.update({ notificado_whatsapp_creacion: true })
-    vigilancia.registrarEnvioOk(id)
+    vigilancia.registrarEnvioOmitido(id, 'sin WhatsApp válido')
+    return
+  }
+
+  // Aviso vencido: el reporte es viejo y "recibimos tu reporte" ya no informa
+  // nada. Ver frescura.js para el porqué — en resumen, tras el corte del
+  // 11-sep-2026 esto habría mandado tres días de avisos atrasados de una sola
+  // vez. Se marca la bandera para que no se reintente en cada reconexión.
+  const frescura = avisoDeCreacionVencido(incidencia.fecha_creacion, {
+    topeHoras: process.env.AVISO_CREACION_MAX_HORAS,
+  })
+
+  if (frescura.vencido) {
+    const horas = Math.round(frescura.horas)
+    console.log(
+      `[server] ${incidencia.numero_ticket || id} (creación): omitido, el reporte es de hace ${horas} h ` +
+        `(tope ${frescura.tope} h). El vecino ya tiene su número de ticket desde la pantalla de envío.`
+    )
+    await ref.update({ notificado_whatsapp_creacion: true })
+    vigilancia.registrarEnvioOmitido(id, `reporte de hace ${horas} h, sobre el tope de ${frescura.tope} h`)
     return
   }
 

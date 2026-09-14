@@ -63,6 +63,13 @@ jobs:
         shell: bash
         run: |
           fallas=""
+          # Qué TIPO de problema es. No es cosmético: un servicio suspendido por
+          # Render y un servicio que arrancó mal se arreglan en pantallas
+          # distintas, y hasta el 14-sep-2026 los dos abrían el mismo aviso
+          # diciendo "no está respondiendo bien". El de septiembre estuvo tres
+          # días abierto sin que nadie supiera que bastaba con mirar la
+          # facturación.
+          categoria=""
 
           # --- El sitio de los vecinos ---
           # curl ya imprime 000 cuando no logra conectar, asi que un "|| echo 000"
@@ -70,6 +77,9 @@ jobs:
           codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$URL_SITIO") || true
           if [ "$codigo" != "200" ]; then
             fallas="${fallas}- El sitio no responde (HTTP $codigo en $URL_SITIO)"$'\n'
+            # El sitio caído le gana a cualquier problema del bot: sin sitio el
+            # vecino no puede ni reportar.
+            categoria="sitio"
           fi
 
           # --- El bot de WhatsApp ---
@@ -87,6 +97,7 @@ jobs:
 
             if [ "$estado" = "000" ]; then
               fallas="${fallas}- El bot de WhatsApp no responde (sin conexión a $URL_BOT)"$'\n'
+              [ -z "$categoria" ] && categoria="sin_conexion"
             elif [ "$estado" = "404" ]; then
               # Un 404 no es el bot diciendo que está enfermo: es que en esa
               # dirección no hay ningún /salud. O URL_BOT apunta a un servicio que
@@ -98,15 +109,36 @@ jobs:
               # registros de Render y las plantillas de Meta, que es donde
               # justamente no está el problema.
               fallas="${fallas}- No existe /salud en $URL_BOT (HTTP 404). Revisa que la variable URL_BOT tenga la dirección real del servicio en Render, y que ese servicio esté desplegado con la versión que incluye /salud."$'\n'
+              [ -z "$categoria" ] && categoria="sin_salud"
             elif [ "$estado" != "200" ]; then
-              detalle=$(echo "$informe" | grep -o '"problemas":\[[^]]*\]' || echo "$informe")
-              fallas="${fallas}- El bot reporta problemas (HTTP $estado): $detalle"$'\n'
+              # La pregunta que decide todo: ¿contestó el BOT o contestó RENDER?
+              #
+              # /salud responde 503 con JSON cuando el bot corre pero algo suyo
+              # está mal (ver vigilancia.js). Render responde 503 con una página
+              # HTML cuando no deja arrancar el servicio. El código es el mismo y
+              # el arreglo no tiene nada que ver: uno se mira en los registros y
+              # en Meta, el otro en la facturación de Render.
+              if echo "$informe" | grep -q '"problemas"'; then
+                detalle=$(echo "$informe" | grep -o '"problemas":\[[^]]*\]' || echo "$informe")
+                fallas="${fallas}- El bot está corriendo pero reporta problemas (HTTP $estado): $detalle"$'\n'
+                [ -z "$categoria" ] && categoria="bot_enfermo"
+              elif echo "$informe" | grep -qi 'suspend'; then
+                fallas="${fallas}- RENDER SUSPENDIÓ EL SERVICIO (HTTP $estado). El bot no está caído: Render no lo deja arrancar. Casi siempre es un cobro rechazado."$'\n'
+                [ -z "$categoria" ] && categoria="suspendido"
+              else
+                # Se limpia el HTML para que el aviso no quede con media página
+                # pegada adentro, que es lo que hacía ilegible el del 11-sep.
+                resumen=$(echo "$informe" | tr '\n' ' ' | sed 's/<[^>]*>/ /g' | tr -s ' ' | cut -c1-200)
+                fallas="${fallas}- El bot no está corriendo: Render responde HTTP $estado y el cuerpo no viene del bot. Dice: $resumen"$'\n'
+                [ -z "$categoria" ] && categoria="sin_arrancar"
+              fi
             fi
           fi
 
           if [ -n "$fallas" ]; then
             {
               echo "hay=si"
+              echo "categoria=$categoria"
               echo "detalle<<FIN"
               echo "$fallas"
               echo "FIN"
@@ -133,12 +165,81 @@ jobs:
         uses: actions/github-script@v7
         env:
           HAY_FALLAS: ${{ steps.revisar.outputs.hay }}
+          CATEGORIA: ${{ steps.revisar.outputs.categoria }}
           DETALLE: ${{ steps.revisar.outputs.detalle }}
         with:
           script: |
             const ETIQUETA = 'servicio-caido'
-            const TITULO = 'El servicio no está respondiendo bien'
             const hayFallas = process.env.HAY_FALLAS === 'si'
+
+            // Título y "dónde mirar" según QUÉ se rompió. Antes había un solo
+            // título para todo y el aviso mandaba a revisar los registros de
+            // Render y las plantillas de Meta siempre — en el corte del 11-sep,
+            // que fue una suspensión por facturación, los dos lugares estaban
+            // perfectos y el aviso no nombraba el único que importaba.
+            const PANEL_RENDER = 'Panel de Render: My project → Production → ProyectoMuni'
+            const POR_CATEGORIA = {
+              sitio: {
+                titulo: 'El sitio de los vecinos no está respondiendo',
+                mirar: [
+                  'Últimas corridas de "Desplegar sitio" en Actions, por si el último despliegue rompió algo',
+                  'Estado de Firebase Hosting: https://console.firebase.google.com/project/app-incidencias-urbanas/hosting',
+                  'Uso de Firestore, por si se agotó la cuota: https://console.firebase.google.com/project/app-incidencias-urbanas/usage',
+                ],
+              },
+              suspendido: {
+                titulo: 'Render suspendió el bot de WhatsApp',
+                mirar: [
+                  'Facturación de Render: casi siempre es un cobro rechazado (tarjeta vencida o sin fondo)',
+                  PANEL_RENDER + ' → el banner de arriba dice el motivo',
+                  'Pestaña Events del servicio: ahí queda anotado cuándo y por qué se suspendió',
+                  'Cuando lo reactives, los avisos pendientes salen solos al reiniciar — pero los de reportes de más de 24 h se omiten a propósito (ver whatsapp-api-oficial/frescura.js)',
+                ],
+              },
+              sin_arrancar: {
+                titulo: 'El bot de WhatsApp no está corriendo',
+                mirar: [
+                  PANEL_RENDER + ' → pestaña Logs, para ver por qué no levanta',
+                  'Pestaña Events: si el último deploy falló, aparece ahí',
+                  'Variables de entorno: si falta FIREBASE_SERVICE_ACCOUNT o WHATSAPP_TOKEN, el proceso muere al arrancar',
+                ],
+              },
+              bot_enfermo: {
+                titulo: 'El bot de WhatsApp está corriendo pero fallando',
+                mirar: [
+                  'El detalle de arriba ya dice qué problema reporta el propio bot',
+                  'Estado de las plantillas en Meta: una edición las deja "En revisión" y corta el 100% de los envíos',
+                  PANEL_RENDER + ' → pestaña Logs',
+                  'Uso de Firestore: https://console.firebase.google.com/project/app-incidencias-urbanas/usage',
+                ],
+              },
+              sin_conexion: {
+                titulo: 'El bot de WhatsApp no responde',
+                mirar: [
+                  PANEL_RENDER + ' → ¿está desplegado y despierto?',
+                  'Pestaña Logs y pestaña Events',
+                  'Si Render se ve bien, puede ser un corte de red puntual: la próxima revisión en 30 min lo confirma',
+                ],
+              },
+              sin_salud: {
+                titulo: 'La dirección configurada del bot no es la correcta',
+                mirar: [
+                  'Variable URL_BOT en Settings → Secrets and variables → Actions → pestaña Variables',
+                  PANEL_RENDER + ' → copiar la dirección real del servicio',
+                ],
+              },
+            }
+
+            const GENERICO = {
+              titulo: 'El servicio no está respondiendo bien',
+              mirar: [
+                PANEL_RENDER + ' → pestañas Logs y Events',
+                'Estado de las plantillas en Meta',
+                'Uso de Firestore: https://console.firebase.google.com/project/app-incidencias-urbanas/usage',
+              ],
+            }
+
+            const caso = POR_CATEGORIA[process.env.CATEGORIA] || GENERICO
 
             // Se busca el issue abierto en vez de guardar estado en algún lado:
             // el propio issue ES el estado. Así no hay nada que se pueda
@@ -168,9 +269,7 @@ jobs:
                 `Comprobado: ${new Date().toISOString()}`,
                 '',
                 'Dónde mirar:',
-                '- Registros del bot en Render',
-                '- Estado de las plantillas en Meta (una edición las deja "En revisión" y corta los envíos)',
-                '- Uso de Firestore: https://console.firebase.google.com/project/app-incidencias-urbanas/usage',
+                ...caso.mirar.map((linea) => `- ${linea}`),
                 '',
                 'Este aviso se cierra solo cuando la siguiente revisión salga bien.',
               ].join('\n')
@@ -191,11 +290,22 @@ jobs:
                     issue_number: issue.number, body: cuerpo,
                   })
                 }
+                // Si el problema cambió de tipo mientras el aviso seguía abierto
+                // —o si el aviso se abrió con el título genérico de antes— el
+                // título se corrige. El título es lo único que se lee desde la
+                // lista de issues y desde el correo, así que dejarlo apuntando al
+                // problema equivocado es como no haber avisado.
+                if (issue.title !== caso.titulo) {
+                  await github.rest.issues.update({
+                    owner: context.repo.owner, repo: context.repo.repo,
+                    issue_number: issue.number, title: caso.titulo,
+                  })
+                }
                 core.setFailed('El servicio sigue con problemas.')
               } else {
                 await github.rest.issues.create({
                   owner: context.repo.owner, repo: context.repo.repo,
-                  title: TITULO, labels: [ETIQUETA], body: cuerpo,
+                  title: caso.titulo, labels: [ETIQUETA], body: cuerpo,
                 })
                 core.setFailed('El servicio tiene problemas; se abrió un aviso.')
               }

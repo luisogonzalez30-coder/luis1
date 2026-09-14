@@ -36,6 +36,7 @@ const estado = {
   ultimoError: null,
   totalEnviados: 0,
   totalFallidos: 0,
+  totalOmitidos: 0,
   // clave: id de incidencia -> desde cuándo está esperando su aviso.
   pendientes: new Map(),
   // Un listener caído es invisible: Firestore no reintenta solo y el proceso
@@ -51,6 +52,19 @@ function registrarEnvioOk(id) {
   estado.pendientes.delete(id)
   estado.ultimoEnvioOk = Date.now()
   estado.totalEnviados += 1
+}
+
+// El aviso no se mandó, pero tampoco está pendiente: se decidió a propósito no
+// mandarlo (reporte anónimo, o aviso ya vencido — ver frescura.js).
+//
+// Deliberadamente NO toca `ultimoEnvioOk`: eso mide hace cuánto que la cadena
+// hacia Meta funciona de verdad, y marcarlo acá la falsearía. Importa: si Meta
+// estuviera rechazando todo y entraran diez reportes anónimos seguidos,
+// contarlos como envíos buenos dejaría /salud en verde durante una caída real.
+function registrarEnvioOmitido(id, motivo) {
+  estado.pendientes.delete(id)
+  estado.totalOmitidos += 1
+  estado.ultimoOmitido = { cuando: Date.now(), motivo: String(motivo).slice(0, 200) }
 }
 
 function registrarEnvioFallido(id, mensaje) {
@@ -112,6 +126,10 @@ function diagnostico() {
       minutosDesdeUltimoEnvioOk: minutosDesde(estado.ultimoEnvioOk),
       totalEnviados: estado.totalEnviados,
       totalFallidos: estado.totalFallidos,
+      totalOmitidos: estado.totalOmitidos,
+      ultimoOmitido: estado.ultimoOmitido
+        ? { haceMinutos: minutosDesde(estado.ultimoOmitido.cuando), motivo: estado.ultimoOmitido.motivo }
+        : null,
       ultimoError: estado.ultimoError
         ? { haceMinutos: minutosDesde(estado.ultimoError.cuando), mensaje: estado.ultimoError.mensaje }
         : null,
@@ -122,6 +140,7 @@ function diagnostico() {
 module.exports = {
   registrarPendiente,
   registrarEnvioOk,
+  registrarEnvioOmitido,
   registrarEnvioFallido,
   registrarErrorListener,
   diagnostico,
