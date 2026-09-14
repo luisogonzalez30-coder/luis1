@@ -1871,3 +1871,56 @@ se quiere automatizar, ese es el dato que falta.
 Compra Ágil y Convenio Marco. Rubro desactualizado = invisible para esos dos canales por
 mucho que el cazador encuentre la oportunidad. Es el requisito que hoy separa de poder
 postular al Convenio Marco, que es justamente la mejor oportunidad detectada.
+
+## 50. El bot lleva 81 horas suspendido en Render (14-sep-2026)
+
+**Detectado el 14-sep a las 15:52 UTC revisando el estado general. Empezó el 11-sep a las
+06:15 UTC.** `proyectomuni.onrender.com/salud` devuelve HTTP 503 con la página de suspensión
+de Render (`This service has been suspended`), no un error del bot. El servicio está apagado
+por Render, no caído por código.
+
+**No es el plan Free durmiendo.** Render está en plan **Starter pagado** desde el 26-ago
+(§ `docs/PLATAFORMAS.md`), así que una suspensión apunta a cobro rechazado, no a horas
+agotadas. Un servicio dormido de plan Free responde lento; uno suspendido responde esta
+página. Distinguirlo importa porque manda a dos lugares distintos: el panel de facturación,
+no los registros.
+
+**Qué dejó de funcionar durante la caída:**
+
+- El aviso de WhatsApp al vecino que reporta.
+- El bot conversacional: el webhook de Meta apunta a ese servicio, así que quien escribe no
+  recibe respuesta.
+- Las cinco funciones de IA (§48), que corren en el mismo proceso.
+
+**Qué NO se perdió.** Los avisos atrasados salen solos al levantar el servicio: el listener
+de `escucharNuevosTickets()` (`whatsapp-api-oficial/server.js:108`) consulta por
+`notificado_whatsapp_creacion == false` y procesa los `added`, que incluyen los documentos que
+estaban pendientes de antes cuando el proceso se reconecta. Es el mismo reintento gratis que se
+diseñó para los deploys. No hay nada que reenviar a mano.
+
+**Riesgo al reactivar:** Meta puede desuscribir un webhook que falla de forma sostenida. Hay
+que confirmar la suscripción a `messages` en el panel de Meta después de que el servicio
+vuelva, no darla por hecha.
+
+### Los dos fallos de proceso que destapó
+
+**1. Nadie se enteró en tres días.** `vigilar.yml` existe por el corte del 9-ago (§39.5), donde
+19 horas de envíos fallidos pasaron desapercibidas. El mecanismo funcionó —el issue #17 se
+abrió a los minutos, con la etiqueta `servicio-caido`— pero el aviso no llegó a la persona.
+El correo de GitHub por issue abierto no se está mirando. Esta caída duró 81 horas, cuatro
+veces la que motivó construir la vigilancia.
+
+**2. La vigilancia no corre cada 30 minutos.** El cron dice `*/30 * * * *`, pero las corridas
+reales del 13 y 14-sep fueron 21:31, 23:47, 02:30, 08:20 y 15:07 UTC: huecos de 2 h 16 a
+6 h 47. GitHub retrasa los `schedule` según la carga de la plataforma y no garantiza la
+frecuencia. La promesa de "avisa de una caída inmediata" que está escrita en `CLAUDE.md` no es
+cierta tal como está: el peor caso medido es de casi siete horas.
+
+### Nota de método
+
+Desde esta sesión los tres dominios devolvieron `000` con `connect_rejected` del proxy: el muro
+de red que `CLAUDE.md` daba por levantado el 30-ago **está puesto otra vez** en este entorno.
+Se define por entorno y por sesión, así que conviene comprobarlo cada vez en lugar de confiar
+en lo que diga el documento. El diagnóstico de esta sección no sale de `npm run revisar` —que
+solo pudo verificar los certificados— sino de los registros de `vigilar.yml` en GitHub Actions,
+que corre fuera de esa red.
