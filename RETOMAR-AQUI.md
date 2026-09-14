@@ -70,14 +70,32 @@ advertido en su `LEEME.md`, pero vale repetirlo donde se lee primero.
 El costo de haberlo separado, dicho para que nadie se sorprenda después: **una mejora al
 flujo de reportes hay que hacerla dos veces.** Fue una decisión explícita del usuario.
 
-**Lo que quedó esperándote a ti**, en orden, todo dentro de `condominioaqui/DESPLEGAR.md`:
+**El proyecto de Firebase ya existe** (14-sep): `condominioaqui-7be45`. El ID quedó con sufijo
+porque `condominioaqui` a secas estaba tomado, y ya está escrito en `.firebaserc` y en el
+workflow — no hay que configurar nada por eso.
 
-1. Crear el proyecto de Firebase de CondominioAquí — **tiene que ser uno nuevo**, distinto del
-   de TuMuniAquí: las reglas de Firestore se despliegan completas y publicar las de allá sobre
-   este proyecto borraría las que protegen los datos de Licantén.
-2. Cargar los 9 secretos en GitHub (todos con sufijo `_CONDOMINIO`).
-3. `npm run desplegar:reglas`, sembrar el demo y crear el usuario administrador.
-4. Habilitar PDF en el preset de Cloudinary (`resource_type: auto`).
+**Se corrigieron los índices de Firestore** (§50 de su propia arquitectura): el archivo se
+había copiado de TuMuniAquí y apuntaba a `incidencias`, `tickets_publicos` y `municipio_id`,
+que acá no existen. Desplegarlo habría creado cinco índices inútiles y ninguno de los
+necesarios: cada panel habría fallado con "The query requires an index" al abrirlo por primera
+vez. Los cinco que están ahora salen de leer las consultas reales.
+
+**Lo que quedó esperándote a ti**, en orden, todo dentro de `condominioaqui/DESPLEGAR.md`.
+Los cuatro pasos necesitan credenciales que solo tienes tú — desde una sesión de Claude no
+hay acceso a Render, ni a la consola de Firebase, ni forma de crear secretos en GitHub:
+
+1. **Descargar la clave de servicio** del proyecto (⚙️ → Cuentas de servicio → Generar nueva
+   clave privada). Sirve para dos cosas: el secreto de GitHub y sembrar el demo.
+2. **Cargar los 9 secretos en GitHub**, todos con sufijo `_CONDOMINIO`. Tres de los valores ya
+   están escritos hechos en `DESPLEGAR.md` paso 5.
+3. **`npm run desplegar:reglas`** desde `condominioaqui/`. Antes, `npx firebase use` tiene que
+   responder `condominioaqui-7be45`: si responde `app-incidencias-urbanas`, ese comando
+   **borra las reglas que protegen los datos de Licantén**.
+4. **`npm run demo -- --aplicar`** y crear a mano el usuario `ADMINISTRADOR` (Auth + documento
+   en `usuarios_condominio`, los campos están en `DESPLEGAR.md` paso 9).
+
+Y una quinta, opcional: habilitar PDF en el preset de Cloudinary (`resource_type: auto`). Sin
+eso el respaldo de las mantenciones solo acepta fotos, que igual sirven.
 
 Mientras eso no esté, su workflow avisa qué falta y **termina en verde** — no hay sitio que
 se haya dejado de publicar. Si algún día faltan *algunos* secretos en vez de todos, ahí sí
