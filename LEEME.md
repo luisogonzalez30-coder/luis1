@@ -60,6 +60,7 @@ Eso mismo corre **solo, todos los días a las 9:00 de la mañana** (`.github/wor
 | `public/` y `dist/` | Archivos estáticos y el build ya compilado |
 | `docs/` | Propuesta comercial, kit de difusión, pauta para la reunión con el alcalde e informe de costos |
 | `landing/` | La landing comercial de TuMuniAquí (proyecto de hosting aparte) |
+| `condominioaqui/` | **Otro producto.** CondominioAquí: gestión de solicitudes y cumplimiento de la Ley 21.442 para condominios. Independiente — tiene su propio `LEEME.md`, su `package.json` y su base de datos. No se toca al trabajar en TuMuniAquí |
 | `entrega-2026-08-02/` | Foto congelada de la entrega del 2 de agosto: las carpetas `1-App-General` y `2-App-Licanten` tal como estaban. Es material viejo, el código vivo es el de esta carpeta |
 
 ## Documentación

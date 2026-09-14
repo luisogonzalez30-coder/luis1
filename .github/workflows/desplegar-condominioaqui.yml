@@ -1,0 +1,273 @@
+# Publica CondominioAquí (carpeta condominioaqui/) en su propio Firebase Hosting.
+#
+# Es un gemelo de desplegar.yml, pero apuntando a OTRO producto y a OTRO proyecto
+# de Firebase. Los dos conviven en el mismo repositorio y no se pisan porque cada
+# uno filtra por carpeta: este solo corre cuando cambia algo de condominioaqui/,
+# y aquel se ignora los cambios de acá.
+#
+#   1. Pull Request → vista previa en URL temporal, comentada en el PR (7 días).
+#   2. Merge a main → sitio real.
+#
+# Mientras la configuración inicial no esté hecha —ningún secreto cargado— este
+# workflow avisa qué falta y termina en VERDE, también en main: que el proyecto
+# de Firebase todavía no exista no es un error del código, y no hay ningún sitio
+# que se haya dejado de actualizar. Un rojo permanente entrena a ignorar la CI.
+#
+# Distinto es que falten ALGUNOS: ahí la configuración existe y está rota, hay un
+# sitio publicado que se quedó atrás, y el workflow falla.
+#
+# Requisitos (todos se crean una sola vez, ver condominioaqui/DESPLEGAR.md):
+#   - El proyecto de Firebase, que NO es el de TuMuniAquí.
+#   - El secreto FIREBASE_SERVICE_ACCOUNT_CONDOMINIOAQUI.
+#   - Los 8 secretos VITE_*_CONDOMINIO.
+
+name: Desplegar CondominioAquí
+
+on:
+  push:
+    branches: [main]
+    # Solo si cambió algo del producto. Republicar el sitio por una nota en un
+    # .md es riesgo sin contraparte, y republicarlo por un cambio de TuMuniAquí
+    # sería directamente un error.
+    paths:
+      - 'condominioaqui/**'
+      - '.github/workflows/desplegar-condominioaqui.yml'
+      - '!condominioaqui/**.md'
+      - '!condominioaqui/docs/**'
+  pull_request:
+    paths:
+      - 'condominioaqui/**'
+      - '.github/workflows/desplegar-condominioaqui.yml'
+      - '!condominioaqui/**.md'
+      - '!condominioaqui/docs/**'
+
+concurrency:
+  group: desplegar-condominioaqui-${{ github.ref }}
+  cancel-in-progress: true
+
+# Todo corre dentro de la carpeta del producto. Sin esto, npm encontraría el
+# package.json de TuMuniAquí y compilaría la app equivocada — que además
+# compilaría bien, que es lo peligroso.
+defaults:
+  run:
+    working-directory: condominioaqui
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+
+    # Los PR desde un fork no reciben secretos (GitHub los bloquea a propósito).
+    # Sin secretos esto fallaría igual, así que se salta en vez de dejar un rojo
+    # que miente.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: condominioaqui/package-lock.json
+
+      - name: Instalar dependencias
+        # npm ci instala exactamente las versiones del package-lock.json, así lo
+        # que se publica es lo mismo que se probó. Si el lock todavía no existe
+        # (primera vez), cae a npm install para no bloquear el primer despliegue.
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "Sin package-lock.json todavía: usando npm install."
+            npm install --no-audit --no-fund
+          fi
+
+      # Vite NO falla cuando falta un VITE_*: lo reemplaza por undefined y
+      # compila igual. El sitio se publica, pero firebase.js revienta con
+      # "auth/invalid-api-key" al evaluarse el módulo, React nunca monta y el
+      # residente se queda mirando la pantalla de carga para siempre. Pasó de
+      # verdad en el otro producto, y lo peor es que la CI estaba verde.
+      # En un PR, la falta de secretos NO es un error del código: es que la
+      # configuración inicial del proyecto todavía no se ha hecho (ver
+      # DESPLEGAR.md). Se avisa y se salta el resto. En `main` sí se falla: ahí
+      # significa que el sitio no se publicó y hay que enterarse.
+      - name: Comprobar la configuración antes de compilar
+        id: config
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY_CONDOMINIO }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN_CONDOMINIO }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID_CONDOMINIO }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET_CONDOMINIO }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID_CONDOMINIO }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID_CONDOMINIO }}
+          VITE_CLOUDINARY_CLOUD_NAME: ${{ secrets.VITE_CLOUDINARY_CLOUD_NAME_CONDOMINIO }}
+          VITE_CLOUDINARY_UPLOAD_PRESET: ${{ secrets.VITE_CLOUDINARY_UPLOAD_PRESET_CONDOMINIO }}
+        shell: bash
+        run: |
+          faltan=""
+          total=0
+          for v in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN \
+                   VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET \
+                   VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID \
+                   VITE_CLOUDINARY_CLOUD_NAME VITE_CLOUDINARY_UPLOAD_PRESET; do
+            total=$((total + 1))
+            # Expansión indirecta: se comprueba el VALOR sin imprimirlo nunca,
+            # al registro solo llega el nombre. El //[[:space:]]/ descarta un
+            # secreto que quedó con un salto de línea pegado al copiar, que para
+            # Vite es tan inservible como no tenerlo.
+            if [ -z "${!v//[[:space:]]/}" ]; then
+              faltan="$faltan $v"
+            fi
+          done
+
+          if [ -n "$faltan" ]; then
+            echo "completa=no" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Falta la configuración inicial de CondominioAquí"
+              echo ""
+              echo "No se compiló nada. Estos secretos están vacíos o no existen"
+              echo "(el nombre real lleva el sufijo \`_CONDOMINIO\`):"
+              echo ""
+              for v in $faltan; do echo "- \`${v}_CONDOMINIO\`"; done
+              echo ""
+              echo "Créalos en Settings → Secrets and variables → Actions."
+              echo "Paso a paso en \`condominioaqui/DESPLEGAR.md\`, paso 5."
+              echo ""
+              echo "Sin ellos el sitio compila pero queda muerto: firebase.js lanza"
+              echo "auth/invalid-api-key al cargar y la app no llega a montarse."
+              echo "Por eso no se compila en vez de publicar algo inservible."
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            # Cuántos faltan decide si esto es un error o simplemente trabajo
+            # que todavía no se ha hecho, y la diferencia importa:
+            #
+            #   - Faltan TODOS  → el producto nunca se configuró. No hay sitio
+            #     que actualizar, así que no hay nada que se haya dejado de
+            #     publicar. Avisar y seguir en verde. Fallar acá dejaría `main`
+            #     rojo para siempre hasta que alguien haga la configuración
+            #     inicial, y un rojo permanente entrena a ignorar la CI, que es
+            #     justo lo contrario de para qué existe esta comprobación.
+            #   - Faltan ALGUNOS → la configuración existe y está rota o
+            #     incompleta. Eso sí es un error: hay un sitio publicado que se
+            #     quedó sin actualizar, y hay que enterarse.
+            cuantos=$(echo $faltan | wc -w)
+
+            if [ "$cuantos" -lt "$total" ]; then
+              echo "::error::Configuración incompleta, no se publicó nada. Faltan:$faltan"
+              exit 1
+            fi
+
+            if [ "${{ github.event_name }}" = "push" ]; then
+              echo "::warning::CondominioAquí todavía no está configurado; no hay nada que publicar."
+            else
+              echo "::warning::Falta la configuración inicial; se omite el build en este PR."
+            fi
+            exit 0
+          fi
+
+          echo "completa=si" >> "$GITHUB_OUTPUT"
+          echo "Los 8 secretos de configuración están presentes."
+
+      - name: Compilar
+        if: steps.config.outputs.completa == 'si'
+        # La configuración web de Firebase NO es secreta: viaja en el JavaScript
+        # que recibe cualquier visitante, y quien protege los datos son las
+        # reglas de Firestore. Van como secretos solo para no commitear el .env.
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY_CONDOMINIO }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN_CONDOMINIO }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID_CONDOMINIO }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET_CONDOMINIO }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID_CONDOMINIO }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID_CONDOMINIO }}
+          VITE_CLOUDINARY_CLOUD_NAME: ${{ secrets.VITE_CLOUDINARY_CLOUD_NAME_CONDOMINIO }}
+          VITE_CLOUDINARY_UPLOAD_PRESET: ${{ secrets.VITE_CLOUDINARY_UPLOAD_PRESET_CONDOMINIO }}
+          VITE_USE_FIREBASE_EMULATORS: 'false'
+        run: npm run build
+
+      - name: Comprobar que el build no salió vacío
+        if: steps.config.outputs.completa == 'si'
+        run: |
+          test -f dist/index.html || { echo "No se generó dist/index.html"; exit 1; }
+          ls dist/assets/index-*.js >/dev/null || { echo "No se generó el bundle"; exit 1; }
+
+      # --- ¿Está la credencial? --------------------------------------------
+      # Sin este chequeo, cuando falta el secreto la acción de Firebase revienta
+      # con "Input required and not supplied: firebaseServiceAccount" y el PR
+      # queda en rojo, como si el código estuviera roto. Un rojo que miente
+      # entrena a ignorar la CI.
+      - name: Ver si hay credencial de publicación
+        id: credencial
+        if: steps.config.outputs.completa == 'si'
+        env:
+          CUENTA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CONDOMINIOAQUI }}
+        run: |
+          if [ -z "$CUENTA" ]; then
+            echo "hay=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "hay=si" >> "$GITHUB_OUTPUT"
+          fi
+
+      # --- Vista previa (Pull Requests) ------------------------------------
+      # `entryPoint` le dice a la acción dónde está el firebase.json — sin eso
+      # leería el de TuMuniAquí y publicaría su carpeta dist/.
+      #
+      # El projectId sale de la variable si existe; si no, del valor por defecto.
+      # Existe porque Firebase le pega un sufijo al ID cuando el que pediste está
+      # tomado, y en ese caso se arregla creando la variable en GitHub sin tener
+      # que tocar este archivo (ver DESPLEGAR.md paso 6).
+      - name: Publicar vista previa
+        if: github.event_name == 'pull_request' && steps.config.outputs.completa == 'si' && steps.credencial.outputs.hay == 'si'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CONDOMINIOAQUI }}
+          projectId: ${{ vars.FIREBASE_PROJECT_ID_CONDOMINIO || 'condominioaqui' }}
+          entryPoint: condominioaqui
+          expires: 7d
+
+      # En un PR la vista previa es un extra: si falta la credencial se avisa y
+      # se sigue. El build ya demostró que el código está sano.
+      - name: Avisar que no hay vista previa
+        if: github.event_name == 'pull_request' && steps.config.outputs.completa == 'si' && steps.credencial.outputs.hay == 'no'
+        run: |
+          {
+            echo "### Vista previa no publicada"
+            echo ""
+            echo "El código compila bien, pero falta la credencial para publicar."
+            echo ""
+            echo "Crea el secreto **FIREBASE_SERVICE_ACCOUNT_CONDOMINIOAQUI** en"
+            echo "Settings → Secrets and variables → Actions, pegando el JSON"
+            echo "completo de la clave de servicio del proyecto de Firebase de"
+            echo "CondominioAquí — **no** el de TuMuniAquí."
+            echo ""
+            echo "Paso a paso en \`condominioaqui/DESPLEGAR.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Sin credencial: se omite la vista previa (el build sí pasó)."
+
+      # --- Sitio real (merge a main) ---------------------------------------
+      - name: Publicar en producción
+        if: github.event_name == 'push' && steps.config.outputs.completa == 'si' && steps.credencial.outputs.hay == 'si'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CONDOMINIOAQUI }}
+          projectId: ${{ vars.FIREBASE_PROJECT_ID_CONDOMINIO || 'condominioaqui' }}
+          entryPoint: condominioaqui
+          channelId: live
+
+      # En main SÍ se falla a propósito. Omitir en silencio dejaría creyendo que
+      # el sitio se actualizó cuando no pasó nada.
+      - name: Falta la credencial para publicar
+        if: github.event_name == 'push' && steps.config.outputs.completa == 'si' && steps.credencial.outputs.hay == 'no'
+        run: |
+          echo "::error::No se publicó nada: falta FIREBASE_SERVICE_ACCOUNT_CONDOMINIOAQUI."
+          echo "El sitio sigue con la versión anterior. Ver condominioaqui/DESPLEGAR.md."
+          exit 1
