@@ -19,11 +19,12 @@ conversiones:
 
 | # | Conversión | Valor |
 |---|---|---|
-| 1 | Pedido de **torta por encargo** | Producto de mayor ticket. Hoy son ~20 tortas al mes y hay capacidad para producir hasta 10 al día |
-| 2 | **Cotización de evento** (tablas, coffee break, celebraciones) | Ticket alto. Se reserva con 2 semanas de anticipación |
-| 3 | **Cupo en taller** presencial (tartas, galletas, torta decorada) | Margen alto, refuerza la marca |
-| 4 | **Gift card** | Cobro anticipado, atrae gente de afuera |
-| 5 | **Cómo llegar** (visita al local) | Tráfico de paso y turismo |
+| 1 | **Pedido para llevar o delivery** armado en la web con los precios del POS | Es el grueso del negocio: ~300 ventas al mes en 2026. Aquí se recupera el ticket promedio |
+| 2 | Pedido de **torta por encargo** | ~20 tortas al mes, ticket mayor. El precio de torta entera no está en el POS **[PENDIENTE]** |
+| 3 | **Cotización de evento** (tablas, coffee break, celebraciones) | Ticket alto. Se reserva con 2 semanas de anticipación |
+| 4 | **Cupo en taller** presencial (tartas, galletas, torta decorada) | Margen alto, refuerza la marca |
+| 5 | **Gift card** | Cobro anticipado, atrae gente de afuera |
+| 6 | **Cómo llegar** (visita al local) | Tráfico de paso y turismo |
 
 Métrica norte: pedidos y cotizaciones recibidos por la web por mes. No medir likes ni visitas
 sueltas.
@@ -46,11 +47,53 @@ sueltas.
 - Tiene inicio de actividades en el SII, boleta electrónica y resolución sanitaria.
 - Hace talleres y tiene tiempo y espacio para ellos.
 
-**[PENDIENTE] pedir al dueño:** dirección exacta y referencia de ruta, horario por día,
+**[PENDIENTE] pedir al dueño:** reporte de ventas por producto de Fudo (unidades por año), costo
+de cada producto activo, ventas de 2025 en el mismo periodo que 2026, desglose mensual, dirección exacta y referencia de ruta, horario por día,
 número de WhatsApp, precios y tamaños reales de tortas, plazo mínimo para tortas, sabores
 reales, lista de tablas y su precio por persona, fotos propias de tortas/tablas/equipo,
 historia de por qué abrió, política de abono, zonas de despacho (Curicó, Talca) y costo,
 temas y fechas de talleres, montos de gift card.
+
+## Datos de ventas (Fudo, tomados de capturas del dueño el 22-oct-2026)
+
+| Año | Ventas | Total | Ticket promedio | Ventas/día | Ingreso/día |
+|---|---|---|---|---|---|
+| 2023 | 2.920 | $35.818.130 | $12.266 | 8,00 | $98.132 |
+| 2024 | 2.710 | $32.580.680 | $12.022 | 7,40 | $89.018 |
+| 2025 | 2.603 | $30.467.300 | $11.705 | 7,13 | $83.472 |
+| 2026 (295 días, a la fecha) | 2.916 | $27.004.900 | $9.261 | 9,88 | $91.542 |
+
+Lectura (supuesto: los datos de 2026 llegan hasta el 22-oct, y los años van del 1-ene al 31-dic):
+
+- 2023 a 2025: el total baja 14,9 % y las ventas 10,9 %.
+- 2026 a la fecha **no** está cayendo: ventas por día +38,6 % e ingreso por día +9,7 % frente a
+  2025. Ya suma el 88,6 % del total de 2025 completo.
+- El problema de 2026 es el **ticket promedio: −20,9 %** frente a 2025 (−24,5 % frente a 2023,
+  en pesos nominales). Más ventas, pero más chicas.
+- Recuperar el ticket de 2025 ($11.705) exige sumar $2.444 por venta, equivalente a $7,1 millones
+  sobre las 2.916 ventas de 2026 a la fecha.
+- El campo "Personas" (1.914, 531, 450, 244) no es confiable como medida de visitas: no se usa.
+- Falta comparar el mismo periodo (1-ene al 22-oct de 2025) y ver el desglose mensual; 2026 incluye
+  el verano y aún no incluye noviembre y diciembre.
+- Falta el reporte de ventas por producto para saber qué cambió en la mezcla. El catálogo
+  exportado trae las columnas **Costo y Margen vacías**, así que no se puede ordenar por margen.
+
+## Catálogo del POS (productos activos usados en la web)
+
+- Café y bebidas: espresso $2.000, la mayoría $3.000, matcha latte e iced latte $3.500,
+  frappuccino $4.500.
+- Pastelería (porción): $2.000 a $5.000. Kuchen $3.000 en cinco sabores (berries, frambuesa,
+  frutilla, manzana canela, nuez). Galleta estilo NY $2.500, galleta NY Dubái $3.000.
+  Tarta completa $17.000.
+- Sándwiches: croissant jamón queso $4.500, bagels $4.000, ciabatta $7.000 a $8.000 (Rural
+  $7.500, Lorino $8.000, clásico italiano $7.000).
+- Tablas con papas fritas: $8.500 a $9.500.
+- Tapaditos $27.000 (contenido **[PENDIENTE]**).
+- Delivery: Licantén $2.000, Huapi $2.000, sector Lora $1.000, Curepto $3.000, Placilla $3.000.
+- Hay productos inactivos (gluten free, sin azúcar, quiches, smoothies): **no mostrarlos ni
+  prometerlos**.
+- Nombres truncados en el PDF a confirmar: tabla clásica, clásico italiano, bagels, brownie con
+  helado, y qué incluye cada tabla y sándwich.
 
 ## Público
 
@@ -67,9 +110,13 @@ temas y fechas de talleres, montos de gift card.
 2. **Cabecera** fija: marca, ancla a Tortas, Eventos, Talleres, Regala, Carta, Cómo llegar y
    botón "Encargar torta".
 3. **Hero**: titular "Todos bienvenidos." sobre fondo negro tipo letrero, foto real de la
-   fachada, CTA primario "Encargar una torta", CTA secundario "Cómo llegar".
+   fachada, CTA primario "Pedir para llevar", CTA secundario "Encargar una torta".
 4. **Franja de confianza**: 4,6 en Google, 85 reseñas, 9 años, pet friendly, hora de apertura.
-5. **En tu ruta / Cómo llegar**: citas del resumen de Google Maps con su fuente, dirección con
+5. **Pedido para llevar y a domicilio**: carta curada (para compartir, sándwiches, dulces, café)
+   con cantidades, total exacto y zona de delivery. Orden por valor, no por categoría del POS.
+   Sugerencia automática de lo que falta en el pedido (bebida, dulce o sándwich) para subir el
+   ticket. Termina en WhatsApp con el pedido y el total escritos.
+5b. **En tu ruta / Cómo llegar**: citas del resumen de Google Maps con su fuente, dirección con
    botón copiar, botón a Google Maps, horario.
 6. **Tortas por encargo**: formulario corto (ocasión, tamaño, fecha, entrega, idea, nombre) con
    vista previa del mensaje y botón que abre WhatsApp con el pedido ya escrito. Pasos reales:
@@ -87,6 +134,9 @@ temas y fechas de talleres, montos de gift card.
 ## Reglas de conversión
 
 - Un solo CTA primario por pantalla; el secundario no compite con él.
+- Mostrar solo productos **activos** del POS, con el precio vigente. Los precios de la web y los
+  del POS deben salir de la misma fuente.
+- Mostrar primero lo que más sube el valor del pedido (tablas, tarta completa, ciabatta).
 - El formulario pide lo mínimo y **termina en WhatsApp con el mensaje armado**, porque es
   donde ya conversa el negocio. Mostrar el mensaje antes de enviar.
 - Prueba social solo con datos reales y con su fuente. Nada de testimonios inventados.
