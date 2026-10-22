@@ -159,6 +159,32 @@ Lectura (supuesto: los datos de 2026 llegan hasta el 22-oct, y los años van del
 - Evitar el estilo genérico de plantilla: sin degradados morado-azul, sin tarjetas con borde
   redondeado en todo, sin emojis como viñetas.
 
+## Fotos: uso estratégico y reglas
+
+| Dónde | Foto | Por qué |
+|---|---|---|
+| Hero | Fachada con el letrero "Todos bienvenidos" | Reconocer el lugar al llegar |
+| Tortas por encargo | Galería de 14 diseños con filtro (infantiles, bautizo y primer año, tortas de crema) y botón "Quiero una así" que rellena el formulario | El cliente elige el diseño antes de escribir. Reduce el ida y vuelta por WhatsApp |
+| **Torta de novios** | Secuencia de 12 fotos del proceso: 6 momentos en un cuadro fijo que cambia al hacer scroll, más una tira con 5 fotos | Es la pieza de mayor valor y la que más muestra oficio. Lleva al formulario con "Matrimonio" preseleccionado |
+| Pedir para llevar | Miniaturas solo en "Tarta completa" y "Pie de limón" | Imagen donde hay un producto del POS que coincide |
+| Eventos | Tres tortas en una mesa | Prueba de que atienden celebraciones |
+| Nosotros | Vitrina con la pizarra | Muestra lo que se encuentra al entrar |
+
+Reglas:
+
+- **No publicar caras de menores.** De las fotos con niñas se usaron solo recortes de la torta.
+  Con autorización escrita de los apoderados se pueden usar las fotos completas.
+- No usar fotos que no sean propias (los cupcakes de Minnie parecen de banco de imágenes).
+- Las tortas llevan nombres de niños. Pedir permiso o tapar el nombre.
+- Pedir permiso a los novios antes de publicar la secuencia del matrimonio.
+- Cuidar lo que se ve de fondo: tarjetas con nombre completo, productos de limpieza, personas.
+- Los nombres de las tortas de crema son descriptivos (por lo que se ve). Confirmar sabores.
+- La vitrina muestra una pizarra con productos hoy inactivos en el POS (smoothies, muffins,
+  tiramisú). Cambiar la foto si se quiere ser fiel a la carta vigente.
+- En producción, convertir a WebP/AVIF con `srcset`. La vista previa pesa ~3,4 MB.
+- Contacto: el WhatsApp se leyó del cartel acrílico del local (+56 9 9210 1764) y la dirección
+  (Km 95, Ruta J-60, Sector Lora) de una tarjeta ilegible a esa resolución. **Confirmar ambos.**
+
 ## Requisitos técnicos
 
 - **Fase 1** (1 semana): landing estática, un solo archivo o carpeta mínima, hospedaje
