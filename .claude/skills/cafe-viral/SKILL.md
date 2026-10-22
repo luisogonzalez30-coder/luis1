@@ -185,3 +185,11 @@ visible, impulsar antes de probar), decirlo directamente y proponer la alternati
 - Tendencias y audios cambian rápido: marcar "verificar vigencia" en lo que dependa de ellos.
 - Respetar derechos de imagen: pedir permiso a clientes que salgan en cámara y usar música de
   la biblioteca comercial de la plataforma si el local es una cuenta de negocio.
+
+## Material de apoyo
+
+- `references/banco-de-ideas.md`: ganchos, formatos de video, captions y checklist de grabación.
+- `references/prompt-web-sabor-rural.md`: prompt para construir la web de conversión de Sabor Rural
+  (hechos confirmados, estructura, reglas de conversión, requisitos técnicos).
+- `references/sabor-rural/preview.html`: vista previa de esa web, autocontenida. Los datos
+  marcados `[entre corchetes]` y el número de WhatsApp (`WA`) son por completar.
