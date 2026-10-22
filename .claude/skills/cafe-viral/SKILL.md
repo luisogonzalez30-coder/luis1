@@ -191,5 +191,6 @@ visible, impulsar antes de probar), decirlo directamente y proponer la alternati
 - `references/banco-de-ideas.md`: ganchos, formatos de video, captions y checklist de grabación.
 - `references/prompt-web-sabor-rural.md`: prompt para construir la web de conversión de Sabor Rural
   (hechos confirmados, estructura, reglas de conversión, requisitos técnicos).
-- `references/sabor-rural/preview.html`: vista previa de esa web, autocontenida. Los datos
-  marcados `[entre corchetes]` y el número de WhatsApp (`WA`) son por completar.
+- La vista previa de esa web se genera a partir del prompt. No se guarda como `.html` en el
+  repositorio: `desplegar.yml` corre en cualquier PR que toque algo que no sea `.md` y
+  publicaría un preview del sitio del municipio sin que nada suyo haya cambiado.
