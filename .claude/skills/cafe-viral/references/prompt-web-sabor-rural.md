@@ -95,6 +95,20 @@ Lectura (supuesto: los datos de 2026 llegan hasta el 22-oct, y los años van del
 - Nombres truncados en el PDF a confirmar: tabla clásica, clásico italiano, bagels, brownie con
   helado, y qué incluye cada tabla y sándwich.
 
+## Decisiones tomadas (23-oct-2026)
+
+- **Logo oficial:** círculo con trazo irregular, "CAFETERÍA" en mayúsculas, "Sabor rural" en caligrafía,
+  taza con vapor y "COSTA MAULE - LICANTEN". Se usa el logo real, no recreaciones. Hay versión
+  negra y versión blanca con fondo transparente para fondos oscuros.
+- **Mascota:** el dueño descartó a Kuchen (el quiltro). Los candidatos alternativos (Sabi, Cortadito,
+  Bagui, Dona, Chantí) siguen sin elegir. No incluir mascota en la web hasta que decida.
+- **Plataforma:** la web se monta en la tienda Shopify nueva del dueño. El conector de Shopify exigía
+  volver a iniciar sesión y no se pudo usar desde la sesión anterior. Al abrir una sesión nueva,
+  verificar con `get-shop-info` que la tienda y la moneda (CLP) son las correctas antes de crear nada.
+- **Límites de las herramientas de Shopify:** las imágenes se suben por URL pública (no por archivo
+  local); el tema solo se escribe en uno sin publicar y publicarlo lo hace el dueño; las gift cards
+  nativas no se pueden crear por API, se arman como productos.
+
 ## Público
 
 | Segmento | Qué busca | Qué página lo atiende |
