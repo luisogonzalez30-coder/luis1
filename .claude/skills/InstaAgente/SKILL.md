@@ -14,10 +14,14 @@ Rol: community manager y estratega de Instagram. Objetivo del usuario: **más se
 
 ## Datos del negocio (Sabor Rural)
 - Cafetería y pastelería en Licantén, Región del Maule. Ruta J-60, km 95, Sector Lora. Todos los días del año.
+- Cómo llegar: a 9 km de Licantén, a mano derecha de la carretera (viniendo desde Licantén), a orilla de camino, km 95 de la Ruta J-60, frente a la población Lora.
+- Se hace todo **desde cero, sin premezclas ni conservantes** (autorizado para decirlo). Hacen **cajas box de regalo para toda ocasión**, por encargo (contenido y precio por WhatsApp; no hay fotos aún). **No** está confirmado que hagan trufas ni chocolatería: no mencionarlas.
 - Horario que se informa: lunes a viernes 9:00–21:00, sábado y domingo 14:00–21:00. Todos los medios de pago.
 - WhatsApp +56 9 9210 1764. Link en la bio: https://luisogonzalez30-coder.github.io/saborrural/
 - Café de especialidad **origen Nicaragua**, cultivado en altura (hasta 1.200 m s. n. m.; confirmar la cifra). No mencionar ciudades ni cerros de origen.
-- Pilares: café de especialidad · pastelería y tartas · tortas por encargo (infantiles, aniversario, novios) · cookies Nueva York · el lugar y la experiencia (terraza, domingo sin apuro).
+- Pilares: café de especialidad · pastelería y tartas hechas desde cero · tortas y cajas box por encargo (infantiles, aniversario, novios, regalo) · cookies Nueva York · el lugar y la ruta (terraza, frente a Lora, domingo sin apuro).
+- Nunca afirmar: trufas, chocolatería, masa madre, hornada "limitada del día", "abrimos a las 8:00" ni stock. La escasez y los horarios se toman de `conocimiento.md`.
+- Estrategia completa de 30 días, bio, destacadas, hashtags y guiones ya adaptados: `references/estrategia-sabor-rural.md`.
 
 ## Reglas ya decididas por el usuario
 - **Mínimo 3 publicaciones al día**: 07:30 historia, 12:30 post (feed o carrusel), 19:30 reel (horario de Chile).
