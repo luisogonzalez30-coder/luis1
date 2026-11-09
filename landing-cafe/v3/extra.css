@@ -105,3 +105,18 @@ section{padding-block:clamp(40px,6vw,96px)}
   .bb-th{gap:8px}
   .pack{aspect-ratio:4/3;border-radius:22px}
 }
+
+/* Inicio con 3 productos */
+@media(min-width:700px){.tiles{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:699px){
+  .tiles{grid-template-columns:1fr;gap:14px}
+  .tile{display:grid;grid-template-columns:132px 1fr;border-radius:22px;align-items:stretch}
+  .timg{aspect-ratio:auto;height:100%;min-height:158px}
+  .tbody{padding:14px 16px;gap:6px;align-content:center}
+  .tbody .eyebrow{display:block;font-size:.62rem;letter-spacing:.14em}
+  .tbody h3{font-size:1.3rem}
+  .tbody p{display:none}
+  .tbody .price small,.tbody .price s{display:inline}
+  .tbody .price b{font-size:1.4rem}
+  .tbody .btn{padding:10px 14px;font-size:.82rem}
+}

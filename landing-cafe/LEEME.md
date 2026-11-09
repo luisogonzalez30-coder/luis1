@@ -33,10 +33,12 @@ La landing larga se dividió en un inicio corto (banner + 4 tarjetas) y una pág
 | Latte Art Pen | `atelier-pen` |
 | Dripper Plegable | `atelier-dripper` |
 | Llavero Barista | `atelier-llavero` |
-| Set Atelier | `atelier-set` |
 | Gracias | `gracias-cafe-atelier` |
 
 - "Comprar ahora" agrega la variante y va directo a `/checkout`; "Agregar al carrito" abre el carrito lateral.
 - IDs de variante en `CONFIG.shopify.variants` (app.js). Los productos están en BORRADOR: el pago falla hasta activarlos.
 - Para actualizar una página: reconstruir, subir el `.b64.txt` nuevo a Archivos y cambiar el `?v=`/nombre en la URL del cuerpo de la página.
 - La carpeta raíz (`index.html`, `build-shopify.py`) es la versión larga anterior, ya reemplazada en Shopify.
+
+### Cambio del 9-nov-2026: sin Set ni packs
+Cada pieza tiene un proveedor distinto, así que no se venden juntas en un solo pedido. Se eliminó el Set Atelier (página, producto en Shopify, tarjeta, textos) y la foto/colección de 4 llaveros. Quedan 3 productos: Latte Art Pen, Dripper Plegable y Llavero Barista (con variantes). Los enlaces internos navegan la página contenedora (`parent.location`) conservando UTM, para no abrirse dentro del iframe.

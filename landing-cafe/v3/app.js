@@ -1,30 +1,26 @@
 /* ========== CONFIGURACIÓN (edita aquí) ========== */
-const PAGE_ID = '@@PAGE@@';          // hub | pen | drip | key | set
+const PAGE_ID = '@@PAGE@@';          // hub | pen | drip | key
 const PAGE_MODE = '@@MODE@@';        // preview | shopify
 const VIDEO_URL = '@@VIDEO@@';
 const CONFIG = {
   freeShipFrom: 49,                  // USD
-  payLinks: { pen:'', drip:'', 'key-cafe':'', 'key-verde':'', 'key-rosa':'', 'key-cup':'', 'key-tzc':'', 'key-tzh':'', 'key-tzm':'', set:'' },
-  stock: { pen: 23, drip: 31, key: 46, set: 17 },   // unidades reales del lote
+  payLinks: { pen:'', drip:'', 'key-cafe':'', 'key-verde':'', 'key-rosa':'', 'key-cup':'', 'key-tzc':'', 'key-tzh':'', 'key-tzm':'' },
+  stock: { pen: 23, drip: 31, key: 46 },   // unidades reales del lote
   shopify: { enabled: PAGE_MODE === 'shopify', variants: {
     pen:'68244271071469', drip:'68244271104237',
     'key-cafe':'68244271169773', 'key-verde':'68244271202541', 'key-rosa':'68244271235309', 'key-cup':'68244271268077',
-    'key-tzc':'68244272578797', 'key-tzh':'68244272611565', 'key-tzm':'68244272644333',
-    'set-cafe':'68244271300845', 'set-verde':'68244271333613', 'set-rosa':'68244271366381' } }
+    'key-tzc':'68244272578797', 'key-tzh':'68244272611565', 'key-tzm':'68244272644333' } }
 };
-const PAGES = { hub:'cafe-atelier', pen:'atelier-pen', drip:'atelier-dripper', key:'atelier-llavero', set:'atelier-set' };
-const FILES = { hub:'index.html', pen:'pen.html', drip:'drip.html', key:'key.html', set:'set.html' };
+const PAGES = { hub:'cafe-atelier', pen:'atelier-pen', drip:'atelier-dripper', key:'atelier-llavero' };
+const FILES = { hub:'index.html', pen:'pen.html', drip:'drip.html', key:'key.html' };
 const P = {
   pen:  { price: 29.90, was: 44.90, img: ['pen-flower','pen-heart','pen-feather'] },
   drip: { price: 19.90, was: 29.90, img: ['drip-drop','drip-balcony','drip-flat'] },
-  key:  { price: 12.90, was: 18.90, v: { cafe:['mach-cafe','mach-hand'], verde:['mach-verde'], rosa:['mach-rosa'], tzc:['tz-heart'], tzh:['tz-leaf'], tzm:['tz-marsh'], cup:['cup-palm','cup-hand'] } },
-  set:  { price: 59.90 }
+  key:  { price: 12.90, was: 18.90, v: { cafe:['mach-cafe','mach-hand'], verde:['mach-verde'], rosa:['mach-rosa'], tzc:['tz-heart'], tzh:['tz-leaf'], tzm:['tz-marsh'], cup:['cup-palm','cup-hand'] } }
 };
-const SET_REF = P.pen.price + P.drip.price + P.key.price * 2;
-P.set.was = SET_REF;
-const VARS = { key:['cafe','verde','rosa','tzc','tzh','tzm','cup'], set:['cafe','verde','rosa'] };
+const VARS = { key:['cafe','verde','rosa','tzc','tzh','tzm','cup'] };
 const SW = { cafe:'#8a5a3b', verde:'#8fae85', rosa:'#efb8c0' };
-const THUMB = { pen:'pen-flower', drip:'drip-drop', set:'set-cafe', 'key:cafe':'mach-cafe', 'key:verde':'mach-verde', 'key:rosa':'mach-rosa', 'key:cup':'cup-palm', 'key:tzc':'tz-heart', 'key:tzh':'tz-leaf', 'key:tzm':'tz-marsh', 'set:cafe':'set-cafe', 'set:verde':'set-verde', 'set:rosa':'set-rosa' };
+const THUMB = { pen:'pen-flower', drip:'drip-drop', 'key:cafe':'mach-cafe', 'key:verde':'mach-verde', 'key:rosa':'mach-rosa', 'key:cup':'cup-palm', 'key:tzc':'tz-heart', 'key:tzh':'tz-leaf', 'key:tzm':'tz-marsh' };
 
 /* ========== TRADUCCIONES ========== */
 @@I18N@@
@@ -49,27 +45,31 @@ let lang='en';
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const fmt=n=>new Intl.NumberFormat(LOCALE[lang],{style:'currency',currency:'USD'}).format(n);
 const t=(k,v={})=>{ let s=(I18N[lang]&&I18N[lang][k])??I18N.en[k]??k; for(const x in v) s=s.split('{'+x+'}').join(v[x]); return s };
-const varSel={ key:'cafe', set:'cafe' };
+const varSel={ key:'cafe' };
 let cart=[]; try{ cart=JSON.parse(ls.get('ac_cart2')||'[]').filter(i=>P[i.id]&&(i.id==='pen'||i.id==='drip'||(VARS[i.id]||[]).includes(i.v))) }catch(e){ cart=[] }
-const origin=()=>{ try{ return top.location.origin }catch(e){ return location.origin } };
-const hrefOf=k=>PAGE_MODE==='shopify' ? origin()+'/pages/'+PAGES[k] : FILES[k];
-const tgt=PAGE_MODE==='shopify' ? ' target="_top"' : '';
+const origin=()=>{ try{ return parent.location.origin }catch(e){ return location.origin } };
+const hrefOf=k=>PAGE_MODE==='shopify' ? '/pages/'+PAGES[k] : FILES[k];
+const tgt=PAGE_MODE==='shopify' ? ' data-nl target="_top"' : '';
+function navTo(href){
+  let url=href;
+  try{ const base=parent.location, u=new URL(href,base.href); if(base.search&&!u.search) u.search=base.search; url=u.href }catch(e){}
+  try{ parent.location.assign(url) }catch(e){ try{ window.open(url,'_top') }catch(e2){ location.href=url } }
+}
 const payKey=(id,v)=>id==='key'?'key-'+v:id;
 const payUrl=(id,v)=>(CONFIG.payLinks&&CONFIG.payLinks[payKey(id,v)])||'';
 const pct=p=>Math.round((1-p.price/p.was)*100);
 const names={pen:'pen_n',drip:'drip_n',key:'key_n'};
-const pName=id=>id==='set'?'Set Atelier':t(names[id]);
-const pTag=id=>({pen:t('pen_t'),drip:t('drip_t'),key:t('key_t'),set:t('b_eye')})[id];
-const pDesc=id=>({pen:t('pen_d'),drip:t('drip_d'),key:t('key_d'),set:t('b_sub')})[id];
+const pName=id=>t(names[id]);
+const pTag=id=>({pen:t('pen_t'),drip:t('drip_t'),key:t('key_t')})[id];
+const pDesc=id=>({pen:t('pen_d'),drip:t('drip_d'),key:t('key_d')})[id];
 const vLabel=(id,v)=>t('v_'+v);
-function mainImg(id){ return id==='pen'?P.pen.img[0]:id==='drip'?P.drip.img[0]:id==='key'?P.key.v[varSel.key][0]:'set-cafe' }
+function mainImg(id){ return id==='pen'?P.pen.img[0]:id==='drip'?P.drip.img[0]:id==='key'?P.key.v[varSel.key][0]:'mach-cafe' }
 function gallery(id){
   let a;
   if(id==='pen') a=P.pen.img; else if(id==='drip') a=P.drip.img;
-  else if(id==='key') a=[...P.key.v[varSel.key],'tz-pack','mach-market','mach-hand'];
-  else a=['set-'+varSel.set,P.key.v[varSel.set][0],'tz-pack','pen-flower','drip-balcony'];
+  else a=[...P.key.v[varSel.key],'mach-market','mach-hand'];
   a=[...new Set(a)];
-  if((id==='key'&&varSel.key==='rosa')||(id==='set'&&varSel.set==='rosa')) a.push('@video');
+  if(id==='key'&&varSel.key==='rosa') a.push('@video');
   return a;
 }
 function stockHtml(id){ const n=CONFIG.stock[id]; return `<span>${t('left',{n})}</span><div class="bar"><i style="width:${Math.min(100,Math.round(n/60*100))}%"></i></div>` }
@@ -84,7 +84,6 @@ setInterval(tick,1000);
 
 /* ========== CARRITO ========== */
 function lineInfo(i){
-  if(i.id==='set') return { name:'Atelier Set', sub:t('v_mach')+' · '+t('v_'+i.v), img:THUMB['set:'+i.v] };
   if(i.id==='key') return { name:t('key_n'), sub:(['cafe','verde','rosa'].includes(i.v)?t('v_mach')+' · ':'')+t('v_'+i.v), img:THUMB['key:'+i.v] };
   return { name:t(names[i.id]), sub:'', img:THUMB[i.id] };
 }
@@ -111,14 +110,14 @@ function add(id,v){
   if(ex) ex.qty++; else cart.push(vv?{id,v:vv,qty:1}:{id,qty:1});
   renderCart(); toast(t('t_add'));
 }
-const shopVar=i=>CONFIG.shopify.variants[i.id==='set'?'set-'+(i.v||'cafe'):i.id==='key'?'key-'+i.v:i.id];
+const shopVar=i=>CONFIG.shopify.variants[i.id==='key'?'key-'+i.v:i.id];
 async function shopifyCheckout(items,btn){
   if(btn) btn.style.opacity=.6;
   try{
     const o=origin();
     const r=await fetch(o+'/cart/add.js',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:items.map(i=>({id:Number(shopVar(i)),quantity:i.qty}))})});
     if(!r.ok) throw new Error('cart');
-    try{ top.location.href=o+'/checkout' }catch(e){ location.href=o+'/checkout' }
+    navTo('/checkout')
   }catch(e){ if(btn) btn.style.opacity=1; toast(t('c_err')) }
 }
 function buyNow(id,btn){
@@ -133,12 +132,12 @@ function closeCart(){ $('#drawer').classList.remove('on'); $('#veil').classList.
 function swatch(v){ return SW[v]?`<i class="sw" style="background:${SW[v]}"></i>`:'' }
 function buybox(id){
   const p=P[id], gal=gallery(id), main=gi.main>=gal.length?0:gi.main;
-  const vars=VARS[id]?`<div class="opt"><span class="lbl">${t(id==='set'?'b_color':'pick')}</span><div class="vars" role="group">${VARS[id].map(v=>`<button type="button" data-pv="${v}" aria-pressed="${varSel[id]===v}">${swatch(v)}${t('v_'+v)}</button>`).join('')}</div></div>`:'';
+  const vars=VARS[id]?`<div class="opt"><span class="lbl">${t('pick')}</span><div class="vars" role="group">${VARS[id].map(v=>`<button type="button" data-pv="${v}" aria-pressed="${varSel[id]===v}">${swatch(v)}${t('v_'+v)}</button>`).join('')}</div></div>`:'';
   const link=payUrl(id,varSel[id]);
-  const incl=id==='set'?`<div class="inc">${[t('pen_n'),t('drip_n'),t('key_n')+' · '+t('b_mach'),t('key_n')+' · '+t('v_cup')].map(x=>`<span>${x}</span>`).join('')}</div>`:'';
+  const incl='';
   return `<a class="back top" href="${hrefOf('hub')}"${tgt}>← ${t('all')}</a><div class="bb">
     <div class="bb-gal"><div class="bb-main"><span class="badge">-${pct(p)}%</span>${gal[main]==='@video'?`<video id="bbVid" src="${VIDEO_URL}" poster="${IM('rosa-poster')}" autoplay muted loop playsinline></video>`:`<img id="bbMain" src="${IM(gal[main])}" alt="${pName(id)}">`}</div>
-      <div class="bb-th">${gal.map((g,i)=>`<button type="button" data-th="${i}" aria-pressed="${i===main}" aria-label="${i+1}"><img src="${IM(g==='@video'?'th-rosa-poster':g==='set-'+varSel.set?'th-'+g:g)}" alt="">${g==='@video'?'<span class="play" aria-hidden="true"></span>':''}</button>`).join('')}</div></div>
+      <div class="bb-th">${gal.map((g,i)=>`<button type="button" data-th="${i}" aria-pressed="${i===main}" aria-label="${i+1}"><img src="${IM(g==='@video'?'th-rosa-poster':g)}" alt="">${g==='@video'?'<span class="play" aria-hidden="true"></span>':''}</button>`).join('')}</div></div>
     <div class="bb-info">
       <span class="eyebrow">${pTag(id)}</span>
       <h1>${pName(id)}</h1>
@@ -153,22 +152,21 @@ function buybox(id){
     </div></div>`;
 }
 const gi={ main:0 };
-function renderBuybox(){ const el=$('#buybox'); if(el){ el.innerHTML=buybox(PAGE_ID); tick(); const sp=$('#stickyP'); if(sp) sp.textContent=fmt(P[PAGE_ID].price) } }
+function renderBuybox(){ const el=$('#buybox'); if(el){ el.innerHTML=buybox(PAGE_ID); tick(); const sn=$('#stickyN'); if(sn) sn.textContent=pName(PAGE_ID); const sp=$('#stickyP'); if(sp) sp.textContent=fmt(P[PAGE_ID].price) } }
 const ticks=(a)=>`<ul class="ticks">${a.map(k=>`<li>${t(k)}</li>`).join('')}</ul>`;
 const story=(img,e,ti,p,tk,flip)=>`<div class="story${flip?' flip':''}"><div class="story-img"><img src="${IM(img)}" alt="" loading="lazy"></div><div><span class="eyebrow">${t(e)}</span><h2>${t(ti)}</h2><p>${t(p)}</p>${ticks(tk)}</div></div>`;
 const banner=(img,cap)=>`<figure class="pack"><img src="${IM(img)}" alt="" loading="lazy">${cap?`<figcaption>${t(cap)}</figcaption>`:''}</figure>`;
 const head=(e,ti,p)=>`<div class="sec-head">${e?`<span class="eyebrow">${t(e)}</span>`:''}<h2>${t(ti)}</h2>${p?`<p>${t(p)}</p>`:''}</div>`;
-function variantCards(list,id){ const pp=id==='set'?P.set:P.key; return `<div class="grid3">${list.map(v=>`<article class="ccard"><img src="${IM(P.key.v[v][0])}" alt="${t('v_'+v)}" loading="lazy"><div class="cinfo"><h3>${swatch(v)}${id==='set'?'Set · ':''}${t('v_'+v)}</h3><div class="price"><b>${fmt(pp.price)}</b><s>${fmt(pp.was)}</s></div><button class="btn block" type="button" data-addvar="${id}:${v}">${t('col_btn')}</button></div></article>`).join('')}</div>` }
+function variantCards(list,id){ const pp=P.key; return `<div class="grid3">${list.map(v=>`<article class="ccard"><img src="${IM(P.key.v[v][0])}" alt="${t('v_'+v)}" loading="lazy"><div class="cinfo"><h3>${swatch(v)}${t('v_'+v)}</h3><div class="price"><b>${fmt(pp.price)}</b><s>${fmt(pp.was)}</s></div><button class="btn block" type="button" data-addvar="${id}:${v}">${t('col_btn')}</button></div></article>`).join('')}</div>` }
 const videoBlock=(cta)=>`<div class="story"><div class="vwrap"><div class="vframe"><video id="vid360" muted loop playsinline preload="metadata" poster="${IM('rosa-poster')}" src="${VIDEO_URL}" aria-label="360"></video><button class="vsnd" id="vsnd" type="button" aria-pressed="false" aria-label="${t('snd')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="w" d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12"/><path class="x" d="M16 9l5 6M21 9l-5 6"/></svg></button></div></div><div><span class="eyebrow">${t('vid_e')}</span><h2>${t('vid_t')}</h2><p>${t('vid_p')}</p>${ticks(['vid_1','vid_2','vid_3'])}<div style="margin-top:28px">${cta}</div></div></div>`;
 const ctaKey=()=>`<button class="btn pulse" type="button" data-addvar="key:rosa"><span>${t('vid_cta')}</span> →</button>`;
-const ctaSet=()=>`<button class="btn pulse" type="button" data-setrosa><span>${t('vid_cta')}</span> →</button>`;
 const ctaHub=()=>`<a class="btn pulse" href="${hrefOf('key')}"${tgt}>${t('view')} →</a>`;
 const steps=()=>`${head(null,'st_t')}<div class="steps">${[1,2,3].map(n=>`<div class="step"><b>${n}</b><h3>${t('st'+n+'_t')}</h3><p>${t('st'+n+'_p')}</p></div>`).join('')}</div>`;
 const guar=()=>`<div class="guar">${[1,2,3].map(n=>`<div class="gbox"><h3>${t('g'+n+'_t')}</h3><p>${t('g'+n+'_p')}</p></div>`).join('')}</div>`;
 const faq=(n)=>`<div class="faq">${Array.from({length:n},(_,i)=>i+1).map(i=>`<details${i===1?' open':''}><summary>${t('q'+i)}</summary><p>${t('a'+i)}</p></details>`).join('')}</div>`;
 const marquee=(a)=>`<div class="m-track" aria-hidden="true">${[...a,...a,...a].map(n=>`<img src="${IM(n)}" alt="" loading="lazy">`).join('')}</div>`;
 function cross(except){
-  const ids=['pen','drip','key','set'].filter(x=>x!==except);
+  const ids=['pen','drip','key'].filter(x=>x!==except);
   return `<div class="grid3">${ids.map(id=>`<a class="xcard" href="${hrefOf(id)}"${tgt}><img src="${IM(mainImg(id))}" alt="" loading="lazy"><div><h3>${pName(id)}</h3><span class="eyebrow">${pTag(id)}</span><div class="price"><b>${fmt(P[id].price)}</b><s>${fmt(P[id].was)}</s></div><span class="more">${t('view')} →</span></div></a>`).join('')}</div>`;
 }
 const finalCta=(img)=>`<section class="final"><img src="${IM(img)}" alt=""><div class="wrap"><h2>${t('f_t')}</h2><p>${t('f_p')}</p><div class="ends" style="margin:0 auto 32px"><small>${t('h_ends')}</small>${cdHtml()}</div><a class="btn pulse" data-buy="${PAGE_ID}" href="${payUrl(PAGE_ID,varSel[PAGE_ID])||'#'}">${t('buy')} →</a></div></section>`;
@@ -176,8 +174,8 @@ const finalCta=(img)=>`<section class="final"><img src="${IM(img)}" alt=""><div 
 /* ========== PÁGINAS ========== */
 const SECTIONS = {
   hub(){
-    const slides=[['pen','pen-heart'],['key','mach-pack'],['drip','drip-drop'],['set','tz-pack']];
-    const tiles=[['pen','pen-flower','pen-heart'],['drip','drip-drop','drip-balcony'],['key','mach-rosa','tz-pack'],['set','set-cafe','tz-pack']];
+    const slides=[['pen','pen-heart'],['key','mach-pack'],['drip','drip-drop']];
+    const tiles=[['pen','pen-flower','pen-heart'],['drip','drip-drop','drip-balcony'],['key','mach-rosa','mach-hand']];
     return `<section class="hub-ban" id="top">
       <div class="slides">${slides.map(([id,img],i)=>`<a class="slide${i===0?' on':''}" href="${hrefOf(id)}"${tgt} data-slide="${i}"><img src="${IM(img)}" alt=""><span class="cap"><small>${t('view')}</small>${pName(id)} →</span></a>`).join('')}</div>
       <div class="wrap hub-txt"><span class="pill">${t('h_eye')}</span><h1>${t('h_title')}</h1><p class="lead">${t('h_sub')}</p>
@@ -210,19 +208,11 @@ const SECTIONS = {
     <section style="padding-top:0"><div class="wrap">${story('mach-pack','s3_e','s3_t','s3_p',['s3_1','s3_2','s3_3'])}</div></section>
     <section style="padding-top:0"><div class="wrap">${videoBlock(ctaKey())}</div></section>
     <section class="alt"><div class="wrap">${head('col_e','col_t','col_p')}${variantCards(['cafe','verde','rosa'],'key')}</div></section>
-    <section><div class="wrap">${head('cup_e','cup_t','cup_p')}${variantCards(['tzc','tzh','tzm'],'key')}${banner('tz-pack','pk_cap')}</div></section>
-    <section class="moments" style="padding-top:0">${marquee(['tz-pack','tz-heart','tz-leaf','tz-marsh','mach-cafe','mach-verde','mach-rosa','mach-hand','cup-hand','cup-finger'])}</section>
+    <section><div class="wrap">${head('cup_e','cup_t','cup_p')}${variantCards(['tzc','tzh','tzm'],'key')}</div></section>
+    <section class="moments" style="padding-top:0">${marquee(['tz-heart','tz-leaf','tz-marsh','mach-cafe','mach-verde','mach-rosa','mach-hand','cup-hand','cup-finger'])}</section>
     <section style="padding-top:0"><div class="wrap">${guar()}</div></section>
     <section id="faq" style="padding-top:0"><div class="wrap">${head(null,'q_t')}${faq(5)}</div></section>
-    <section><div class="wrap">${head(null,'cross_t')}${cross('key')}</div></section>${finalCta('mach-pack')}`; },
-  set(){ return `<section class="pp"><div class="wrap" id="buybox"></div></section>
-    <section style="padding-top:0"><div class="wrap">${banner('tz-pack')}</div></section>
-    <section style="padding-top:0"><div class="wrap">${head('b_eye','b_title')}<div class="grid3 four">${['pen','drip','key'].map(id=>`<a class="xcard" href="${hrefOf(id)}"${tgt}><img src="${IM(mainImg(id))}" alt="" loading="lazy"><div><h3>${pName(id)}</h3><span class="eyebrow">${pTag(id)}</span><span class="more">${t('view')} →</span></div></a>`).join('')}</div></div></section>
-    <section class="alt"><div class="wrap">${head('col_e','col_t','col_p')}${variantCards(['cafe','verde','rosa'],'set')}</div></section>
-    <section><div class="wrap">${videoBlock(ctaSet())}</div></section>
-    <section style="padding-top:0"><div class="wrap">${guar()}</div></section>
-    <section id="faq"><div class="wrap">${head(null,'q_t')}${faq(5)}</div></section>
-    <section><div class="wrap">${head(null,'cross_t')}${cross('set')}</div></section>${finalCta('tz-pack')}`; }
+    <section><div class="wrap">${head(null,'cross_t')}${cross('key')}</div></section>${finalCta('mach-pack')}`; }
 };
 function renderPage(){
   $('#app').innerHTML=SECTIONS[PAGE_ID]();
@@ -236,7 +226,7 @@ function bindMedia(){
 }
 let slideIx=0, slideTm=0;
 function showSlide(i){ slideIx=i; $$('.slide').forEach((s,k)=>s.classList.toggle('on',k===i)); $$('[data-dot]').forEach((d,k)=>d.setAttribute('aria-pressed',k===i)) }
-function bindSlides(){ clearInterval(slideTm); if(PAGE_ID!=='hub') return; slideTm=setInterval(()=>showSlide((slideIx+1)%4),4800) }
+function bindSlides(){ clearInterval(slideTm); if(PAGE_ID!=='hub') return; slideTm=setInterval(()=>showSlide((slideIx+1)%$$('.slide').length),4800) }
 
 /* ========== IDIOMA ========== */
 function applyI18n(){
@@ -253,10 +243,10 @@ $('#openCart').onclick=openCart; $('#closeCart').onclick=closeCart; $('#veil').o
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCart() });
 $('#go').addEventListener('click',e=>{ if(CONFIG.shopify.enabled){ e.preventDefault(); if(cart.length) shopifyCheckout(cart,$('#go')); return } if(!$('#go').dataset.url){ e.preventDefault(); $('#goNote').hidden=false } });
 document.addEventListener('click',e=>{
+  const nl=e.target.closest('a[data-nl]'); if(nl&&PAGE_MODE==='shopify'){ e.preventDefault(); navTo(nl.getAttribute('href')); return }
   const by=e.target.closest('[data-buy]'); if(by){ if(!payUrl(by.dataset.buy,varSel[by.dataset.buy])){ e.preventDefault(); burst(e.clientX,e.clientY); buyNow(by.dataset.buy,by) } return }
   const ad=e.target.closest('[data-add]'); if(ad){ add(ad.dataset.add); burst(e.clientX,e.clientY); setTimeout(openCart,450); return }
   const av=e.target.closest('[data-addvar]'); if(av){ const [id,v]=av.dataset.addvar.split(':'); add(id,v); burst(e.clientX,e.clientY); setTimeout(openCart,450); return }
-  const sr=e.target.closest('[data-setrosa]'); if(sr){ varSel.set='rosa'; gi.main=0; renderBuybox(); scrollTo({top:0,behavior:'smooth'}); return }
   const pv=e.target.closest('[data-pv]'); if(pv){ varSel[PAGE_ID]=pv.dataset.pv; gi.main=0; renderBuybox(); return }
   const th=e.target.closest('[data-th]'); if(th){ gi.main=+th.dataset.th; renderBuybox(); return }
   const dt=e.target.closest('[data-dot]'); if(dt){ showSlide(+dt.dataset.dot); bindSlides(); return }
@@ -285,8 +275,8 @@ function loop(){
 (function(){
   const saved=ls.get('ac_lang');
   lang=(saved&&I18N[saved])?saved:browserLang();
-  const hl=$('#logo'); hl.href=hrefOf('hub'); if(PAGE_MODE==='shopify') hl.target='_top';
-  $$('[data-nav]').forEach(a=>{ a.href=hrefOf('hub')+(a.dataset.nav?'#'+a.dataset.nav:''); if(PAGE_MODE==='shopify') a.target='_top' });
+  const hl=$('#logo'); hl.href=hrefOf('hub'); if(PAGE_MODE==='shopify'){ hl.target='_top'; hl.setAttribute('data-nl','') }
+  $$('[data-nav]').forEach(a=>{ a.href=hrefOf('hub')+(a.dataset.nav?'#'+a.dataset.nav:''); if(PAGE_MODE==='shopify'){ a.target='_top'; a.setAttribute('data-nl','') } });
   const sb=$('#stickyBuy'); if(sb) sb.dataset.buy=PAGE_ID;
   applyI18n();
   if(!saved) ipCountry().then(cc=>{ if(!cc) return; const l=CC_LANG[cc]||'en'; if(l!==lang){ lang=l; applyI18n(); toast(t('t_lang')) } });
