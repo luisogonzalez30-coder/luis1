@@ -8,7 +8,7 @@ THUMBS = ['trio', 'rosa-poster', 'pen-flower', 'drip-drop', 'mach-cafe', 'mach-v
 IMGS = {
     'hub': ['trio', 'pen-heart', 'mach-pack', 'drip-drop', 'pen-flower', 'drip-balcony', 'mach-rosa', 'mach-hand', 'mach-cafe', 'rosa-poster'],
     'pen': ['trio', 'pen-flower', 'pen-heart', 'pen-feather', 'drip-drop', 'mach-cafe'],
-    'drip': ['trio', 'drip-kit', 'filt-hands', 'drip-drop', 'drip-balcony', 'drip-flat', 'pen-flower', 'mach-cafe'],
+    'drip': ['trio', 'real-1', 'real-2', 'real-3', 'real-4', 'real-5', 'real-6', 'drip-kit', 'filt-hands', 'drip-drop', 'drip-balcony', 'drip-flat', 'pen-flower', 'mach-cafe'],
     'trio': ['trio', 'mach-cafe', 'mach-verde', 'mach-rosa', 'mach-hand', 'mach-market', 'mach-pack', 'rosa-poster', 'pen-flower', 'drip-drop'],
     'key': ['trio', 'th-rosa-poster', 'mach-cafe', 'mach-hand', 'mach-market', 'mach-verde', 'mach-rosa', 'tz-heart', 'tz-leaf', 'tz-marsh',
             'cup-palm', 'cup-hand', 'cup-finger', 'mach-pack', 'pen-flower', 'drip-drop', 'rosa-poster'],

@@ -230,6 +230,7 @@ const SECTIONS = {
   drip(){ return `<section class="pp"><div class="wrap" id="buybox"></div></section>
     <section style="padding-top:0"><div class="wrap">${story('drip-drop','s2_e','s2_t','s2_p',['s2_1','s2_2','s2_3'])}</div></section>
     <section style="padding-top:0"><div class="wrap">${story('filt-hands','fil_e','fil_t','fil_p',['d_inc1','d_inc2','d_inc3'],true)}</div></section>
+    <section class="alt"><div class="wrap">${head('real_e','real_t','real_p')}<div class="photos">${[1,2,3,4,5,6].map(n=>`<img src="${IM('real-'+n)}" alt="" loading="lazy">`).join('')}</div></div></section>
     <section><div class="wrap">${banner('drip-balcony')}</div></section>
     <section class="moments" style="padding-top:0">${marquee(['drip-drop','drip-balcony','drip-flat','drip-drop','drip-balcony'])}</section>
     <section style="padding-top:0"><div class="wrap">${guar()}</div></section>

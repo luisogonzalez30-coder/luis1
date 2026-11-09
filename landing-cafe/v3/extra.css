@@ -141,3 +141,8 @@ section{padding-block:clamp(40px,6vw,96px)}
 .bb-info .save{margin:0;width:fit-content}
 
 .hint{margin:0;font-size:.84rem;color:var(--mut);font-style:italic}
+
+/* Fotos reales: mosaico que respeta la proporción de cada foto */
+.photos{column-count:3;column-gap:14px}
+.photos img{width:100%;display:block;margin:0 0 14px;border-radius:18px;border:1px solid var(--line);break-inside:avoid}
+@media(max-width:699px){.photos{column-count:2;column-gap:10px}.photos img{margin-bottom:10px;border-radius:14px}}
