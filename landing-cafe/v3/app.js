@@ -23,7 +23,7 @@ const PAGES = { hub:'cafe-atelier', pen:'atelier-pen', drip:'atelier-dripper', k
 const FILES = { hub:'index.html', pen:'pen.html', drip:'drip.html', key:'key.html', trio:'trio.html' };
 const P = {
   pen:  { price: 22.99, img: ['pen-flower','pen-heart','pen-feather'] },
-  drip: { price: 23.00, img: ['drip-drop','drip-balcony','drip-flat'] },
+  drip: { price: 23.00, img: ['drip-kit','drip-drop','drip-balcony','drip-flat','filt-hands'] },
   key:  { price: 14.99, v: { cafe:['mach-cafe','mach-hand'], verde:['mach-verde'], rosa:['mach-rosa'], tzc:['tz-heart'], tzh:['tz-leaf'], tzm:['tz-marsh'], cup:['cup-palm','cup-hand'] } },
   trio: { price: 29.99, was: 44.97, img: ['trio','mach-cafe','mach-verde','mach-rosa'] }
 };
@@ -72,7 +72,7 @@ const pName=id=>t(names[id]);
 const pTag=id=>({pen:t('pen_t'),drip:t('drip_t'),key:t('key_t'),trio:t('trio_t')})[id];
 const pDesc=id=>({pen:t('pen_d'),drip:t('drip_d'),key:t('key_d'),trio:t('trio_d')})[id];
 const vLabel=(id,v)=>t('v_'+v);
-function mainImg(id){ return id==='pen'?P.pen.img[0]:id==='drip'?P.drip.img[0]:id==='key'?P.key.v[varSel.key][0]:'trio' }
+function mainImg(id){ return id==='pen'?P.pen.img[0]:id==='drip'?'drip-drop':id==='key'?P.key.v[varSel.key][0]:'trio' }
 function gallery(id){
   let a;
   if(id==='pen') a=P.pen.img; else if(id==='drip') a=P.drip.img;
@@ -229,6 +229,7 @@ const SECTIONS = {
     <section><div class="wrap">${head(null,'cross_t')}${cross('pen')}</div></section>${finalCta('pen-heart')}`; },
   drip(){ return `<section class="pp"><div class="wrap" id="buybox"></div></section>
     <section style="padding-top:0"><div class="wrap">${story('drip-drop','s2_e','s2_t','s2_p',['s2_1','s2_2','s2_3'])}</div></section>
+    <section style="padding-top:0"><div class="wrap">${story('filt-hands','fil_e','fil_t','fil_p',['d_inc1','d_inc2','d_inc3'],true)}</div></section>
     <section><div class="wrap">${banner('drip-balcony')}</div></section>
     <section class="moments" style="padding-top:0">${marquee(['drip-drop','drip-balcony','drip-flat','drip-drop','drip-balcony'])}</section>
     <section style="padding-top:0"><div class="wrap">${guar()}</div></section>
