@@ -6,7 +6,7 @@ const CONFIG = {
   freeShipFrom: 49,                  // USD
   payLinks: {   // Links de pago de PayPal (USD). Vacío = el botón muestra "Próximamente".
     'pen-white':'https://www.paypal.com/ncp/payment/NL8T3HS2HEGNA', 'pen-red':'https://www.paypal.com/ncp/payment/NL8T3HS2HEGNA', 'pen-yellow':'https://www.paypal.com/ncp/payment/NL8T3HS2HEGNA', 'pen-pink':'https://www.paypal.com/ncp/payment/NL8T3HS2HEGNA',   // mismo link por ahora: PayPal no recibe el color
-    drip:'',
+    drip:'https://www.paypal.com/ncp/payment/2TR9R6JV3SKUU',
     'key-cafe':'https://www.paypal.com/ncp/payment/YTAR8N83UWPGU',
     'key-verde':'https://www.paypal.com/ncp/payment/MLT6HDJVKTXEA',
     'key-rosa':'https://www.paypal.com/ncp/payment/KC9TY6SXHVRP2',
@@ -23,7 +23,7 @@ const PAGES = { hub:'cafe-atelier', pen:'atelier-pen', drip:'atelier-dripper', k
 const FILES = { hub:'index.html', pen:'pen.html', drip:'drip.html', key:'key.html', trio:'trio.html' };
 const P = {
   pen:  { price: 22.99, img: ['pen-flower','pen-heart','pen-feather'] },
-  drip: { price: 19.90, img: ['drip-drop','drip-balcony','drip-flat'] },
+  drip: { price: 23.00, img: ['drip-drop','drip-balcony','drip-flat'] },
   key:  { price: 14.99, v: { cafe:['mach-cafe','mach-hand'], verde:['mach-verde'], rosa:['mach-rosa'], tzc:['tz-heart'], tzh:['tz-leaf'], tzm:['tz-marsh'], cup:['cup-palm','cup-hand'] } },
   trio: { price: 29.99, was: 44.97, img: ['trio','mach-cafe','mach-verde','mach-rosa'] }
 };
@@ -148,7 +148,7 @@ function buybox(id){
   const buyBtn=link?`<a class="btn block pulse" id="buyBtn" data-buy="${id}" href="${link}" target="_blank" rel="noopener">${t('buy')} →</a>`:`<button class="btn block soon" type="button" disabled>${t('soon')}</button>`;
   const trioNote=id==='trio'?`<p class="save">${t('trio_save',{x:fmt(p.was-p.price),p:pct(p)})}</p>`:'';
   const upsell=(id==='key'&&['cafe','verde','rosa'].includes(varSel.key))?`<a class="upsell" href="${hrefOf('trio')}"${tgt}><img src="${IM('th-trio')}" alt=""><div><b>${t('up_t')}</b><span>${t('up_p',{a:fmt(P.trio.price),b:fmt(P.trio.was)})}</span></div><i>${t('up_cta')} →</i></a>`:'';
-  const incl=id==='trio'?`<div class="inc">${['cafe','verde','rosa'].map(v=>`<span>${swatch(v)}${t('v_mach')} ${t('v_'+v)}</span>`).join('')}</div>`:'';
+  const incl=id==='trio'?`<div class="inc">${['cafe','verde','rosa'].map(v=>`<span>${swatch(v)}${t('v_mach')} ${t('v_'+v)}</span>`).join('')}</div>`:id==='drip'?`<div class="inc">${['d_inc1','d_inc2','d_inc3'].map(k=>`<span>${t(k)}</span>`).join('')}</div>`:'';
   return `<a class="back top" href="${hrefOf('hub')}"${tgt}>← ${t('all')}</a><div class="bb">
     <div class="bb-gal"><div class="bb-main">${p.was?`<span class="badge">-${pct(p)}%</span>`:''}${gal[main]==='@video'?`<video id="bbVid" src="${VIDEO_URL}" poster="${IM('rosa-poster')}" autoplay muted loop playsinline></video>`:`<img id="bbMain" src="${IM(gal[main])}" alt="${pName(id)}">`}</div>
       <div class="bb-th">${gal.map((g,i)=>`<button type="button" data-th="${i}" aria-pressed="${i===main}" aria-label="${i+1}"><img src="${IM(g==='@video'?'th-rosa-poster':g)}" alt="">${g==='@video'?'<span class="play" aria-hidden="true"></span>':''}</button>`).join('')}</div></div>
