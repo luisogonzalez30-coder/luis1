@@ -16,3 +16,10 @@ convierte en tienda real conviene moverlo a su propio repositorio.
 - Reseñas reales: no hay testimonios inventados a propósito.
 - La cuenta regresiva reinicia cada día a medianoche local.
 - Desplegar (Vercel/Netlify) o llevar a Shopify.
+
+## Shopify (maulestore.com)
+- Landing: https://www.maulestore.com/pages/cafe-atelier
+- Gracias: https://www.maulestore.com/pages/gracias-cafe-atelier
+- Se publican como en las otras landings de la tienda: la página de Shopify carga un `.txt` base64 (archivos `atelier-landing-b64.txt` y `atelier-gracias-b64.txt` en Contenido > Archivos) y lo muestra en un iframe. Las fotos van embebidas en ese archivo.
+- `build-shopify.py` genera esos archivos desde `index.html` y `gracias/index.html`. Para actualizar: reconstruir, subir el `.txt` nuevo y cambiar el `?v=` de la URL en el cuerpo de la página.
+- Productos creados como BORRADOR (Latte Art Pen, Dripper Plegable, Llavero Barista, Set Atelier) con precios provisorios en CLP. El carrito de la landing usa los IDs de variante de `CONFIG.shopify.variants`; no funciona hasta que los productos estén ACTIVOS.

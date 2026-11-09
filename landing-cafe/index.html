@@ -143,6 +143,10 @@ html:not(.js) .rv{opacity:1;transform:none}
 @media(min-width:900px){.wa{bottom:24px}}
 .wa[hidden]{display:none}
 .pbody .btn.ghost{padding:14px 24px}
+.pack{margin:clamp(28px,4vw,48px) 0 0;position:relative;border-radius:30px;overflow:hidden;border:1px solid var(--line);aspect-ratio:16/9;background:#000}
+.pack img{width:100%;height:100%;object-fit:cover}
+.pack figcaption{position:absolute;left:0;right:0;bottom:0;padding:48px 24px 22px;background:linear-gradient(transparent,rgba(12,8,6,.85));font:italic 500 clamp(1.4rem,3vw,2.4rem)/1.1 var(--f-d);color:var(--gold2)}
+@media(max-width:600px){.pack{aspect-ratio:4/3}}
 /* Historias */
 .story{display:grid;gap:36px;align-items:center;margin-bottom:clamp(56px,8vw,110px)}
 .story:last-child{margin-bottom:0}
@@ -333,6 +337,14 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-bet
   </div>
 </section>
 
+<section style="padding-top:0" id="tazas">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow" data-i18n="cup_e"></span><h2 data-i18n="cup_t"></h2><p data-i18n="cup_p"></p></div>
+    <div class="grid3" id="cups"></div>
+    <figure class="pack rv"><img src="img/tz-pack.jpg" alt="Colección de llaveros barista: tres tazas latte art y un vaso para llevar" loading="lazy"><figcaption data-i18n="pk_cap"></figcaption></figure>
+  </div>
+</section>
+
 <section style="padding-top:0">
   <div class="wrap">
     <div class="story rv">
@@ -365,6 +377,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-bet
         <h2 data-i18n-html="b_title"></h2>
         <p style="color:var(--mut)" data-i18n="b_sub"></p>
         <div class="inc" id="inc"></div>
+        <div class="vars" id="bpick" style="margin-bottom:20px"></div>
         <div class="price" id="bprice"></div>
         <span class="save" id="bsave"></span>
         <div class="stock" id="bstock"></div>
@@ -478,12 +491,19 @@ const CONFIG = {
   discountPct: 10,
   stock: { pen: 23, drip: 31, key: 46, set: 17 },  // unidades reales del lote
   // Links de pago por producto (Stripe, Shopify, Mercado Pago, etc.). Vacío = el botón agrega al carrito.
-  payLinks: { pen:'', drip:'', 'key-cafe':'', 'key-verde':'', 'key-rosa':'', 'key-cup':'', set:'' }
+  payLinks: { pen:'', drip:'', 'key-cafe':'', 'key-verde':'', 'key-rosa':'', 'key-cup':'', 'key-tzc':'', 'key-tzh':'', 'key-tzm':'', set:'' },
+  popup: true,
+  // Modo Shopify: el carrito agrega estas variantes y lleva al checkout de la tienda.
+  shopify: { enabled: false, variants: {
+    pen:'68244271071469', drip:'68244271104237',
+    'key-cafe':'68244271169773', 'key-verde':'68244271202541', 'key-rosa':'68244271235309', 'key-cup':'68244271268077',
+    'key-tzc':'68244272578797', 'key-tzh':'68244272611565', 'key-tzm':'68244272644333',
+    'set-cafe':'68244271300845', 'set-verde':'68244271333613', 'set-rosa':'68244271366381' } }
 };
 const P = {
   pen:  { price: 29.90, was: 44.90, img: ['pen-flower','pen-heart'] },
   drip: { price: 19.90, was: 29.90, img: ['drip-drop','drip-balcony'] },
-  key:  { price: 12.90, was: 18.90, v: { cafe: ['mach-cafe','mach-hand'], verde: ['mach-verde','mach-verde'], rosa: ['mach-rosa','mach-rosa'], cup: ['cup-hand','cup-press'] } },
+  key:  { price: 12.90, was: 18.90, v: { cafe: ['mach-cafe','mach-hand'], verde: ['mach-verde','mach-verde'], rosa: ['mach-rosa','mach-rosa'], cup: ['cup-palm','cup-hand'], tzc: ['tz-heart','tz-pack'], tzh: ['tz-leaf','tz-pack'], tzm: ['tz-marsh','tz-pack'] } },
   set:  { price: 59.90, img: ['pen-flower'] }
 };
 const SET_REF = P.pen.price + P.drip.price + P.key.price * 2;
@@ -503,7 +523,9 @@ es:{
  drip_n:"Dripper Plegable",drip_t:"Pour over portátil",drip_d:"Silicona plegable con base estable. Café filtrado sobre cualquier taza.",
  key_n:"Llavero Barista",key_t:"Miniaturas coleccionables",key_d:"Mini cafetera o mini vaso con cadena. Elige tu diseño.",
  v_mach:"Cafetera",v_cup:"Vaso",v_cafe:"Café",v_verde:"Verde",v_rosa:"Rosa",add:"Agregar al carrito",left:"Quedan {n} en este lote",tagl:"Edición limitada",
- col_e:"Variantes",col_t:"Tres colores. Una sola favorita.",col_p:"La mini cafetera llega en café, verde salvia y rosa. Elige la que combine con tus llaves.",col_btn:"Quiero este color",b_mach:"Cafetera (café, verde o rosa)",buy:"Comprar ahora",pay:"Pagar",c_multi:"Paga cada producto con su botón Pagar.",wa_t:"¿Dudas? Escríbenos",q5:"¿Qué colores tiene la cafetera?",a5:"Café, verde y rosa. Elige tu favorita en la tarjeta del producto o en la sección de colores.",
+ col_e:"Variantes",col_t:"Tres colores. Una sola favorita.",col_p:"La mini cafetera llega en café, verde salvia y rosa. Elige la que combine con tus llaves.",col_btn:"Lo quiero",b_mach:"Cafetera (café, verde o rosa)",buy:"Comprar ahora",pay:"Pagar",c_multi:"Paga cada producto con su botón Pagar.",wa_t:"¿Dudas? Escríbenos",q5:"¿Qué colores tiene la cafetera?",a5:"Café, verde y rosa. Elige tu favorita en la tarjeta del producto o en la sección de colores.",
+ v_tzc:"Taza corazón",v_tzh:"Taza hoja",v_tzm:"Taza malvavisco",cup_e:"Tazas latte art",cup_t:"Tres tazas. Tres diseños.",cup_p:"Corazón, hoja y malvavisco. Mini tazas con arte latte para colgar en tus llaves.",pk_cap:"Cuatro llaveros, una colección.",b_color:"Color de la cafetera",
+ c_err:"No pudimos abrir el pago. Inténtalo de nuevo.",
  s1_e:"Latte Art Pen",s1_t:"Corazones, hojas y flores. <em>Sin ser barista.</em>",s1_p:"Un toque y el cacao dibuja sobre la espuma. Tu café de siempre, con acabado de cafetería de especialidad.",
  s1_1:"Trazos finos y precisos",s1_2:"Cabe en cualquier cajón",s1_3:"El regalo que sorprende",
  s2_e:"Dripper Plegable",s2_t:"Café de especialidad, <em>plegado en tu mochila.</em>",s2_p:"Se aplana para viajar y se abre en segundos sobre cualquier taza. Filtrado lento, sabor limpio.",
@@ -545,7 +567,9 @@ en:{
  drip_n:"Collapsible Dripper",drip_t:"Portable pour over",drip_d:"Foldable silicone with a stable base. Filtered coffee over any mug.",
  key_n:"Barista Keychain",key_t:"Collectible miniatures",key_d:"Mini espresso machine or mini cup on a chain. Pick your design.",
  v_mach:"Machine",v_cup:"Cup",v_cafe:"Brown",v_verde:"Green",v_rosa:"Pink",add:"Add to cart",left:"{n} left in this batch",tagl:"Limited edition",
- col_e:"Variants",col_t:"Three colors. One favorite.",col_p:"The mini espresso machine comes in brown, sage green and pink. Pick the one that matches your keys.",col_btn:"I want this color",b_mach:"Machine (brown, green or pink)",buy:"Buy now",pay:"Pay",c_multi:"Pay for each product with its Pay button.",wa_t:"Questions? Message us",q5:"What colors does the machine come in?",a5:"Brown, green and pink. Pick your favorite on the product card or in the colors section.",
+ col_e:"Variants",col_t:"Three colors. One favorite.",col_p:"The mini espresso machine comes in brown, sage green and pink. Pick the one that matches your keys.",col_btn:"I want this one",b_mach:"Machine (brown, green or pink)",buy:"Buy now",pay:"Pay",c_multi:"Pay for each product with its Pay button.",wa_t:"Questions? Message us",q5:"What colors does the machine come in?",a5:"Brown, green and pink. Pick your favorite on the product card or in the colors section.",
+ v_tzc:"Heart cup",v_tzh:"Leaf cup",v_tzm:"Marshmallow cup",cup_e:"Latte art cups",cup_t:"Three cups. Three designs.",cup_p:"Heart, leaf and marshmallow. Mini latte art cups for your keys.",pk_cap:"Four keychains, one collection.",b_color:"Machine color",
+ c_err:"We couldn't open the checkout. Please try again.",
  s1_e:"Latte Art Pen",s1_t:"Hearts, leaves and flowers. <em>No barista skills needed.</em>",s1_p:"One touch and cocoa draws across the foam. Your usual coffee, with a specialty-café finish.",
  s1_1:"Fine, precise lines",s1_2:"Fits in any drawer",s1_3:"The gift that surprises",
  s2_e:"Collapsible Dripper",s2_t:"Specialty coffee, <em>folded into your bag.</em>",s2_p:"It flattens for travel and opens in seconds over any mug. Slow filter, clean flavor.",
@@ -587,7 +611,9 @@ pt:{
  drip_n:"Dripper Dobrável",drip_t:"Pour over portátil",drip_d:"Silicone dobrável com base estável. Café coado em qualquer caneca.",
  key_n:"Chaveiro Barista",key_t:"Miniaturas colecionáveis",key_d:"Mini cafeteira ou mini copo com corrente. Escolha seu design.",
  v_mach:"Cafeteira",v_cup:"Copo",v_cafe:"Marrom",v_verde:"Verde",v_rosa:"Rosa",add:"Adicionar ao carrinho",left:"Restam {n} neste lote",tagl:"Edição limitada",
- col_e:"Variantes",col_t:"Três cores. Uma favorita.",col_p:"A mini cafeteira vem em marrom, verde sálvia e rosa. Escolha a que combina com suas chaves.",col_btn:"Quero esta cor",b_mach:"Cafeteira (marrom, verde ou rosa)",buy:"Comprar agora",pay:"Pagar",c_multi:"Pague cada produto com seu botão Pagar.",wa_t:"Dúvidas? Fale conosco",q5:"Quais cores a cafeteira tem?",a5:"Marrom, verde e rosa. Escolha sua favorita no cartão do produto ou na seção de cores.",
+ col_e:"Variantes",col_t:"Três cores. Uma favorita.",col_p:"A mini cafeteira vem em marrom, verde sálvia e rosa. Escolha a que combina com suas chaves.",col_btn:"Quero este",b_mach:"Cafeteira (marrom, verde ou rosa)",buy:"Comprar agora",pay:"Pagar",c_multi:"Pague cada produto com seu botão Pagar.",wa_t:"Dúvidas? Fale conosco",q5:"Quais cores a cafeteira tem?",a5:"Marrom, verde e rosa. Escolha sua favorita no cartão do produto ou na seção de cores.",
+ v_tzc:"Xícara coração",v_tzh:"Xícara folha",v_tzm:"Xícara marshmallow",cup_e:"Xícaras latte art",cup_t:"Três xícaras. Três designs.",cup_p:"Coração, folha e marshmallow. Mini xícaras com arte latte para pendurar nas chaves.",pk_cap:"Quatro chaveiros, uma coleção.",b_color:"Cor da cafeteira",
+ c_err:"Não foi possível abrir o pagamento. Tente novamente.",
  s1_e:"Latte Art Pen",s1_t:"Corações, folhas e flores. <em>Sem ser barista.</em>",s1_p:"Um toque e o cacau desenha na espuma. Seu café de sempre, com acabamento de cafeteria especial.",
  s1_1:"Traços finos e precisos",s1_2:"Cabe em qualquer gaveta",s1_3:"O presente que surpreende",
  s2_e:"Dripper Dobrável",s2_t:"Café especial, <em>dobrado na sua mochila.</em>",s2_p:"Achata para viajar e abre em segundos sobre qualquer caneca. Coado lento, sabor limpo.",
@@ -629,7 +655,9 @@ fr:{
  drip_n:"Dripper Pliable",drip_t:"Pour over nomade",drip_d:"Silicone pliable à base stable. Café filtré sur n'importe quelle tasse.",
  key_n:"Porte-clés Barista",key_t:"Miniatures de collection",key_d:"Mini machine à café ou mini gobelet avec chaîne. Choisissez votre modèle.",
  v_mach:"Machine",v_cup:"Gobelet",v_cafe:"Marron",v_verde:"Vert",v_rosa:"Rose",add:"Ajouter au panier",left:"Plus que {n} dans ce lot",tagl:"Édition limitée",
- col_e:"Variantes",col_t:"Trois couleurs. Une seule favorite.",col_p:"La mini machine existe en marron, vert sauge et rose. Choisissez celle qui va avec vos clés.",col_btn:"Je veux cette couleur",b_mach:"Machine (marron, vert ou rose)",buy:"Acheter maintenant",pay:"Payer",c_multi:"Payez chaque produit avec son bouton Payer.",wa_t:"Une question ? Écrivez-nous",q5:"Quelles couleurs pour la machine ?",a5:"Marron, vert et rose. Choisissez votre favorite sur la fiche produit ou dans la section couleurs.",
+ col_e:"Variantes",col_t:"Trois couleurs. Une seule favorite.",col_p:"La mini machine existe en marron, vert sauge et rose. Choisissez celle qui va avec vos clés.",col_btn:"Je le veux",b_mach:"Machine (marron, vert ou rose)",buy:"Acheter maintenant",pay:"Payer",c_multi:"Payez chaque produit avec son bouton Payer.",wa_t:"Une question ? Écrivez-nous",q5:"Quelles couleurs pour la machine ?",a5:"Marron, vert et rose. Choisissez votre favorite sur la fiche produit ou dans la section couleurs.",
+ v_tzc:"Tasse cœur",v_tzh:"Tasse feuille",v_tzm:"Tasse guimauve",cup_e:"Tasses latte art",cup_t:"Trois tasses. Trois modèles.",cup_p:"Cœur, feuille et guimauve. Mini tasses latte art à accrocher à vos clés.",pk_cap:"Quatre porte-clés, une collection.",b_color:"Couleur de la machine",
+ c_err:"Impossible d'ouvrir le paiement. Réessayez.",
  s1_e:"Latte Art Pen",s1_t:"Cœurs, feuilles et fleurs. <em>Sans être barista.</em>",s1_p:"Un geste et le cacao dessine sur la mousse. Votre café habituel, avec la finition d'un café de spécialité.",
  s1_1:"Traits fins et précis",s1_2:"Se glisse dans n'importe quel tiroir",s1_3:"Le cadeau qui surprend",
  s2_e:"Dripper Pliable",s2_t:"Un café de spécialité, <em>plié dans votre sac.</em>",s2_p:"Il s'aplatit pour voyager et s'ouvre en secondes sur n'importe quelle tasse. Filtration lente, goût net.",
@@ -671,7 +699,9 @@ de:{
  drip_n:"Faltbarer Dripper",drip_t:"Pour Over für unterwegs",drip_d:"Faltbares Silikon mit stabilem Fuß. Filterkaffee über jeder Tasse.",
  key_n:"Barista-Schlüsselanhänger",key_t:"Sammelbare Miniaturen",key_d:"Mini-Espressomaschine oder Mini-Becher mit Kette. Wähle dein Design.",
  v_mach:"Maschine",v_cup:"Becher",v_cafe:"Braun",v_verde:"Grün",v_rosa:"Rosa",add:"In den Warenkorb",left:"Nur noch {n} in dieser Charge",tagl:"Limitierte Edition",
- col_e:"Varianten",col_t:"Drei Farben. Eine Favoritin.",col_p:"Die Mini-Espressomaschine gibt es in Braun, Salbeigrün und Rosa. Wähle die passend zu deinen Schlüsseln.",col_btn:"Diese Farbe will ich",b_mach:"Maschine (braun, grün oder rosa)",buy:"Jetzt kaufen",pay:"Bezahlen",c_multi:"Bezahle jedes Produkt mit seinem Bezahlen-Button.",wa_t:"Fragen? Schreib uns",q5:"In welchen Farben gibt es die Maschine?",a5:"Braun, Grün und Rosa. Wähle deine Favoritin auf der Produktkarte oder im Farbbereich.",
+ col_e:"Varianten",col_t:"Drei Farben. Eine Favoritin.",col_p:"Die Mini-Espressomaschine gibt es in Braun, Salbeigrün und Rosa. Wähle die passend zu deinen Schlüsseln.",col_btn:"Das will ich",b_mach:"Maschine (braun, grün oder rosa)",buy:"Jetzt kaufen",pay:"Bezahlen",c_multi:"Bezahle jedes Produkt mit seinem Bezahlen-Button.",wa_t:"Fragen? Schreib uns",q5:"In welchen Farben gibt es die Maschine?",a5:"Braun, Grün und Rosa. Wähle deine Favoritin auf der Produktkarte oder im Farbbereich.",
+ v_tzc:"Herz-Tasse",v_tzh:"Blatt-Tasse",v_tzm:"Marshmallow-Tasse",cup_e:"Latte-Art-Tassen",cup_t:"Drei Tassen. Drei Designs.",cup_p:"Herz, Blatt und Marshmallow. Mini-Latte-Art-Tassen für deinen Schlüsselbund.",pk_cap:"Vier Anhänger, eine Kollektion.",b_color:"Farbe der Maschine",
+ c_err:"Die Kasse ließ sich nicht öffnen. Bitte erneut versuchen.",
  s1_e:"Latte Art Pen",s1_t:"Herzen, Blätter und Blumen. <em>Ganz ohne Barista-Training.</em>",s1_p:"Ein Tipp und Kakao zeichnet auf den Schaum. Dein gewohnter Kaffee mit dem Finish eines Specialty-Cafés.",
  s1_1:"Feine, präzise Linien",s1_2:"Passt in jede Schublade",s1_3:"Das Geschenk, das überrascht",
  s2_e:"Faltbarer Dripper",s2_t:"Specialty-Kaffee, <em>flach in deiner Tasche.</em>",s2_p:"Zum Reisen flach gefaltet, in Sekunden auf jeder Tasse aufgebaut. Langsam gefiltert, klarer Geschmack.",
@@ -713,7 +743,9 @@ it:{
  drip_n:"Dripper Pieghevole",drip_t:"Pour over portatile",drip_d:"Silicone pieghevole con base stabile. Caffè filtrato su qualsiasi tazza.",
  key_n:"Portachiavi Barista",key_t:"Miniature da collezione",key_d:"Mini macchina del caffè o mini bicchiere con catenella. Scegli il tuo design.",
  v_mach:"Macchina",v_cup:"Bicchiere",v_cafe:"Marrone",v_verde:"Verde",v_rosa:"Rosa",add:"Aggiungi al carrello",left:"Ne restano {n} in questo lotto",tagl:"Edizione limitata",
- col_e:"Varianti",col_t:"Tre colori. Una sola preferita.",col_p:"La mini macchina del caffè è disponibile in marrone, verde salvia e rosa. Scegli quella che si abbina alle tue chiavi.",col_btn:"Voglio questo colore",b_mach:"Macchina (marrone, verde o rosa)",buy:"Acquista ora",pay:"Paga",c_multi:"Paga ogni prodotto con il suo pulsante Paga.",wa_t:"Dubbi? Scrivici",q5:"Di che colori è la macchina?",a5:"Marrone, verde e rosa. Scegli la tua preferita nella scheda prodotto o nella sezione colori.",
+ col_e:"Varianti",col_t:"Tre colori. Una sola preferita.",col_p:"La mini macchina del caffè è disponibile in marrone, verde salvia e rosa. Scegli quella che si abbina alle tue chiavi.",col_btn:"Lo voglio",b_mach:"Macchina (marrone, verde o rosa)",buy:"Acquista ora",pay:"Paga",c_multi:"Paga ogni prodotto con il suo pulsante Paga.",wa_t:"Dubbi? Scrivici",q5:"Di che colori è la macchina?",a5:"Marrone, verde e rosa. Scegli la tua preferita nella scheda prodotto o nella sezione colori.",
+ v_tzc:"Tazza cuore",v_tzh:"Tazza foglia",v_tzm:"Tazza marshmallow",cup_e:"Tazze latte art",cup_t:"Tre tazze. Tre design.",cup_p:"Cuore, foglia e marshmallow. Mini tazze latte art da appendere alle chiavi.",pk_cap:"Quattro portachiavi, una collezione.",b_color:"Colore della macchina",
+ c_err:"Impossibile aprire il pagamento. Riprova.",
  s1_e:"Latte Art Pen",s1_t:"Cuori, foglie e fiori. <em>Senza essere un barista.</em>",s1_p:"Un tocco e il cacao disegna sulla schiuma. Il tuo caffè di sempre, con la finitura di una caffetteria specialty.",
  s1_1:"Tratti sottili e precisi",s1_2:"Sta in qualsiasi cassetto",s1_3:"Il regalo che sorprende",
  s2_e:"Dripper Pieghevole",s2_t:"Caffè specialty, <em>ripiegato nello zaino.</em>",s2_p:"Si appiattisce per viaggiare e si apre in pochi secondi su qualsiasi tazza. Filtrazione lenta, gusto pulito.",
@@ -768,9 +800,9 @@ let lang = 'en';
 const $ = (s,r=document)=>r.querySelector(s), $$ = (s,r=document)=>[...r.querySelectorAll(s)];
 const fmt = n => new Intl.NumberFormat(LOCALE[lang],{style:'currency',currency:'USD'}).format(n);
 const t = (k,v={}) => { let s=(I18N[lang]&&I18N[lang][k])??I18N.en[k]??k; for(const x in v) s=s.split('{'+x+'}').join(v[x]); return s };
-let cart = []; try{ cart = JSON.parse(ls.get('ac_cart')||'[]').filter(i=>P[i.id] && (i.id!=='key'||P.key.v[i.v])) }catch(e){ cart=[] }
+let cart = []; try{ cart = JSON.parse(ls.get('ac_cart')||'[]').filter(i=>P[i.id] && (i.id!=='key'||P.key.v[i.v])).map(i=>(i.id==='set'&&!i.v)?{...i,v:'cafe'}:i) }catch(e){ cart=[] }
 let discount = ls.get('ac_code')===CONFIG.discountCode;
-const varSel = { key:'cafe' };
+const varSel = { key:'cafe', set:'cafe' };
 const SW = { cafe:'#8a5a3b', verde:'#8fae85', rosa:'#efb8c0' };
 const payKey = (id,v)=> id==='key' ? 'key-'+v : id;
 const payUrl = (id,v)=> (CONFIG.payLinks&&CONFIG.payLinks[payKey(id,v)])||'';
@@ -791,7 +823,7 @@ function stockHtml(id){ const n=CONFIG.stock[id]; return `<span>${t('left',{n})}
 function renderProducts(){
   const card=(id,nameK,subK,descK)=>{
     const p=P[id]; const imgs = id==='key'? p.v[varSel.key] : p.img;
-    const vars = id==='key' ? `<div class="vars" role="group">${['cafe','verde','rosa','cup'].map(v=>`<button type="button" data-var="${v}" aria-pressed="${varSel.key===v}">${SW[v]?`<i class="sw" style="background:${SW[v]}"></i>`:''}${t('v_'+v)}</button>`).join('')}</div>` : '';
+    const vars = id==='key' ? `<div class="vars" role="group">${['cafe','verde','rosa','tzc','tzh','tzm','cup'].map(v=>`<button type="button" data-var="${v}" aria-pressed="${varSel.key===v}">${SW[v]?`<i class="sw" style="background:${SW[v]}"></i>`:''}${t('v_'+v)}</button>`).join('')}</div>` : '';
     return `<article class="pcard tilt rv in" data-id="${id}">
       <div class="pimg"><span class="badge">-${pct(p)}%</span><span class="tag">${t('tagl')}</span>
         <img src="img/${imgs[0]}.jpg" alt="${t(nameK)}" loading="lazy"><img src="img/${imgs[1]}.jpg" alt="" loading="lazy"></div>
@@ -803,19 +835,21 @@ function renderProducts(){
   };
   $('#pgrid').innerHTML = card('pen','pen_n','pen_t','pen_d')+card('drip','drip_n','drip_t','drip_d')+card('key','key_n','key_t','key_d');
 }
-function renderColors(){
-  $('#colors').innerHTML = ['cafe','verde','rosa'].map(v=>`<article class="ccard rv in"><img src="img/mach-${v}.jpg" alt="${t('key_n')} ${t('v_'+v)}" loading="lazy"><div class="cinfo"><h3><i class="sw" style="background:${SW[v]}"></i>${t('v_'+v)}</h3><div class="price"><b>${fmt(P.key.price)}</b><s>${fmt(P.key.was)}</s></div><button class="btn block" type="button" data-addcol="${v}">${t('col_btn')}</button></div></article>`).join('');
+function variantGrid(sel,list){
+  $(sel).innerHTML = list.map(v=>`<article class="ccard rv in"><img src="img/${P.key.v[v][0]}.jpg" alt="${t('key_n')} ${t('v_'+v)}" loading="lazy"><div class="cinfo"><h3>${SW[v]?`<i class="sw" style="background:${SW[v]}"></i>`:''}${t('v_'+v)}</h3><div class="price"><b>${fmt(P.key.price)}</b><s>${fmt(P.key.was)}</s></div><button class="btn block" type="button" data-addcol="${v}">${t('col_btn')}</button></div></article>`).join('');
 }
+function renderColors(){ variantGrid('#colors',['cafe','verde','rosa']); variantGrid('#cups',['tzc','tzh','tzm']) }
 function renderBundle(){
   $('#inc').innerHTML = [t('pen_n'),t('drip_n'),t('key_n')+' · '+t('b_mach'),t('key_n')+' · '+t('v_cup')].map(x=>`<span>${x}</span>`).join('');
   $('#bprice').innerHTML = `<b>${fmt(P.set.price)}</b><s>${fmt(SET_REF)}</s><em>USD</em>`;
   $('#bsave').textContent = t('b_save',{x:fmt(SET_REF-P.set.price)});
   $('#bstock').innerHTML = stockHtml('set');
+  $('#bpick').innerHTML = `<span style="color:var(--mut);font-size:.86rem;width:100%">${t('b_color')}</span>`+['cafe','verde','rosa'].map(v=>`<button type="button" data-setcol="${v}" aria-pressed="${varSel.set===v}"><i class="sw" style="background:${SW[v]}"></i>${t('v_'+v)}</button>`).join('');
   $('#stickyP').textContent = fmt(P.set.price);
 }
 function lineInfo(i){
-  if(i.id==='set') return {name:'Atelier Set', sub:[t('pen_n'),t('drip_n'),t('key_n')].join(' + '), img:'pen-flower'};
-  if(i.id==='key') return {name:t('key_n'), sub:(i.v==='cup'?'':t('v_mach')+' · ')+t('v_'+i.v), img:P.key.v[i.v][0]};
+  if(i.id==='set') return {name:'Atelier Set', sub:t('v_mach')+' · '+t('v_'+i.v), img:'pen-flower'};
+  if(i.id==='key') return {name:t('key_n'), sub:(['cafe','verde','rosa'].includes(i.v)?t('v_mach')+' · ':'')+t('v_'+i.v), img:P.key.v[i.v][0]};
   return {name:t(i.id+'_n'), sub:'', img:P[i.id].img[0]};
 }
 function totals(){
@@ -840,18 +874,30 @@ function renderCart(){
   const text = `Atelier Crema\n`+cart.map(i=>{const L=lineInfo(i);return `${i.qty}x ${L.name}${L.sub&&i.id!=='set'?' ('+L.sub+')':''}`}).join('\n')+`\nTotal: ${fmt(T.tot)} USD`+(discount?`\nCode: ${CONFIG.discountCode}`:'');
   const single = cart.length===1 ? payUrl(cart[0].id,cart[0].v) : '';
   if(CONFIG.checkoutUrl) url=CONFIG.checkoutUrl; else if(single) url=single; else if(CONFIG.whatsapp) url='https://wa.me/'+CONFIG.whatsapp+'?text='+encodeURIComponent(text);
+  if(CONFIG.shopify&&CONFIG.shopify.enabled) url='#shopify';
   go.dataset.url=url; go.setAttribute('href',url||'#');
   go.style.opacity = cart.length?1:.45; go.style.pointerEvents = cart.length?'auto':'none';
   const anyLink = cart.some(i=>payUrl(i.id,i.v)); note.hidden = !!url || !cart.length; note.textContent=t(anyLink?'c_multi':'c_cfg');
   ls.set('ac_cart',JSON.stringify(cart));
 }
 function add(id,v){
-  const vv = id==='key' ? (v||varSel.key) : null;
+  const vv = id==='key' ? (v||varSel.key) : id==='set' ? (v||varSel.set) : null;
   const ex = cart.find(i=>i.id===id && i.v===vv);
   if(ex) ex.qty++; else cart.push(vv?{id,v:vv,qty:1}:{id,qty:1});
   renderCart(); toast(t('t_add'));
 }
-$('#go').addEventListener('click',e=>{ if(!$('#go').dataset.url){ e.preventDefault(); $('#goNote').hidden=false } });
+const shopVar = i => CONFIG.shopify.variants[i.id==='set' ? 'set-'+(i.v||'cafe') : i.id==='key' ? 'key-'+i.v : i.id];
+async function shopifyCheckout(){
+  const go=$('#go'); go.style.opacity=.6;
+  try{
+    const origin=(()=>{try{return top.location.origin}catch(e){return location.origin}})();
+    const items=cart.map(i=>({id:Number(shopVar(i)),quantity:i.qty}));
+    const r=await fetch(origin+'/cart/add.js',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items})});
+    if(!r.ok) throw new Error('cart');
+    try{ top.location.href=origin+'/checkout' }catch(e){ location.href=origin+'/checkout' }
+  }catch(e){ go.style.opacity=1; toast(t('c_err')) }
+}
+$('#go').addEventListener('click',e=>{ if(CONFIG.shopify&&CONFIG.shopify.enabled){ e.preventDefault(); if(cart.length) shopifyCheckout(); return } if(!$('#go').dataset.url){ e.preventDefault(); $('#goNote').hidden=false } });
 
 /* ========== INTERACCIONES ========== */
 function openCart(){ $('#drawer').classList.add('on'); $('#veil').classList.add('on') }
@@ -863,6 +909,7 @@ document.addEventListener('click',e=>{
   const a=e.target.closest('[data-add]'); if(a){ add(a.dataset.add); burst(e.clientX,e.clientY); setTimeout(openCart,450); return }
   const s=e.target.closest('[data-addset]'); if(s){ add('set'); burst(e.clientX,e.clientY); setTimeout(openCart,450); return }
   const by=e.target.closest('[data-buy]'); if(by){ if(!payUrl(by.dataset.buy,varSel.key)){ e.preventDefault(); add(by.dataset.buy); burst(e.clientX,e.clientY); setTimeout(openCart,450) } return }
+  const sc=e.target.closest('[data-setcol]'); if(sc){ varSel.set=sc.dataset.setcol; renderBundle(); return }
   const ac=e.target.closest('[data-addcol]'); if(ac){ add('key',ac.dataset.addcol); burst(e.clientX,e.clientY); setTimeout(openCart,450); return }
   const v=e.target.closest('[data-var]'); if(v){ varSel.key=v.dataset.var; const c=v.closest('.pcard'); $$('[data-var]',c).forEach(b=>b.setAttribute('aria-pressed',b===v)); const im=$$('.pimg img',c); P.key.v[varSel.key].forEach((n,i)=>{ im[i].src='img/'+n+'.jpg' }); const bl=$('[data-buy="key"]',c), u=payUrl('key',varSel.key); if(bl){ bl.setAttribute('href',u||'#'); if(u){ bl.target='_blank'; bl.rel='noopener' } else { bl.removeAttribute('target') } } return }
   const q=e.target.closest('[data-q]'); if(q){ const i=cart[+q.dataset.q]; i.qty+=+q.dataset.d; if(i.qty<1) cart.splice(+q.dataset.q,1); renderCart() }
@@ -879,7 +926,7 @@ function tick(){
 setInterval(tick,1000);
 
 /* Pop-up de salida */
-function showPop(){ if(ss.get('ac_pop')||discount) return; ss.set('ac_pop','1'); $('#pop').classList.add('on') }
+function showPop(){ if(!CONFIG.popup||ss.get('ac_pop')||discount) return; ss.set('ac_pop','1'); $('#pop').classList.add('on') }
 function closePop(){ $('#pop').classList.remove('on') }
 $('#popX').onclick=closePop; $('#popNo').onclick=closePop; $('#pop').addEventListener('click',e=>{ if(e.target.id==='pop') closePop() });
 $('#popGo').onclick=()=>{ discount=true; ls.set('ac_code',CONFIG.discountCode); closePop(); renderCart(); toast(t('t_code')); setTimeout(openCart,500) };
@@ -930,7 +977,7 @@ const colSets=[['pen-flower','mach-hand','drip-balcony','cup-hand'],['mach-marke
 $('#cols').innerHTML = colSets.map(c=>`<div class="col">${[...c,...c].map(n=>`<img src="img/${n}.jpg" alt="" ${'loading="eager"'} decoding="async">`).join('')}</div>`).join('');
 const words=['Latte Art','Pour Over','Barista','Signature','Mini Café','Crema'];
 $('#bigTrack').innerHTML = [...words,...words,...words,...words].map(w=>`<span>${w}</span>`).join('');
-const all=['mach-cafe','mach-verde','mach-rosa','pen-flower','mach-market','drip-balcony','cup-finger','pen-feather','mach-hand','drip-flat','cup-hand','pen-heart','drip-drop','mach-pack','cup-press'];
+const all=['tz-pack','tz-heart','tz-leaf','tz-marsh','mach-cafe','mach-verde','mach-rosa','pen-flower','mach-market','drip-balcony','cup-finger','pen-feather','mach-hand','drip-flat','cup-hand','pen-heart','drip-drop','mach-pack','cup-press'];
 $('#mTrack').innerHTML = [...all,...all].map(n=>`<img src="img/${n}.jpg" alt="" loading="lazy">`).join('');
 
 /* ========== ARRANQUE ========== */
