@@ -83,12 +83,12 @@ def main():
     os.makedirs('out/shopify', exist_ok=True)
     # Vista previa: el hub es fragmento (el publicador lo envuelve); el resto, documentos completos
     open('out/preview/index.html', 'w').write('<title>Atelier Crema</title>\n' + HEAD + '\n' + body('hub', 'preview'))
-    for p in ['pen', 'drip', 'key', 'trio', 'cups']:
+    for p in ['pen', 'drip', 'key', 'cups']:
         open('out/preview/%s.html' % p, 'w').write(full_doc(p, 'preview'))
     th = open('../thanks/index.html').read().replace("storeUrl: ''", "storeUrl: 'index.html'")
     open('out/preview/gracias.html', 'w').write('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>' + th + '</body></html>')
     # Shopify: documentos completos con imágenes embebidas, en base64
-    for p in ['hub', 'pen', 'drip', 'key', 'trio', 'cups']:
+    for p in ['hub', 'pen', 'drip', 'key', 'cups']:
         doc = full_doc(p, 'shopify')
         open('out/shopify/%s.html' % p, 'w').write(doc)
         open('out/shopify/%s.b64.txt' % p, 'w').write(base64.b64encode(doc.encode()).decode())
