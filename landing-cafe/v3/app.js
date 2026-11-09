@@ -10,7 +10,7 @@ const CONFIG = {
     'key-cafe':'https://www.paypal.com/ncp/payment/YTAR8N83UWPGU',
     'key-verde':'https://www.paypal.com/ncp/payment/MLT6HDJVKTXEA',
     'key-rosa':'https://www.paypal.com/ncp/payment/KC9TY6SXHVRP2',
-    'cups-pack':'', 'cups-heart':'', 'cups-leaf':'', 'cups-marsh':'', 'cups-togo':'',   // pendientes: el usuario enviará los links
+    'cups-pack':'https://www.paypal.com/ncp/payment/2SA3AAVKCPGT4', 'cups-heart':'https://www.paypal.com/ncp/payment/3AL4Z8DDKUCRE', 'cups-leaf':'https://www.paypal.com/ncp/payment/B7K7P4MC5GR48', 'cups-marsh':'https://www.paypal.com/ncp/payment/YSGTEJ8ULPF2N', 'cups-togo':'https://www.paypal.com/ncp/payment/7J8S7ULX8UAHU',
     trio:'https://www.paypal.com/ncp/payment/8QFPWMXRB8G54' },
   cart: false,                       // el pago es directo por PayPal, un producto por pago
   stock: {},                         // solo cifras reales, ej. { pen: 12 }; vacío = sin barra de stock
