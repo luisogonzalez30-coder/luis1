@@ -200,8 +200,8 @@ const finalCta=(img)=>{ const l=payUrl(PAGE_ID,varSel[PAGE_ID]); return `<sectio
 /* ========== PÁGINAS ========== */
 const SECTIONS = {
   hub(){
-    const slides=[['pen','pen-heart'],['key','trio'],['cups','tz-pack'],['drip','drip-drop']];
-    const tiles=[['key','trio','mach-rosa'],['pen','pen-flower','pen-heart'],['drip','drip-drop','drip-balcony'],['cups','tz-heart','tz-leaf']];
+    const slides=[['pen','pen-heart'],['key','mach-rosa'],['cups','tz-pack'],['drip','drip-drop']];
+    const tiles=[['key','mach-rosa','mach-hand'],['pen','pen-flower','pen-heart'],['drip','drip-drop','drip-balcony'],['cups','tz-heart','tz-leaf']];
     return `<section class="hub-ban" id="top">
       <div class="slides">${slides.map(([id,img],i)=>`<a class="slide${i===0?' on':''}" href="${hrefOf(id)}"${tgt} data-slide="${i}"><img src="${IM(img)}" alt=""><span class="cap"><small>${t('view')}</small>${pName(id)} →</span></a>`).join('')}</div>
       <div class="wrap hub-txt"><span class="pill">${t('h_eye')}</span><h1>${t('h_title')}</h1><p class="lead">${t('h_sub')}</p>
