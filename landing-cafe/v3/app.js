@@ -275,6 +275,7 @@ $('#openCart').onclick=openCart; $('#closeCart').onclick=closeCart; $('#veil').o
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCart() });
 $('#go').addEventListener('click',e=>{ if(CONFIG.shopify.enabled){ e.preventDefault(); if(cart.length) shopifyCheckout(cart,$('#go')); return } if(!$('#go').dataset.url){ e.preventDefault(); $('#goNote').hidden=false } });
 document.addEventListener('click',e=>{
+  const an=e.target.closest('a[href*="#"]'); if(an){ const h=an.getAttribute('href'), id=h.slice(h.indexOf('#')+1), same=h[0]==='#'||(PAGE_ID==='hub'&&h.indexOf(PAGES.hub)>-1); const el=id&&same&&document.getElementById(id); if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth',block:'start'}); return } if(h[0]==='#'){ e.preventDefault(); return } }
   const nl=e.target.closest('a[data-nl]'); if(nl&&PAGE_MODE==='shopify'){ e.preventDefault(); navTo(nl.getAttribute('href')); return }
   const by=e.target.closest('[data-buy]'); if(by){ const u=payUrl(by.dataset.buy,varSel[by.dataset.buy]); if(!u){ e.preventDefault(); return } burst(e.clientX,e.clientY); return }
   const ad=e.target.closest('[data-add]'); if(ad){ add(ad.dataset.add); burst(e.clientX,e.clientY); setTimeout(openCart,450); return }
