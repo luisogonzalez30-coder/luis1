@@ -19,6 +19,7 @@ def build(src,imgdir,out,patches):
     print(out,len(doc)//1024,'KB html',os.path.getsize(out+'.b64.txt')//1024,'KB b64')
 build('site/index.html','site/img','dist/landing.html',[
  ("shopify: { enabled: false,","shopify: { enabled: true,"),
- ("popup: true,","popup: false,")])
+ ("popup: true,","popup: false,"),
+ ("const VIDEO_URL='vid/rosa-360.mp4';","const VIDEO_URL='https://cdn.shopify.com/s/files/1/0844/1371/0573/files/atelier-rosa-360.mp4?v=1794237367';")])
 build('thanks/index.html','thanks/img','dist/thanks.html',[
  ("storeUrl: '',","storeUrl: 'https://www.maulestore.com/pages/cafe-atelier',")])

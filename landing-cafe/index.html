@@ -147,6 +147,14 @@ html:not(.js) .rv{opacity:1;transform:none}
 .pack img{width:100%;height:100%;object-fit:cover}
 .pack figcaption{position:absolute;left:0;right:0;bottom:0;padding:48px 24px 22px;background:linear-gradient(transparent,rgba(12,8,6,.85));font:italic 500 clamp(1.4rem,3vw,2.4rem)/1.1 var(--f-d);color:var(--gold2)}
 @media(max-width:600px){.pack{aspect-ratio:4/3}}
+.vwrap{display:grid;justify-items:center}
+.vframe{position:relative;width:min(100%,360px);aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--gold);box-shadow:0 40px 90px -30px rgba(216,178,110,.45),0 0 0 8px rgba(216,178,110,.06);background:#000}
+.vframe video{width:100%;height:100%;object-fit:cover;display:block}
+.vsnd{position:absolute;right:14px;bottom:14px;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:rgba(12,8,6,.7);backdrop-filter:blur(6px);cursor:pointer;display:grid;place-items:center;color:var(--gold2)}
+.vsnd svg{width:22px;height:22px;fill:currentColor;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.vsnd .w{fill:none;display:none}.vsnd .x{fill:none;display:block}
+.vsnd[aria-pressed="true"] .w{display:block}.vsnd[aria-pressed="true"] .x{display:none}
+.col video{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:18px;flex:none;border:1px solid var(--line);display:block}
 /* Historias */
 .story{display:grid;gap:36px;align-items:center;margin-bottom:clamp(56px,8vw,110px)}
 .story:last-child{margin-bottom:0}
@@ -327,6 +335,18 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-bet
       <p data-i18n="p_sub"></p>
     </div>
     <div class="grid3" id="pgrid"></div>
+  </div>
+</section>
+
+<section style="padding-top:0" id="video360">
+  <div class="wrap">
+    <div class="story rv">
+      <div class="vwrap"><div class="vframe"><video id="vid360" muted loop playsinline preload="metadata" aria-label="Mini cafetera rosa girando en 360 grados"></video>
+        <button class="vsnd" id="vsnd" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="w" d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12"/><path class="x" d="M16 9l5 6M21 9l-5 6"/></svg></button></div></div>
+      <div><span class="eyebrow" data-i18n="vid_e"></span><h2 data-i18n="vid_t"></h2><p data-i18n="vid_p"></p>
+        <ul class="ticks"><li data-i18n="vid_1"></li><li data-i18n="vid_2"></li><li data-i18n="vid_3"></li></ul>
+        <div style="margin-top:28px"><button class="btn pulse" type="button" data-addcol="rosa"><span data-i18n="vid_cta"></span> →</button></div></div>
+    </div>
   </div>
 </section>
 
@@ -526,6 +546,7 @@ es:{
  col_e:"Variantes",col_t:"Tres colores. Una sola favorita.",col_p:"La mini cafetera llega en café, verde salvia y rosa. Elige la que combine con tus llaves.",col_btn:"Lo quiero",b_mach:"Cafetera (café, verde o rosa)",buy:"Comprar ahora",pay:"Pagar",c_multi:"Paga cada producto con su botón Pagar.",wa_t:"¿Dudas? Escríbenos",q5:"¿Qué colores tiene la cafetera?",a5:"Café, verde y rosa. Elige tu favorita en la tarjeta del producto o en la sección de colores.",
  v_tzc:"Taza corazón",v_tzh:"Taza hoja",v_tzm:"Taza malvavisco",cup_e:"Tazas latte art",cup_t:"Tres tazas. Tres diseños.",cup_p:"Corazón, hoja y malvavisco. Mini tazas con arte latte para colgar en tus llaves.",pk_cap:"Cuatro llaveros, una colección.",b_color:"Color de la cafetera",
  c_err:"No pudimos abrir el pago. Inténtalo de nuevo.",
+ vid_e:"En 360°",vid_t:"Cada detalle, a la vista.",vid_p:"Mira girar la mini cafetera: portafiltro, manómetro y una tacita con arte latte, todo en miniatura.",vid_1:"Portafiltro y manómetro en miniatura",vid_2:"Tacita con arte latte incluida",vid_3:"Cadena y argolla para colgarla",vid_cta:"Quiero la rosa",snd:"Activar sonido",
  s1_e:"Latte Art Pen",s1_t:"Corazones, hojas y flores. <em>Sin ser barista.</em>",s1_p:"Un toque y el cacao dibuja sobre la espuma. Tu café de siempre, con acabado de cafetería de especialidad.",
  s1_1:"Trazos finos y precisos",s1_2:"Cabe en cualquier cajón",s1_3:"El regalo que sorprende",
  s2_e:"Dripper Plegable",s2_t:"Café de especialidad, <em>plegado en tu mochila.</em>",s2_p:"Se aplana para viajar y se abre en segundos sobre cualquier taza. Filtrado lento, sabor limpio.",
@@ -570,6 +591,7 @@ en:{
  col_e:"Variants",col_t:"Three colors. One favorite.",col_p:"The mini espresso machine comes in brown, sage green and pink. Pick the one that matches your keys.",col_btn:"I want this one",b_mach:"Machine (brown, green or pink)",buy:"Buy now",pay:"Pay",c_multi:"Pay for each product with its Pay button.",wa_t:"Questions? Message us",q5:"What colors does the machine come in?",a5:"Brown, green and pink. Pick your favorite on the product card or in the colors section.",
  v_tzc:"Heart cup",v_tzh:"Leaf cup",v_tzm:"Marshmallow cup",cup_e:"Latte art cups",cup_t:"Three cups. Three designs.",cup_p:"Heart, leaf and marshmallow. Mini latte art cups for your keys.",pk_cap:"Four keychains, one collection.",b_color:"Machine color",
  c_err:"We couldn't open the checkout. Please try again.",
+ vid_e:"In 360°",vid_t:"Every detail, in view.",vid_p:"Watch the mini espresso machine turn: portafilter, pressure gauge and a tiny latte art cup, all in miniature.",vid_1:"Miniature portafilter and gauge",vid_2:"Tiny latte art cup included",vid_3:"Chain and ring to hang it",vid_cta:"I want the pink one",snd:"Turn sound on",
  s1_e:"Latte Art Pen",s1_t:"Hearts, leaves and flowers. <em>No barista skills needed.</em>",s1_p:"One touch and cocoa draws across the foam. Your usual coffee, with a specialty-café finish.",
  s1_1:"Fine, precise lines",s1_2:"Fits in any drawer",s1_3:"The gift that surprises",
  s2_e:"Collapsible Dripper",s2_t:"Specialty coffee, <em>folded into your bag.</em>",s2_p:"It flattens for travel and opens in seconds over any mug. Slow filter, clean flavor.",
@@ -614,6 +636,7 @@ pt:{
  col_e:"Variantes",col_t:"Três cores. Uma favorita.",col_p:"A mini cafeteira vem em marrom, verde sálvia e rosa. Escolha a que combina com suas chaves.",col_btn:"Quero este",b_mach:"Cafeteira (marrom, verde ou rosa)",buy:"Comprar agora",pay:"Pagar",c_multi:"Pague cada produto com seu botão Pagar.",wa_t:"Dúvidas? Fale conosco",q5:"Quais cores a cafeteira tem?",a5:"Marrom, verde e rosa. Escolha sua favorita no cartão do produto ou na seção de cores.",
  v_tzc:"Xícara coração",v_tzh:"Xícara folha",v_tzm:"Xícara marshmallow",cup_e:"Xícaras latte art",cup_t:"Três xícaras. Três designs.",cup_p:"Coração, folha e marshmallow. Mini xícaras com arte latte para pendurar nas chaves.",pk_cap:"Quatro chaveiros, uma coleção.",b_color:"Cor da cafeteira",
  c_err:"Não foi possível abrir o pagamento. Tente novamente.",
+ vid_e:"Em 360°",vid_t:"Cada detalhe à vista.",vid_p:"Veja a mini cafeteira girar: porta-filtro, manômetro e uma xícara com arte latte, tudo em miniatura.",vid_1:"Porta-filtro e manômetro em miniatura",vid_2:"Xícara com arte latte incluída",vid_3:"Corrente e argola para pendurar",vid_cta:"Quero a rosa",snd:"Ativar som",
  s1_e:"Latte Art Pen",s1_t:"Corações, folhas e flores. <em>Sem ser barista.</em>",s1_p:"Um toque e o cacau desenha na espuma. Seu café de sempre, com acabamento de cafeteria especial.",
  s1_1:"Traços finos e precisos",s1_2:"Cabe em qualquer gaveta",s1_3:"O presente que surpreende",
  s2_e:"Dripper Dobrável",s2_t:"Café especial, <em>dobrado na sua mochila.</em>",s2_p:"Achata para viajar e abre em segundos sobre qualquer caneca. Coado lento, sabor limpo.",
@@ -658,6 +681,7 @@ fr:{
  col_e:"Variantes",col_t:"Trois couleurs. Une seule favorite.",col_p:"La mini machine existe en marron, vert sauge et rose. Choisissez celle qui va avec vos clés.",col_btn:"Je le veux",b_mach:"Machine (marron, vert ou rose)",buy:"Acheter maintenant",pay:"Payer",c_multi:"Payez chaque produit avec son bouton Payer.",wa_t:"Une question ? Écrivez-nous",q5:"Quelles couleurs pour la machine ?",a5:"Marron, vert et rose. Choisissez votre favorite sur la fiche produit ou dans la section couleurs.",
  v_tzc:"Tasse cœur",v_tzh:"Tasse feuille",v_tzm:"Tasse guimauve",cup_e:"Tasses latte art",cup_t:"Trois tasses. Trois modèles.",cup_p:"Cœur, feuille et guimauve. Mini tasses latte art à accrocher à vos clés.",pk_cap:"Quatre porte-clés, une collection.",b_color:"Couleur de la machine",
  c_err:"Impossible d'ouvrir le paiement. Réessayez.",
+ vid_e:"En 360°",vid_t:"Chaque détail, sous vos yeux.",vid_p:"Regardez tourner la mini machine : porte-filtre, manomètre et une petite tasse latte art, le tout en miniature.",vid_1:"Porte-filtre et manomètre miniatures",vid_2:"Petite tasse latte art incluse",vid_3:"Chaîne et anneau pour l'accrocher",vid_cta:"Je veux la rose",snd:"Activer le son",
  s1_e:"Latte Art Pen",s1_t:"Cœurs, feuilles et fleurs. <em>Sans être barista.</em>",s1_p:"Un geste et le cacao dessine sur la mousse. Votre café habituel, avec la finition d'un café de spécialité.",
  s1_1:"Traits fins et précis",s1_2:"Se glisse dans n'importe quel tiroir",s1_3:"Le cadeau qui surprend",
  s2_e:"Dripper Pliable",s2_t:"Un café de spécialité, <em>plié dans votre sac.</em>",s2_p:"Il s'aplatit pour voyager et s'ouvre en secondes sur n'importe quelle tasse. Filtration lente, goût net.",
@@ -702,6 +726,7 @@ de:{
  col_e:"Varianten",col_t:"Drei Farben. Eine Favoritin.",col_p:"Die Mini-Espressomaschine gibt es in Braun, Salbeigrün und Rosa. Wähle die passend zu deinen Schlüsseln.",col_btn:"Das will ich",b_mach:"Maschine (braun, grün oder rosa)",buy:"Jetzt kaufen",pay:"Bezahlen",c_multi:"Bezahle jedes Produkt mit seinem Bezahlen-Button.",wa_t:"Fragen? Schreib uns",q5:"In welchen Farben gibt es die Maschine?",a5:"Braun, Grün und Rosa. Wähle deine Favoritin auf der Produktkarte oder im Farbbereich.",
  v_tzc:"Herz-Tasse",v_tzh:"Blatt-Tasse",v_tzm:"Marshmallow-Tasse",cup_e:"Latte-Art-Tassen",cup_t:"Drei Tassen. Drei Designs.",cup_p:"Herz, Blatt und Marshmallow. Mini-Latte-Art-Tassen für deinen Schlüsselbund.",pk_cap:"Vier Anhänger, eine Kollektion.",b_color:"Farbe der Maschine",
  c_err:"Die Kasse ließ sich nicht öffnen. Bitte erneut versuchen.",
+ vid_e:"In 360°",vid_t:"Jedes Detail im Blick.",vid_p:"Sieh die Mini-Espressomaschine rotieren: Siebträger, Manometer und eine winzige Latte-Art-Tasse, alles in Miniatur.",vid_1:"Siebträger und Manometer in Miniatur",vid_2:"Winzige Latte-Art-Tasse inklusive",vid_3:"Kette und Ring zum Aufhängen",vid_cta:"Ich will die rosa",snd:"Ton einschalten",
  s1_e:"Latte Art Pen",s1_t:"Herzen, Blätter und Blumen. <em>Ganz ohne Barista-Training.</em>",s1_p:"Ein Tipp und Kakao zeichnet auf den Schaum. Dein gewohnter Kaffee mit dem Finish eines Specialty-Cafés.",
  s1_1:"Feine, präzise Linien",s1_2:"Passt in jede Schublade",s1_3:"Das Geschenk, das überrascht",
  s2_e:"Faltbarer Dripper",s2_t:"Specialty-Kaffee, <em>flach in deiner Tasche.</em>",s2_p:"Zum Reisen flach gefaltet, in Sekunden auf jeder Tasse aufgebaut. Langsam gefiltert, klarer Geschmack.",
@@ -746,6 +771,7 @@ it:{
  col_e:"Varianti",col_t:"Tre colori. Una sola preferita.",col_p:"La mini macchina del caffè è disponibile in marrone, verde salvia e rosa. Scegli quella che si abbina alle tue chiavi.",col_btn:"Lo voglio",b_mach:"Macchina (marrone, verde o rosa)",buy:"Acquista ora",pay:"Paga",c_multi:"Paga ogni prodotto con il suo pulsante Paga.",wa_t:"Dubbi? Scrivici",q5:"Di che colori è la macchina?",a5:"Marrone, verde e rosa. Scegli la tua preferita nella scheda prodotto o nella sezione colori.",
  v_tzc:"Tazza cuore",v_tzh:"Tazza foglia",v_tzm:"Tazza marshmallow",cup_e:"Tazze latte art",cup_t:"Tre tazze. Tre design.",cup_p:"Cuore, foglia e marshmallow. Mini tazze latte art da appendere alle chiavi.",pk_cap:"Quattro portachiavi, una collezione.",b_color:"Colore della macchina",
  c_err:"Impossibile aprire il pagamento. Riprova.",
+ vid_e:"A 360°",vid_t:"Ogni dettaglio in vista.",vid_p:"Guarda girare la mini macchina: portafiltro, manometro e una tazzina con latte art, tutto in miniatura.",vid_1:"Portafiltro e manometro in miniatura",vid_2:"Tazzina con latte art inclusa",vid_3:"Catenella e anello per appenderla",vid_cta:"Voglio quella rosa",snd:"Attiva l'audio",
  s1_e:"Latte Art Pen",s1_t:"Cuori, foglie e fiori. <em>Senza essere un barista.</em>",s1_p:"Un tocco e il cacao disegna sulla schiuma. Il tuo caffè di sempre, con la finitura di una caffetteria specialty.",
  s1_1:"Tratti sottili e precisi",s1_2:"Sta in qualsiasi cassetto",s1_3:"Il regalo che sorprende",
  s2_e:"Dripper Pieghevole",s2_t:"Caffè specialty, <em>ripiegato nello zaino.</em>",s2_p:"Si appiattisce per viaggiare e si apre in pochi secondi su qualsiasi tazza. Filtrazione lenta, gusto pulito.",
@@ -816,6 +842,7 @@ function applyI18n(){
   const tk=['tb1','tb2','tb3','tb4'].map(k=>`<span>${t(k)}</span>`).join('');
   $('#ticker').innerHTML = tk+tk+tk+tk;
   $('#codeBox').textContent = CONFIG.discountCode;
+  const sb=$('#vsnd'); if(sb) sb.setAttribute('aria-label',t('snd'));
   renderProducts(); renderColors(); renderBundle(); renderCart(); tick(); $('#wa').hidden=!CONFIG.whatsapp; if(CONFIG.whatsapp) $('#wa').href='https://wa.me/'+CONFIG.whatsapp;
 }
 function pct(p){ return Math.round((1-p.price/p.was)*100) }
@@ -974,7 +1001,14 @@ function loop(){
 
 /* Galerías animadas */
 const colSets=[['pen-flower','mach-hand','drip-balcony','cup-hand'],['mach-market','pen-heart','cup-press','drip-drop'],['cup-press','pen-feather','mach-pack','drip-flat']];
-$('#cols').innerHTML = colSets.map(c=>`<div class="col">${[...c,...c].map(n=>`<img src="img/${n}.jpg" alt="" ${'loading="eager"'} decoding="async">`).join('')}</div>`).join('');
+const VIDEO_URL='vid/rosa-360.mp4';
+const vposter=()=>typeof IM==='function'?IM('rosa-poster'):'img/rosa-poster.jpg';
+colSets[1].splice(1,0,'@video');
+$('#cols').innerHTML = colSets.map(c=>`<div class="col">${[...c,...c].map(n=>n==='@video'?`<video class="hv" src="${VIDEO_URL}" poster="${vposter()}" muted loop playsinline autoplay preload="metadata"></video>`:`<img src="img/${n}.jpg" alt="" ${'loading="eager"'} decoding="async">`).join('')}</div>`).join('');
+const v360=$('#vid360'); v360.poster=vposter(); v360.src=VIDEO_URL;
+if('IntersectionObserver' in window){ new IntersectionObserver(es=>es.forEach(en=>{ if(en.isIntersecting){ v360.play().catch(()=>{}) } else v360.pause() }),{threshold:.35}).observe(v360) } else { v360.autoplay=true; v360.play().catch(()=>{}) }
+$('#vsnd').onclick=()=>{ v360.muted=!v360.muted; $('#vsnd').setAttribute('aria-pressed',String(!v360.muted)) };
+$$('.hv').forEach(v=>v.play().catch(()=>{}));
 const words=['Latte Art','Pour Over','Barista','Signature','Mini Café','Crema'];
 $('#bigTrack').innerHTML = [...words,...words,...words,...words].map(w=>`<span>${w}</span>`).join('');
 const all=['tz-pack','tz-heart','tz-leaf','tz-marsh','mach-cafe','mach-verde','mach-rosa','pen-flower','mach-market','drip-balcony','cup-finger','pen-feather','mach-hand','drip-flat','cup-hand','pen-heart','drip-drop','mach-pack','cup-press'];
