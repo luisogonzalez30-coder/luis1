@@ -23,7 +23,7 @@ const PAGES = { hub:'cafe-atelier', pen:'atelier-pen', drip:'atelier-dripper', k
 const FILES = { hub:'index.html', pen:'pen.html', drip:'drip.html', key:'key.html', trio:'trio.html' };
 const P = {
   pen:  { price: 22.99, img: ['pen-flower','pen-heart','pen-feather'] },
-  drip: { price: 23.00, img: ['drip-kit','drip-drop','drip-balcony','drip-flat','filt-hands'] },
+  drip: { price: 23.00, img: ['drip-balcony','drip-drop','drip-flat','drip-kit','filt-hands'] },
   key:  { price: 14.99, v: { cafe:['mach-cafe','mach-hand'], verde:['mach-verde'], rosa:['mach-rosa'], tzc:['tz-heart'], tzh:['tz-leaf'], tzm:['tz-marsh'], cup:['cup-palm','cup-hand'] } },
   trio: { price: 29.99, was: 44.97, img: ['trio','mach-cafe','mach-verde','mach-rosa'] }
 };
