@@ -33,6 +33,7 @@ La landing larga se dividió en un inicio corto (banner + 4 tarjetas) y una pág
 | Latte Art Pen | `atelier-pen` |
 | Dripper Plegable | `atelier-dripper` |
 | Llavero Barista | `atelier-llavero` |
+| Trío Atelier (pack de 3 mini cafeteras, US$29,99) | `atelier-trio` |
 | Gracias | `gracias-cafe-atelier` |
 
 - "Comprar ahora" agrega la variante y va directo a `/checkout`; "Agregar al carrito" abre el carrito lateral.
@@ -42,3 +43,9 @@ La landing larga se dividió en un inicio corto (banner + 4 tarjetas) y una pág
 
 ### Cambio del 9-nov-2026: sin Set ni packs
 Cada pieza tiene un proveedor distinto, así que no se venden juntas en un solo pedido. Se eliminó el Set Atelier (página, producto en Shopify, tarjeta, textos) y la foto/colección de 4 llaveros. Quedan 3 productos: Latte Art Pen, Dripper Plegable y Llavero Barista (con variantes). Los enlaces internos navegan la página contenedora (`parent.location`) conservando UTM, para no abrirse dentro del iframe.
+
+### Pago por PayPal (9-nov-2026)
+- El pago es directo por links de PayPal, un producto por pago; el carrito está oculto (`CONFIG.cart:false`). Links en `CONFIG.payLinks` (app.js): cafetera café, verde, rosa (US$14,99 c/u) y Trío (US$29,99).
+- Sin link, el botón dice "Próximamente": faltan links de Latte Art Pen, Dripper y llaveros de tazas/vaso. Precios mostrados de esos: provisorios.
+- Sin precios tachados inventados (solo el Trío compara contra 3 x 14,99) y sin cifras de stock (`CONFIG.stock` vacío).
+- Para que PayPal vuelva a la página de gracias: en cada link, URL de retorno = https://www.maulestore.com/pages/gracias-cafe-atelier
