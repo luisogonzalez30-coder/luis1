@@ -23,3 +23,20 @@ convierte en tienda real conviene moverlo a su propio repositorio.
 - Se publican como en las otras landings de la tienda: la página de Shopify carga un `.txt` base64 (archivos `atelier-landing-b64.txt` y `atelier-gracias-b64.txt` en Contenido > Archivos) y lo muestra en un iframe. Las fotos van embebidas en ese archivo.
 - `build-shopify.py` genera esos archivos desde `index.html` y `gracias/index.html`. Para actualizar: reconstruir, subir el `.txt` nuevo y cambiar el `?v=` de la URL en el cuerpo de la página.
 - Productos creados como BORRADOR (Latte Art Pen, Dripper Plegable, Llavero Barista, Set Atelier) con precios provisorios en CLP. El carrito de la landing usa los IDs de variante de `CONFIG.shopify.variants`; no funciona hasta que los productos estén ACTIVOS.
+
+## v3: inicio + una página por producto (nov-2026)
+La landing larga se dividió en un inicio corto (banner + 4 tarjetas) y una página optimizada por producto. Fuente en `v3/`; `python3 build_site.py` genera `out/preview` (páginas relativas) y `out/shopify` (HTML con imágenes embebidas + `.b64.txt` para subir a Archivos).
+
+| Página | Handle en Shopify |
+|---|---|
+| Inicio | `cafe-atelier` |
+| Latte Art Pen | `atelier-pen` |
+| Dripper Plegable | `atelier-dripper` |
+| Llavero Barista | `atelier-llavero` |
+| Set Atelier | `atelier-set` |
+| Gracias | `gracias-cafe-atelier` |
+
+- "Comprar ahora" agrega la variante y va directo a `/checkout`; "Agregar al carrito" abre el carrito lateral.
+- IDs de variante en `CONFIG.shopify.variants` (app.js). Los productos están en BORRADOR: el pago falla hasta activarlos.
+- Para actualizar una página: reconstruir, subir el `.b64.txt` nuevo a Archivos y cambiar el `?v=`/nombre en la URL del cuerpo de la página.
+- La carpeta raíz (`index.html`, `build-shopify.py`) es la versión larga anterior, ya reemplazada en Shopify.
