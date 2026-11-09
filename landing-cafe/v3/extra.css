@@ -160,3 +160,6 @@ section{padding-block:clamp(40px,6vw,96px)}
 /* Inicio con 4 productos */
 @media(min-width:700px){.tile{flex:0 1 calc(50% - 10px)}}
 @media(min-width:1000px){.tile{flex:0 1 calc(25% - 15px)}}
+
+.snd-note{display:flex;align-items:center;gap:10px;margin:0;font-size:.95rem;color:var(--gold2);background:rgba(216,178,110,.08);border:1px solid var(--line);border-radius:14px;padding:10px 14px;width:fit-content;max-width:100%}
+.snd-note svg{width:20px;height:20px;flex:none;fill:currentColor}
