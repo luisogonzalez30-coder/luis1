@@ -4,14 +4,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 os.chdir(HERE)
 CDN_VIDEO = 'https://cdn.shopify.com/s/files/1/0844/1371/0573/files/atelier-rosa-360.mp4?v=1794237367'
 TITLES = {'hub': 'Atelier Crema', 'pen': 'Latte Art Pen', 'drip': 'Dripper Plegable', 'key': 'Llavero Barista', 'set': 'Set Atelier'}
-THUMBS = ['pen-flower', 'drip-drop', 'mach-cafe', 'mach-verde', 'mach-rosa', 'cup-palm', 'tz-heart', 'tz-leaf', 'tz-marsh', 'tz-pack']
+THUMBS = ['set-cafe', 'set-verde', 'set-rosa', 'rosa-poster', 'pen-flower', 'drip-drop', 'mach-cafe', 'mach-verde', 'mach-rosa', 'cup-palm', 'tz-heart', 'tz-leaf', 'tz-marsh', 'tz-pack']
 IMGS = {
-    'hub': ['pen-heart', 'mach-pack', 'drip-drop', 'tz-pack', 'pen-flower', 'drip-balcony', 'mach-rosa', 'mach-hand', 'mach-cafe'],
-    'pen': ['pen-flower', 'pen-heart', 'pen-feather', 'drip-drop', 'mach-cafe', 'tz-pack'],
-    'drip': ['drip-drop', 'drip-balcony', 'drip-flat', 'pen-flower', 'mach-cafe', 'tz-pack'],
-    'key': ['mach-cafe', 'mach-hand', 'tz-pack', 'mach-market', 'mach-verde', 'mach-rosa', 'tz-heart', 'tz-leaf', 'tz-marsh',
+    'hub': ['pen-heart', 'mach-pack', 'drip-drop', 'tz-pack', 'pen-flower', 'drip-balcony', 'mach-rosa', 'mach-hand', 'mach-cafe', 'set-cafe', 'rosa-poster'],
+    'pen': ['set-cafe', 'pen-flower', 'pen-heart', 'pen-feather', 'drip-drop', 'mach-cafe', 'tz-pack'],
+    'drip': ['set-cafe', 'drip-drop', 'drip-balcony', 'drip-flat', 'pen-flower', 'mach-cafe', 'tz-pack'],
+    'key': ['set-cafe', 'th-rosa-poster', 'mach-cafe', 'mach-hand', 'tz-pack', 'mach-market', 'mach-verde', 'mach-rosa', 'tz-heart', 'tz-leaf', 'tz-marsh',
             'cup-palm', 'cup-hand', 'cup-finger', 'mach-pack', 'pen-flower', 'drip-drop', 'rosa-poster'],
-    'set': ['tz-pack', 'mach-cafe', 'mach-verde', 'mach-rosa', 'pen-flower', 'drip-balcony', 'drip-drop'],
+    'set': ['set-cafe', 'set-verde', 'set-rosa', 'tz-pack', 'mach-cafe', 'mach-verde', 'mach-rosa', 'pen-flower', 'drip-balcony', 'drip-drop', 'rosa-poster'],
 }
 
 css = open('common.base.css').read() + '\n' + open('extra.css').read()
