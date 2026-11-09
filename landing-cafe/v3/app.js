@@ -10,26 +10,27 @@ const CONFIG = {
     'key-cafe':'https://www.paypal.com/ncp/payment/YTAR8N83UWPGU',
     'key-verde':'https://www.paypal.com/ncp/payment/MLT6HDJVKTXEA',
     'key-rosa':'https://www.paypal.com/ncp/payment/KC9TY6SXHVRP2',
-    'key-cup':'', 'key-tzc':'', 'key-tzh':'', 'key-tzm':'',
+    'cups-pack':'', 'cups-heart':'', 'cups-leaf':'', 'cups-marsh':'', 'cups-togo':'',   // pendientes: el usuario enviará los links
     trio:'https://www.paypal.com/ncp/payment/8QFPWMXRB8G54' },
   cart: false,                       // el pago es directo por PayPal, un producto por pago
   stock: {},                         // solo cifras reales, ej. { pen: 12 }; vacío = sin barra de stock
   shopify: { enabled: PAGE_MODE === 'shopify', variants: {
     pen:'68244271071469', drip:'68244271104237',
-    'key-cafe':'68244271169773', 'key-verde':'68244271202541', 'key-rosa':'68244271235309', 'key-cup':'68244271268077',
-    'key-tzc':'68244272578797', 'key-tzh':'68244272611565', 'key-tzm':'68244272644333' } }
+    'key-cafe':'68244271169773', 'key-verde':'68244271202541', 'key-rosa':'68244271235309'
+  } }
 };
-const PAGES = { hub:'cafe-atelier', pen:'atelier-pen', drip:'atelier-dripper', key:'atelier-llavero', trio:'atelier-trio' };
-const FILES = { hub:'index.html', pen:'pen.html', drip:'drip.html', key:'key.html', trio:'trio.html' };
+const PAGES = { hub:'cafe-atelier', pen:'atelier-pen', drip:'atelier-dripper', key:'atelier-llavero', trio:'atelier-trio', cups:'atelier-tazas' };
+const FILES = { hub:'index.html', pen:'pen.html', drip:'drip.html', key:'key.html', trio:'trio.html', cups:'cups.html' };
 const P = {
   pen:  { price: 22.99, img: ['pen-flower','pen-heart','pen-feather'] },
   drip: { price: 23.00, img: ['drip-balcony','drip-drop','drip-flat','drip-kit','filt-hands'] },
-  key:  { price: 14.99, v: { cafe:['mach-cafe','mach-hand'], verde:['mach-verde'], rosa:['mach-rosa'], tzc:['tz-heart'], tzh:['tz-leaf'], tzm:['tz-marsh'], cup:['cup-palm','cup-hand'] } },
+  key:  { price: 14.99, v: { cafe:['mach-cafe','mach-hand'], verde:['mach-verde'], rosa:['mach-rosa'] } },
+  cups: { price: 14.99, pv: { pack: { price: 44.99, was: 59.96 } }, v: { pack:['tz-pack','tz-heart','tz-leaf','tz-marsh','cup-palm'], heart:['tz-heart','tz-pack'], leaf:['tz-leaf','tz-pack'], marsh:['tz-marsh','tz-marsh-w','tz-pack'], togo:['cup-palm','cup-hand','cup-finger','cup-press'] } },
   trio: { price: 29.99, was: 44.97, img: ['trio','mach-cafe','mach-verde','mach-rosa'] }
 };
-const VARS = { key:['cafe','verde','rosa','tzc','tzh','tzm','cup'], pen:['white','red','yellow','pink'] };
+const VARS = { key:['cafe','verde','rosa'], cups:['pack','heart','leaf','marsh','togo'], pen:['white','red','yellow','pink'] };
 const SW = { cafe:'#8a5a3b', verde:'#8fae85', rosa:'#efb8c0', white:'#f2efe9', red:'#c8312b', yellow:'#f0c63a', pink:'#c2457f' };
-const THUMB = { trio:'trio', pen:'pen-flower', drip:'drip-drop', 'key:cafe':'mach-cafe', 'key:verde':'mach-verde', 'key:rosa':'mach-rosa', 'key:cup':'cup-palm', 'key:tzc':'tz-heart', 'key:tzh':'tz-leaf', 'key:tzm':'tz-marsh' };
+const THUMB = { trio:'trio', pen:'pen-flower', drip:'drip-drop', cups:'tz-pack', 'key:cafe':'mach-cafe', 'key:verde':'mach-verde', 'key:rosa':'mach-rosa' };
 
 /* ========== TRADUCCIONES ========== */
 @@I18N@@
@@ -54,7 +55,7 @@ let lang='en';
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const fmt=n=>new Intl.NumberFormat(LOCALE[lang],{style:'currency',currency:'USD'}).format(n);
 const t=(k,v={})=>{ let s=(I18N[lang]&&I18N[lang][k])??I18N.en[k]??k; for(const x in v) s=s.split('{'+x+'}').join(v[x]); return s };
-const varSel={ key:'cafe', pen:'white' };
+const varSel={ key:'cafe', cups:'pack', pen:'white' };
 let cart=[]; try{ cart=JSON.parse(ls.get('ac_cart2')||'[]').filter(i=>P[i.id]&&(i.id==='pen'||i.id==='drip'||(VARS[i.id]||[]).includes(i.v))) }catch(e){ cart=[] }
 const origin=()=>{ try{ return parent.location.origin }catch(e){ return location.origin } };
 const hrefOf=k=>PAGE_MODE==='shopify' ? '/pages/'+PAGES[k] : FILES[k];
@@ -67,16 +68,18 @@ function navTo(href){
 const payKey=(id,v)=>VARS[id]?id+'-'+v:id;
 const payUrl=(id,v)=>(CONFIG.payLinks&&CONFIG.payLinks[payKey(id,v)])||'';
 const pct=p=>p.was?Math.round((1-p.price/p.was)*100):0;
-const names={pen:'pen_n',drip:'drip_n',key:'key_n',trio:'trio_n'};
+const priceOf=(id,v)=>Object.assign({},P[id],(P[id].pv&&P[id].pv[v])||{});
+const names={pen:'pen_n',drip:'drip_n',key:'key_n',trio:'trio_n',cups:'cups_n'};
 const pName=id=>t(names[id]);
-const pTag=id=>({pen:t('pen_t'),drip:t('drip_t'),key:t('key_t'),trio:t('trio_t')})[id];
-const pDesc=id=>({pen:t('pen_d'),drip:t('drip_d'),key:t('key_d'),trio:t('trio_d')})[id];
+const pTag=id=>({pen:t('pen_t'),drip:t('drip_t'),key:t('key_t'),trio:t('trio_t'),cups:t('cups_t')})[id];
+const pDesc=id=>({pen:t('pen_d'),drip:t('drip_d'),key:t('key_d'),trio:t('trio_d'),cups:t('cups_d')})[id];
 const vLabel=(id,v)=>t('v_'+v);
-function mainImg(id){ return id==='pen'?P.pen.img[0]:id==='drip'?'drip-drop':id==='key'?P.key.v[varSel.key][0]:'trio' }
+function mainImg(id){ return id==='pen'?P.pen.img[0]:id==='drip'?'drip-drop':id==='key'?P.key.v[varSel.key][0]:id==='cups'?'tz-pack':'trio' }
 function gallery(id){
   let a;
   if(id==='pen') a=P.pen.img; else if(id==='drip') a=P.drip.img;
   else if(id==='trio') a=['trio','mach-cafe','mach-verde','mach-rosa'];
+  else if(id==='cups') a=[...P.cups.v[varSel.cups],'tz-heart','tz-leaf','tz-marsh','cup-palm'];
   else a=[...P.key.v[varSel.key],'mach-market','mach-hand'];
   a=[...new Set(a)];
   if((id==='key'&&varSel.key==='rosa')||id==='trio') a.push('@video');
@@ -97,10 +100,10 @@ function lineInfo(i){
   if(i.id==='key') return { name:t('key_n'), sub:(['cafe','verde','rosa'].includes(i.v)?t('v_mach')+' · ':'')+t('v_'+i.v), img:THUMB['key:'+i.v] };
   return { name:t(names[i.id]), sub:'', img:THUMB[i.id] };
 }
-const totals=()=>{ const sub=cart.reduce((a,i)=>a+P[i.id].price*i.qty,0); return {sub,tot:sub} };
+const totals=()=>{ const sub=cart.reduce((a,i)=>a+priceOf(i.id,i.v).price*i.qty,0); return {sub,tot:sub} };
 function renderCart(){
   const n=cart.reduce((a,i)=>a+i.qty,0); $('#cartN').textContent=n;
-  $('#dbody').innerHTML = cart.length ? cart.map((i,ix)=>{ const L=lineInfo(i); return `<div class="line"><img src="${IM('th-'+L.img)}" alt=""><div><h4>${L.name}</h4><small>${L.sub}</small><div class="qty"><button type="button" data-q="${ix}" data-d="-1" aria-label="-">−</button><span>${i.qty}</span><button type="button" data-q="${ix}" data-d="1" aria-label="+">+</button></div></div><div class="lp">${fmt(P[i.id].price*i.qty)}${payUrl(i.id,i.v)?`<a class="pl" href="${payUrl(i.id,i.v)}" target="_blank" rel="noopener">${t('pay')} →</a>`:''}</div></div>` }).join('') : `<div class="empty">${t('c_empty')}</div>`;
+  $('#dbody').innerHTML = cart.length ? cart.map((i,ix)=>{ const L=lineInfo(i); return `<div class="line"><img src="${IM('th-'+L.img)}" alt=""><div><h4>${L.name}</h4><small>${L.sub}</small><div class="qty"><button type="button" data-q="${ix}" data-d="-1" aria-label="-">−</button><span>${i.qty}</span><button type="button" data-q="${ix}" data-d="1" aria-label="+">+</button></div></div><div class="lp">${fmt(priceOf(i.id,i.v).price*i.qty)}${payUrl(i.id,i.v)?`<a class="pl" href="${payUrl(i.id,i.v)}" target="_blank" rel="noopener">${t('pay')} →</a>`:''}</div></div>` }).join('') : `<div class="empty">${t('c_empty')}</div>`;
   const T=totals(), left=Math.max(0,CONFIG.freeShipFrom-T.sub), free=cart.length&&T.sub>=CONFIG.freeShipFrom;
   $('#cSub').textContent=fmt(T.sub); $('#cTot').textContent=fmt(T.tot);
   $('#cShip').textContent=cart.length?(free?t('c_free'):t('c_calc')):'—';
@@ -141,14 +144,15 @@ function closeCart(){ $('#drawer').classList.remove('on'); $('#veil').classList.
 /* ========== COMPONENTES ========== */
 function swatch(v){ return SW[v]?`<i class="sw" style="background:${SW[v]}"></i>`:'' }
 function buybox(id){
-  const p=P[id], gal=gallery(id), main=gi.main>=gal.length?0:gi.main;
+  const p=priceOf(id,varSel[id]), gal=gallery(id), main=gi.main>=gal.length?0:gi.main;
   const vars=VARS[id]?`<div class="opt"><span class="lbl">${t(id==='pen'?'pick_c':'pick')}</span><div class="vars" role="group">${VARS[id].map(v=>`<button type="button" data-pv="${v}" aria-pressed="${varSel[id]===v}">${swatch(v)}${t('v_'+v)}</button>`).join('')}</div></div>`:'';
   const link=payUrl(id,varSel[id]);
   const penNote=(id==='pen'&&varSel.pen!=='white')?`<p class="hint">${t('pen_note')}</p>`:'';
   const buyBtn=link?`<a class="btn block pulse" id="buyBtn" data-buy="${id}" href="${link}" target="_blank" rel="noopener">${t('buy')} →</a>`:`<button class="btn block soon" type="button" disabled>${t('soon')}</button>`;
-  const trioNote=id==='trio'?`<p class="save">${t('trio_save',{x:fmt(p.was-p.price),p:pct(p)})}</p>`:'';
+  const trioNote=(id==='trio'||(id==='cups'&&varSel.cups==='pack'))?`<p class="save">${t('trio_save',{x:fmt(p.was-p.price),p:pct(p)})}</p>`:'';
   const upsell=(id==='key'&&['cafe','verde','rosa'].includes(varSel.key))?`<a class="upsell" href="${hrefOf('trio')}"${tgt}><img src="${IM('th-trio')}" alt=""><div><b>${t('up_t')}</b><span>${t('up_p',{a:fmt(P.trio.price),b:fmt(P.trio.was)})}</span></div><i>${t('up_cta')} →</i></a>`:'';
-  const incl=id==='trio'?`<div class="inc">${['cafe','verde','rosa'].map(v=>`<span>${swatch(v)}${t('v_mach')} ${t('v_'+v)}</span>`).join('')}</div>`:id==='drip'?`<div class="inc">${['d_inc1','d_inc2','d_inc3'].map(k=>`<span>${t(k)}</span>`).join('')}</div>`:'';
+  const cupUp=(id==='cups'&&varSel.cups!=='pack')?`<a class="upsell" role="button" tabindex="0" data-pv="pack"><img src="${IM('th-tz-pack')}" alt=""><div><b>${t('cups_up_t')}</b><span>${t('cups_up_p',{a:fmt(P.cups.pv.pack.price),b:fmt(P.cups.pv.pack.was)})}</span></div><i>${t('up_cta')} →</i></a>`:'';
+  const incl=id==='cups'&&varSel.cups==='pack'?`<div class="inc">${['heart','leaf','marsh','togo'].map(v=>`<span>${t('v_'+v)}</span>`).join('')}</div>`:id==='trio'?`<div class="inc">${['cafe','verde','rosa'].map(v=>`<span>${swatch(v)}${t('v_mach')} ${t('v_'+v)}</span>`).join('')}</div>`:id==='drip'?`<div class="inc">${['d_inc1','d_inc2','d_inc3'].map(k=>`<span>${t(k)}</span>`).join('')}</div>`:'';
   return `<a class="back top" href="${hrefOf('hub')}"${tgt}>← ${t('all')}</a><div class="bb">
     <div class="bb-gal"><div class="bb-main">${p.was?`<span class="badge">-${pct(p)}%</span>`:''}${gal[main]==='@video'?`<video id="bbVid" src="${VIDEO_URL}" poster="${IM('rosa-poster')}" autoplay muted loop playsinline></video>`:`<img id="bbMain" src="${IM(gal[main])}" alt="${pName(id)}">`}</div>
       <div class="bb-th">${gal.map((g,i)=>`<button type="button" data-th="${i}" aria-pressed="${i===main}" aria-label="${i+1}"><img src="${IM(g==='@video'?'th-rosa-poster':g)}" alt="">${g==='@video'?'<span class="play" aria-hidden="true"></span>':''}</button>`).join('')}</div></div>
@@ -160,7 +164,7 @@ function buybox(id){
       ${incl}${vars}${penNote}
       <div class="ends"><small>${t('h_ends')}</small>${cdHtml()}</div>
       <div class="stock">${stockHtml(id)}</div>
-      ${upsell}
+      ${upsell}${cupUp}
       ${buyBtn}
       <div class="trust"><span>${t('tr1')}</span><span>${t('tr2')}</span><span>${t('tr3')}</span></div>
     </div></div>`;
@@ -173,12 +177,12 @@ function syncSticky(){
   else { sb.removeAttribute('href'); sb.removeAttribute('target'); sb.classList.add('soon'); if(sp) sp.textContent=t('soon') }
 }
 function openLink(u){ const a=document.createElement('a'); a.href=u; a.target='_blank'; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove() }
-function renderBuybox(){ const el=$('#buybox'); if(el){ el.innerHTML=buybox(PAGE_ID); tick(); const sn=$('#stickyN'); if(sn) sn.textContent=pName(PAGE_ID); const sp=$('#stickyP'); if(sp) sp.textContent=fmt(P[PAGE_ID].price); syncSticky() } }
+function renderBuybox(){ const el=$('#buybox'); if(el){ el.innerHTML=buybox(PAGE_ID); tick(); const sn=$('#stickyN'); if(sn) sn.textContent=pName(PAGE_ID); const sp=$('#stickyP'); if(sp) sp.textContent=fmt(priceOf(PAGE_ID,varSel[PAGE_ID]).price); syncSticky() } }
 const ticks=(a)=>`<ul class="ticks">${a.map(k=>`<li>${t(k)}</li>`).join('')}</ul>`;
 const story=(img,e,ti,p,tk,flip)=>`<div class="story${flip?' flip':''}"><div class="story-img"><img src="${IM(img)}" alt="" loading="lazy"></div><div><span class="eyebrow">${t(e)}</span><h2>${t(ti)}</h2><p>${t(p)}</p>${ticks(tk)}</div></div>`;
 const banner=(img,cap)=>`<figure class="pack"><img src="${IM(img)}" alt="" loading="lazy">${cap?`<figcaption>${t(cap)}</figcaption>`:''}</figure>`;
 const head=(e,ti,p)=>`<div class="sec-head">${e?`<span class="eyebrow">${t(e)}</span>`:''}<h2>${t(ti)}</h2>${p?`<p>${t(p)}</p>`:''}</div>`;
-function variantCards(list,id){ const pp=P.key; return `<div class="grid3">${list.map(v=>`<article class="ccard"><img src="${IM(P.key.v[v][0])}" alt="${t('v_'+v)}" loading="lazy"><div class="cinfo"><h3>${swatch(v)}${t('v_'+v)}</h3><div class="price"><b>${fmt(pp.price)}</b>${pp.was?`<s>${fmt(pp.was)}</s>`:''}</div><button class="btn block" type="button" data-addvar="${id}:${v}">${t('col_btn')}</button></div></article>`).join('')}</div>` }
+function variantCards(list,id){ return `<div class="grid3">${list.map(v=>{ const pp=priceOf(id,v); return `<article class="ccard"><img src="${IM(P[id].v[v][0])}" alt="${t('v_'+v)}" loading="lazy"><div class="cinfo"><h3>${swatch(v)}${t('v_'+v)}</h3><div class="price"><b>${fmt(pp.price)}</b>${pp.was?`<s>${fmt(pp.was)}</s>`:''}</div><button class="btn block" type="button" data-addvar="${id}:${v}">${t('col_btn')}</button></div></article>` }).join('')}</div>` }
 const videoBlock=(cta)=>`<div class="story"><div class="vwrap"><div class="vframe"><video id="vid360" muted loop playsinline preload="metadata" poster="${IM('rosa-poster')}" src="${VIDEO_URL}" aria-label="360"></video><button class="vsnd" id="vsnd" type="button" aria-pressed="false" aria-label="${t('snd')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="w" d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12"/><path class="x" d="M16 9l5 6M21 9l-5 6"/></svg></button></div></div><div><span class="eyebrow">${t('vid_e')}</span><h2>${t('vid_t')}</h2><p>${t('vid_p')}</p>${ticks(['vid_1','vid_2','vid_3'])}<div style="margin-top:28px">${cta}</div></div></div>`;
 const ctaTrio=()=>`<a class="btn pulse" data-buy="trio" href="${payUrl('trio')}" target="_blank" rel="noopener">${t('buy')} →</a>`;
 const ctaKey=()=>`<button class="btn pulse" type="button" data-addvar="key:rosa"><span>${t('vid_cta')}</span> →</button>`;
@@ -188,7 +192,7 @@ const guar=()=>`<div class="guar">${[1,2,3].map(n=>`<div class="gbox"><h3>${t('g
 const faq=(n)=>`<div class="faq">${Array.from({length:n},(_,i)=>i+1).map(i=>`<details${i===1?' open':''}><summary>${t('q'+i)}</summary><p>${t('a'+i)}</p></details>`).join('')}</div>`;
 const marquee=(a)=>`<div class="m-track" aria-hidden="true">${[...a,...a,...a].map(n=>`<img src="${IM(n)}" alt="" loading="lazy">`).join('')}</div>`;
 function cross(except){
-  const ids=['trio','pen','drip','key'].filter(x=>x!==except);
+  const all=['trio','pen','drip','key','cups'], ix=all.indexOf(except), ids=[1,2,3].map(k=>all[(ix+k)%all.length]);
   return `<div class="grid3">${ids.map(id=>`<a class="xcard" href="${hrefOf(id)}"${tgt}><img src="${IM(mainImg(id))}" alt="" loading="lazy"><div><h3>${pName(id)}</h3><span class="eyebrow">${pTag(id)}</span><div class="price"><b>${fmt(P[id].price)}</b>${P[id].was?`<s>${fmt(P[id].was)}</s>`:''}</div><span class="more">${t('view')} →</span></div></a>`).join('')}</div>`;
 }
 const finalCta=(img)=>{ const l=payUrl(PAGE_ID,varSel[PAGE_ID]); return `<section class="final"><img src="${IM(img)}" alt=""><div class="wrap"><h2>${t('f_t')}</h2><p>${t('f_p')}</p><div class="ends" style="margin:0 auto 32px"><small>${t('h_ends')}</small>${cdHtml()}</div>${l?`<a class="btn pulse" data-buy="${PAGE_ID}" href="${l}" target="_blank" rel="noopener">${t('buy')} →</a>`:`<button class="btn soon" type="button" disabled>${t('soon')}</button>`}</div></section>` };
@@ -196,8 +200,8 @@ const finalCta=(img)=>{ const l=payUrl(PAGE_ID,varSel[PAGE_ID]); return `<sectio
 /* ========== PÁGINAS ========== */
 const SECTIONS = {
   hub(){
-    const slides=[['pen','pen-heart'],['trio','trio'],['key','mach-pack'],['drip','drip-drop']];
-    const tiles=[['trio','trio','mach-rosa'],['pen','pen-flower','pen-heart'],['drip','drip-drop','drip-balcony'],['key','mach-rosa','mach-hand']];
+    const slides=[['pen','pen-heart'],['trio','trio'],['key','mach-pack'],['cups','tz-pack'],['drip','drip-drop']];
+    const tiles=[['trio','trio','mach-rosa'],['pen','pen-flower','pen-heart'],['drip','drip-drop','drip-balcony'],['key','mach-rosa','mach-hand'],['cups','tz-heart','tz-leaf']];
     return `<section class="hub-ban" id="top">
       <div class="slides">${slides.map(([id,img],i)=>`<a class="slide${i===0?' on':''}" href="${hrefOf(id)}"${tgt} data-slide="${i}"><img src="${IM(img)}" alt=""><span class="cap"><small>${t('view')}</small>${pName(id)} →</span></a>`).join('')}</div>
       <div class="wrap hub-txt"><span class="pill">${t('h_eye')}</span><h1>${t('h_title')}</h1><p class="lead">${t('h_sub')}</p>
@@ -236,12 +240,19 @@ const SECTIONS = {
     <section style="padding-top:0"><div class="wrap">${guar()}</div></section>
     <section id="faq" style="padding-top:0"><div class="wrap">${head(null,'q_t')}${faq(4)}</div></section>
     <section><div class="wrap">${head(null,'cross_t')}${cross('drip')}</div></section>${finalCta('drip-balcony')}`; },
+  cups(){ return `<section class="pp"><div class="wrap" id="buybox"></div></section>
+    <section style="padding-top:0"><div class="wrap">${story('tz-pack','cups_e','cups_h','cups_p',['cups_1','cups_2','cups_3'])}</div></section>
+    <section class="alt"><div class="wrap">${head('col2_e','col2_t','col2_p')}<div class="grid4">${['heart','leaf','marsh','togo'].map(v=>{ const pp=priceOf('cups',v); return `<article class="ccard"><img src="${IM(P.cups.v[v][0])}" alt="${t('v_'+v)}" loading="lazy"><div class="cinfo"><h3>${t('v_'+v)}</h3><div class="price"><b>${fmt(pp.price)}</b></div><button class="btn block" type="button" data-addvar="cups:${v}">${t('col_btn')}</button></div></article>` }).join('')}</div></div></section>
+    <section><div class="wrap">${banner('cup-press')}</div></section>
+    <section class="moments" style="padding-top:0">${marquee(['tz-heart','tz-leaf','tz-marsh','cup-palm','tz-marsh-w','cup-hand','cup-finger'])}</section>
+    <section style="padding-top:0"><div class="wrap">${guar()}</div></section>
+    <section id="faq" style="padding-top:0"><div class="wrap">${head(null,'q_t')}${faq(5)}</div></section>
+    <section><div class="wrap">${head(null,'cross_t')}${cross('cups')}</div></section>${finalCta('tz-pack')}`; },
   key(){ return `<section class="pp"><div class="wrap" id="buybox"></div></section>
     <section style="padding-top:0"><div class="wrap">${story('mach-pack','s3_e','s3_t','s3_p',['s3_1','s3_2','s3_3'])}</div></section>
     <section style="padding-top:0"><div class="wrap">${videoBlock(ctaKey())}</div></section>
     <section class="alt"><div class="wrap">${head('col_e','col_t','col_p')}${variantCards(['cafe','verde','rosa'],'key')}</div></section>
-    <section><div class="wrap">${head('cup_e','cup_t','cup_p')}${variantCards(['tzc','tzh','tzm'],'key')}</div></section>
-    <section class="moments" style="padding-top:0">${marquee(['tz-heart','tz-leaf','tz-marsh','mach-cafe','mach-verde','mach-rosa','mach-hand','cup-hand','cup-finger'])}</section>
+    <section class="moments" style="padding-top:0">${marquee(['mach-cafe','mach-verde','mach-rosa','mach-hand','mach-market','mach-pack'])}</section>
     <section style="padding-top:0"><div class="wrap">${guar()}</div></section>
     <section id="faq" style="padding-top:0"><div class="wrap">${head(null,'q_t')}${faq(5)}</div></section>
     <section><div class="wrap">${head(null,'cross_t')}${cross('key')}</div></section>${finalCta('mach-pack')}`; }
@@ -265,7 +276,7 @@ function applyI18n(){
   document.documentElement.lang=lang; $('#lang').value=lang;
   $$('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));
   const tk=['tb1','tb2','tb3','tb4'].map(k=>`<span>${t(k)}</span>`).join(''); $('#ticker').innerHTML=tk+tk+tk+tk;
-  const sp=$('#stickyP'); if(sp&&P[PAGE_ID]) sp.textContent=fmt(P[PAGE_ID].price);
+  const sp=$('#stickyP'); if(sp&&P[PAGE_ID]) sp.textContent=fmt(priceOf(PAGE_ID,varSel[PAGE_ID]).price);
   renderPage(); renderCart();
 }
 

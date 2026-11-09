@@ -3,19 +3,19 @@ import base64, json, os, re, shutil, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 os.chdir(HERE)
 CDN_VIDEO = 'https://cdn.shopify.com/s/files/1/0844/1371/0573/files/atelier-rosa-360.mp4?v=1794237367'
-TITLES = {'hub': 'Atelier Crema', 'pen': 'Latte Art Pen', 'drip': 'Dripper Plegable', 'key': 'Llavero Barista', 'trio': 'Trío Atelier'}
-THUMBS = ['trio', 'rosa-poster', 'pen-flower', 'drip-drop', 'mach-cafe', 'mach-verde', 'mach-rosa', 'cup-palm', 'tz-heart', 'tz-leaf', 'tz-marsh']
+TITLES = {'hub': 'Atelier Crema', 'pen': 'Latte Art Pen', 'drip': 'Dripper Plegable', 'key': 'Llavero Barista', 'trio': 'Trío Atelier', 'cups': 'Tazas Barista'}
+THUMBS = ['tz-pack', 'tz-marsh-w', 'trio', 'rosa-poster', 'pen-flower', 'drip-drop', 'mach-cafe', 'mach-verde', 'mach-rosa', 'cup-palm', 'tz-heart', 'tz-leaf', 'tz-marsh']
 IMGS = {
-    'hub': ['trio', 'pen-heart', 'mach-pack', 'drip-drop', 'pen-flower', 'drip-balcony', 'mach-rosa', 'mach-hand', 'mach-cafe', 'rosa-poster'],
-    'pen': ['trio', 'pen-flower', 'pen-heart', 'pen-feather', 'drip-drop', 'mach-cafe'],
-    'drip': ['trio', 'real-1', 'real-2', 'real-3', 'real-4', 'real-5', 'real-6', 'drip-kit', 'filt-hands', 'drip-drop', 'drip-balcony', 'drip-flat', 'pen-flower', 'mach-cafe'],
-    'trio': ['trio', 'mach-cafe', 'mach-verde', 'mach-rosa', 'mach-hand', 'mach-market', 'mach-pack', 'rosa-poster', 'pen-flower', 'drip-drop'],
-    'key': ['trio', 'th-rosa-poster', 'mach-cafe', 'mach-hand', 'mach-market', 'mach-verde', 'mach-rosa', 'tz-heart', 'tz-leaf', 'tz-marsh',
-            'cup-palm', 'cup-hand', 'cup-finger', 'mach-pack', 'pen-flower', 'drip-drop', 'rosa-poster'],
+    'hub': ['trio', 'tz-pack', 'pen-heart', 'mach-pack', 'drip-drop', 'pen-flower', 'drip-balcony', 'mach-rosa', 'mach-hand', 'mach-cafe', 'rosa-poster'],
+    'pen': ['trio', 'tz-pack', 'pen-flower', 'pen-heart', 'pen-feather', 'drip-drop', 'mach-cafe'],
+    'drip': ['trio', 'tz-pack', 'real-1', 'real-2', 'real-3', 'real-4', 'real-5', 'real-6', 'drip-kit', 'filt-hands', 'drip-drop', 'drip-balcony', 'drip-flat', 'pen-flower', 'mach-cafe'],
+    'trio': ['trio', 'tz-pack', 'mach-cafe', 'mach-verde', 'mach-rosa', 'mach-hand', 'mach-market', 'mach-pack', 'rosa-poster', 'pen-flower', 'drip-drop'],
+    'cups': ['tz-pack', 'tz-heart', 'tz-leaf', 'tz-marsh', 'tz-marsh-w', 'cup-palm', 'cup-hand', 'cup-finger', 'cup-press', 'trio', 'pen-flower', 'drip-drop', 'mach-rosa'],
+    'key': ['trio', 'th-rosa-poster', 'mach-cafe', 'mach-hand', 'mach-market', 'mach-verde', 'mach-rosa', 'tz-pack', 'mach-pack', 'pen-flower', 'drip-drop', 'rosa-poster'],
 }
 
 css = open('common.base.css').read() + '\n' + open('extra.css').read()
-i18n = open('i18n.base.js').read() + '\n' + open('i18n.extra.js').read()
+i18n = open('i18n.base.js').read() + '\n' + open('i18n.extra.js').read() + '\n' + open('i18n.cups.js').read()
 app = open('app.js').read()
 
 CHROME = '''<canvas id="fx" aria-hidden="true"></canvas>
@@ -83,12 +83,12 @@ def main():
     os.makedirs('out/shopify', exist_ok=True)
     # Vista previa: el hub es fragmento (el publicador lo envuelve); el resto, documentos completos
     open('out/preview/index.html', 'w').write('<title>Atelier Crema</title>\n' + HEAD + '\n' + body('hub', 'preview'))
-    for p in ['pen', 'drip', 'key', 'trio']:
+    for p in ['pen', 'drip', 'key', 'trio', 'cups']:
         open('out/preview/%s.html' % p, 'w').write(full_doc(p, 'preview'))
     th = open('../thanks/index.html').read().replace("storeUrl: ''", "storeUrl: 'index.html'")
     open('out/preview/gracias.html', 'w').write('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>' + th + '</body></html>')
     # Shopify: documentos completos con imágenes embebidas, en base64
-    for p in ['hub', 'pen', 'drip', 'key', 'trio']:
+    for p in ['hub', 'pen', 'drip', 'key', 'trio', 'cups']:
         doc = full_doc(p, 'shopify')
         open('out/shopify/%s.html' % p, 'w').write(doc)
         open('out/shopify/%s.b64.txt' % p, 'w').write(base64.b64encode(doc.encode()).decode())

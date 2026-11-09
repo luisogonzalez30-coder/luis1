@@ -146,3 +146,13 @@ section{padding-block:clamp(40px,6vw,96px)}
 .photos{column-count:3;column-gap:14px}
 .photos img{width:100%;display:block;margin:0 0 14px;border-radius:18px;border:1px solid var(--line);break-inside:avoid}
 @media(max-width:699px){.photos{column-count:2;column-gap:10px}.photos img{margin-bottom:10px;border-radius:14px}}
+
+/* Cinco productos en el inicio y cuadrícula de 4 diseños */
+.tiles{display:flex;flex-wrap:wrap;justify-content:center}
+@media(min-width:700px){.tile{flex:0 1 calc(33.333% - 14px)}}
+@media(min-width:1000px){.tile{flex:0 1 calc(20% - 16px)}}
+@media(max-width:699px){.tile{flex:1 1 100%}}
+.grid4{display:grid;gap:20px;grid-template-columns:repeat(4,1fr)}
+@media(max-width:899px){.grid4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:559px){.grid4{grid-template-columns:1fr;gap:12px}}
+.upsell[data-pv]{cursor:pointer}
