@@ -6,7 +6,7 @@ CDN_VIDEO = 'https://cdn.shopify.com/s/files/1/0844/1371/0573/files/atelier-rosa
 TITLES = {'hub': 'Atelier Crema', 'pen': 'Latte Art Pen', 'drip': 'Dripper Plegable', 'key': 'Llavero Barista', 'trio': 'Trío Atelier', 'cups': 'Tazas Barista'}
 THUMBS = ['tz-pack', 'tz-marsh-w', 'trio', 'rosa-poster', 'pen-flower', 'drip-drop', 'mach-cafe', 'mach-verde', 'mach-rosa', 'cup-palm', 'tz-heart', 'tz-leaf', 'tz-marsh']
 IMGS = {
-    'hub': ['trio', 'tz-pack', 'pen-heart', 'mach-pack', 'drip-drop', 'pen-flower', 'drip-balcony', 'mach-rosa', 'mach-hand', 'mach-cafe', 'rosa-poster'],
+    'hub': ['trio', 'tz-pack', 'tz-heart', 'tz-leaf', 'pen-heart', 'mach-pack', 'drip-drop', 'pen-flower', 'drip-balcony', 'mach-rosa', 'mach-hand', 'mach-cafe', 'rosa-poster'],
     'pen': ['trio', 'tz-pack', 'pen-flower', 'pen-heart', 'pen-feather', 'drip-drop', 'mach-cafe'],
     'drip': ['trio', 'tz-pack', 'real-1', 'real-2', 'real-3', 'real-4', 'real-5', 'real-6', 'drip-kit', 'filt-hands', 'drip-drop', 'drip-balcony', 'drip-flat', 'pen-flower', 'mach-cafe'],
     'trio': ['trio', 'tz-pack', 'mach-cafe', 'mach-verde', 'mach-rosa', 'mach-hand', 'mach-market', 'mach-pack', 'rosa-poster', 'pen-flower', 'drip-drop'],
