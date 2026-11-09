@@ -1,0 +1,1029 @@
+<title>Atelier Crema</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Latte Art Pen, dripper plegable y llaveros barista. Café de autor en casa, precios en USD y envío gratis desde US$49.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..800&family=Jost:wght@300..700&display=swap">
+<script>document.documentElement.classList.add('js')</script>
+<style>
+:root{
+  /* Concepto: teatro oscuro de cafetería de autor. Columnas de fotos en movimiento, oro champagne como acento y un único cobre vivo reservado a la urgencia. */
+  --bg:#0c0806; --bg2:#140e0b; --card:#1a130f; --line:rgba(216,178,110,.22);
+  --fg:#f6ede1; --mut:#b9a995; --gold:#d8b26e; --gold2:#f3dca4; --hot:#ee6c3c; --ink:#1a1009;
+  --f-d:'Bodoni Moda','Didot','Bodoni 72',Georgia,serif;
+  --f-b:'Jost','Helvetica Neue',Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 16px/1.6 var(--f-b);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--bg)}
+img{display:block;max-width:100%}
+a{color:inherit}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold2);outline-offset:3px}
+h1,h2,h3{font-family:var(--f-d);font-weight:500;line-height:1.05;letter-spacing:-.01em;margin:0;text-wrap:balance}
+h1 em,h2 em{font-style:italic;background:linear-gradient(100deg,var(--gold) 20%,var(--gold2) 45%,var(--gold) 70%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 6s linear infinite}
+@keyframes shimmer{to{background-position:-220% 0}}
+p{margin:0;text-wrap:pretty}
+.wrap{max-width:1240px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+section{padding-block:clamp(64px,9vw,120px)}
+.eyebrow{font-size:.74rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);font-weight:500}
+.sec-head{display:grid;gap:14px;max-width:760px;margin-bottom:clamp(32px,5vw,56px)}
+.sec-head h2{font-size:clamp(2rem,4.6vw,3.6rem)}
+.sec-head p{color:var(--mut);font-size:1.08rem}
+.rv{opacity:.15;transform:translateY(30px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+html:not(.js) .rv{opacity:1;transform:none}
+
+/* Barra de anuncios */
+.ticker{background:linear-gradient(90deg,var(--gold),var(--gold2),var(--gold));color:var(--ink);overflow:hidden;font-size:.78rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding-top:env(safe-area-inset-top,0px)}
+.ticker-track{display:flex;width:max-content;animation:slide 32s linear infinite}
+.ticker-track span{padding:10px 28px;white-space:nowrap}
+.ticker-track span::after{content:"◆";margin-left:56px;opacity:.5}
+@keyframes slide{to{transform:translateX(-50%)}}
+
+/* Navegación */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:68px}
+.logo{font-family:var(--f-d);font-size:1.35rem;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;font-weight:600;white-space:nowrap}
+.logo b{color:var(--gold);font-weight:600}
+.nav-links{display:none;gap:28px;margin-left:auto;font-size:.88rem;letter-spacing:.06em}
+.nav-links a{text-decoration:none;color:var(--mut);transition:color .2s}
+.nav-links a:hover{color:var(--gold2)}
+.nav-r{display:flex;gap:10px;align-items:center;margin-left:auto}
+.lang{appearance:none;-webkit-appearance:none;background:transparent;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:.82rem;cursor:pointer;color:var(--fg)}
+.lang option{background:var(--bg2);color:var(--fg)}
+.cartbtn{position:relative;display:flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--gold);color:var(--gold2);border-radius:999px;padding:8px 16px;cursor:pointer;font-size:.86rem;font-weight:500;transition:background .25s,color .25s}
+.cartbtn:hover{background:var(--gold);color:var(--ink)}
+.cartbtn i{font-style:normal;min-width:20px;height:20px;border-radius:50%;background:var(--hot);color:#fff;font-size:.72rem;display:grid;place-items:center;font-weight:600}
+@media(max-width:560px){.nav .wrap{gap:8px}.logo{font-size:1rem;letter-spacing:.08em}.cartbtn span{display:none}.cartbtn{padding:8px 12px}.lang{padding:8px 10px;font-size:.78rem}.nav-r{gap:6px}}
+@media(min-width:900px){.nav-links{display:flex}.nav-r{margin-left:0}}
+
+/* Botones */
+.btn{position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:10px;border:0;cursor:pointer;text-decoration:none;font-weight:600;letter-spacing:.04em;border-radius:999px;padding:17px 34px;font-size:1rem;background:linear-gradient(135deg,var(--gold2),var(--gold) 60%,#b78a42);color:var(--ink);transition:transform .25s,box-shadow .25s;box-shadow:0 10px 40px -10px rgba(216,178,110,.55)}
+.btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 18px 50px -10px rgba(216,178,110,.75)}
+.btn::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.6) 50%,transparent 65%);transform:translateX(-120%);animation:shine 4.2s ease-in-out infinite}
+@keyframes shine{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.btn.pulse{animation:pulse 2.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(238,108,60,.55),0 10px 40px -10px rgba(216,178,110,.55)}70%{box-shadow:0 0 0 18px rgba(238,108,60,0),0 10px 40px -10px rgba(216,178,110,.55)}100%{box-shadow:0 0 0 0 rgba(238,108,60,0),0 10px 40px -10px rgba(216,178,110,.55)}}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line);box-shadow:none}
+.btn.ghost::after{display:none}
+.btn.ghost:hover{border-color:var(--gold);color:var(--gold2)}
+.btn.block{width:100%}
+
+/* Hero */
+.hero{position:relative;padding-block:clamp(36px,6vw,80px) clamp(48px,7vw,96px);overflow:hidden}
+.hero::before{content:"";position:absolute;width:760px;height:760px;right:-200px;top:-180px;background:radial-gradient(circle,rgba(216,178,110,.22),transparent 65%);pointer-events:none}
+.hero-grid{display:grid;gap:40px;align-items:center;position:relative}
+@media(min-width:960px){.hero-grid{grid-template-columns:1.05fr .95fr;gap:56px}}
+.hero h1{font-size:clamp(2.7rem,7vw,5.6rem);margin:18px 0 22px}
+.hero .lead{font-size:clamp(1.05rem,1.6vw,1.25rem);color:var(--mut);max-width:520px}
+.pill{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold2);background:rgba(216,178,110,.06)}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--hot);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.25}}
+.cta-row{display:flex;flex-wrap:wrap;gap:14px;margin:30px 0 28px}
+.ends{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:16px 20px;border:1px solid rgba(238,108,60,.4);background:rgba(238,108,60,.07);border-radius:18px;width:fit-content;max-width:100%}
+.ends small{font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:#f6b79d;max-width:210px;line-height:1.35}
+.cd{display:flex;gap:10px}
+.cdb{min-width:58px;text-align:center}
+.cdb b{display:block;font:600 1.9rem/1 var(--f-d);font-variant-numeric:tabular-nums;color:var(--fg)}
+.cdb span{font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+.trust{display:flex;flex-wrap:wrap;gap:12px 28px;margin-top:26px;font-size:.86rem;color:var(--mut)}
+.trust span::before{content:"";display:inline-block;width:14px;height:8px;border-left:2px solid var(--gold);border-bottom:2px solid var(--gold);transform:rotate(-45deg) translateY(-3px);margin-right:10px}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;height:clamp(420px,72vh,720px);overflow:hidden;-webkit-mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent);min-width:0}
+.col{display:flex;flex-direction:column;gap:14px;animation:up 40s linear infinite;will-change:transform}
+.col:nth-child(2){animation-direction:reverse;animation-duration:48s}
+.col:nth-child(3){animation-duration:44s}
+@keyframes up{to{transform:translateY(calc(-50% - 7px))}}
+.col img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:18px;flex:none;border:1px solid var(--line)}
+
+/* Marquesina de texto */
+.big-marq{border-block:1px solid var(--line);overflow:hidden;padding-block:22px;background:var(--bg2)}
+.big-track{display:flex;width:max-content;animation:slide 40s linear infinite}
+.big-track span{font:italic 500 clamp(2rem,5vw,4rem)/1 var(--f-d);padding-inline:26px;white-space:nowrap;color:transparent;-webkit-text-stroke:1px var(--gold)}
+.big-track span:nth-child(even){color:var(--gold);-webkit-text-stroke:0}
+
+/* Productos */
+.grid3{display:grid;gap:24px}
+@media(min-width:760px){.grid3{grid-template-columns:repeat(3,1fr)}}
+.pcard{position:relative;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:26px;overflow:hidden;transition:border-color .3s,box-shadow .4s;transform-style:preserve-3d;will-change:transform;min-width:0}
+.pcard:hover{border-color:var(--gold);box-shadow:0 30px 80px -30px rgba(216,178,110,.4)}
+.pimg{position:relative;aspect-ratio:4/5;overflow:hidden;background:#000}
+.pimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .7s,transform 1.4s cubic-bezier(.2,.7,.2,1)}
+.pimg img+img{opacity:0}
+.pcard:hover .pimg img+img{opacity:1}
+.pcard:hover .pimg img{transform:scale(1.07)}
+.badge{position:absolute;top:16px;left:16px;z-index:2;background:var(--hot);color:#fff;font-weight:600;font-size:.82rem;letter-spacing:.04em;padding:6px 14px;border-radius:999px}
+.tag{position:absolute;top:16px;right:16px;z-index:2;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;padding:6px 12px;border-radius:999px;background:rgba(12,8,6,.7);backdrop-filter:blur(6px);color:var(--gold2);border:1px solid var(--line)}
+.pbody{display:grid;gap:14px;padding:24px;flex:1;align-content:start}
+.pbody h3{font-size:1.7rem}
+.pbody .sub{color:var(--gold);font-size:.78rem;letter-spacing:.2em;text-transform:uppercase}
+.pbody p{color:var(--mut);font-size:.98rem}
+.vars{display:flex;gap:8px;flex-wrap:wrap}
+.vars button{background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 16px;cursor:pointer;font-size:.86rem;color:var(--mut);transition:all .2s}
+.vars button[aria-pressed="true"]{border-color:var(--gold);color:var(--ink);background:var(--gold)}
+.price{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.price b{font:600 2rem/1 var(--f-d);font-variant-numeric:tabular-nums}
+.price s{color:var(--mut);font-size:1rem;font-variant-numeric:tabular-nums}
+.price em{font-style:normal;font-size:.7rem;letter-spacing:.14em;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+.stock{display:grid;gap:6px;font-size:.8rem;color:#f6b79d}
+.bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--hot),#ffb27a);transition:width 1.4s cubic-bezier(.2,.7,.2,1)}
+
+.sw{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;border:1px solid rgba(255,255,255,.35);vertical-align:-1px}
+.ccard{background:var(--card);border:1px solid var(--line);border-radius:26px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .3s,transform .4s}
+.ccard:hover{border-color:var(--gold);transform:translateY(-6px)}
+.ccard img{width:100%;aspect-ratio:1;object-fit:cover}
+.cinfo{padding:22px;display:grid;gap:14px}
+.cinfo h3{font-size:1.6rem}
+.pl{display:block;margin-top:6px;font-size:.78rem;color:var(--gold2);text-decoration:none;font-weight:500}
+.wa{position:fixed;z-index:56;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));background:#25d366;color:#06240f;font-weight:600;font-size:.88rem;padding:12px 18px;border-radius:999px;text-decoration:none;box-shadow:0 10px 30px -8px rgba(0,0,0,.6)}
+@media(min-width:900px){.wa{bottom:24px}}
+.wa[hidden]{display:none}
+.pbody .btn.ghost{padding:14px 24px}
+.pack{margin:clamp(28px,4vw,48px) 0 0;position:relative;border-radius:30px;overflow:hidden;border:1px solid var(--line);aspect-ratio:16/9;background:#000}
+.pack img{width:100%;height:100%;object-fit:cover}
+.pack figcaption{position:absolute;left:0;right:0;bottom:0;padding:48px 24px 22px;background:linear-gradient(transparent,rgba(12,8,6,.85));font:italic 500 clamp(1.4rem,3vw,2.4rem)/1.1 var(--f-d);color:var(--gold2)}
+@media(max-width:600px){.pack{aspect-ratio:4/3}}
+.vwrap{display:grid;justify-items:center}
+.vframe{position:relative;width:min(100%,360px);aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--gold);box-shadow:0 40px 90px -30px rgba(216,178,110,.45),0 0 0 8px rgba(216,178,110,.06);background:#000}
+.vframe video{width:100%;height:100%;object-fit:cover;display:block}
+.vsnd{position:absolute;right:14px;bottom:14px;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:rgba(12,8,6,.7);backdrop-filter:blur(6px);cursor:pointer;display:grid;place-items:center;color:var(--gold2)}
+.vsnd svg{width:22px;height:22px;fill:currentColor;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.vsnd .w{fill:none;display:none}.vsnd .x{fill:none;display:block}
+.vsnd[aria-pressed="true"] .w{display:block}.vsnd[aria-pressed="true"] .x{display:none}
+.col video{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:18px;flex:none;border:1px solid var(--line);display:block}
+/* Historias */
+.story{display:grid;gap:36px;align-items:center;margin-bottom:clamp(56px,8vw,110px)}
+.story:last-child{margin-bottom:0}
+@media(min-width:900px){.story{grid-template-columns:1fr 1fr;gap:72px}.story.flip .story-img{order:2}}
+.story-img{position:relative;border-radius:30px;overflow:hidden;aspect-ratio:5/4;border:1px solid var(--line)}
+.story-img img{position:absolute;left:0;top:-8%;width:100%;height:116%;object-fit:cover;will-change:transform}
+.story-img::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(12,8,6,.55))}
+.story h2{font-size:clamp(2rem,4.2vw,3.4rem);margin:14px 0 18px}
+.story p{color:var(--mut);font-size:1.1rem;max-width:520px}
+.ticks{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:12px}
+.ticks li{display:flex;gap:14px;align-items:center;font-size:1rem}
+.ticks li::before{content:"";flex:none;width:26px;height:26px;border-radius:50%;border:1px solid var(--gold);background:radial-gradient(circle,var(--gold) 0 3px,transparent 4px)}
+
+/* Set */
+.bundle-sec{background:radial-gradient(ellipse at top,rgba(216,178,110,.14),transparent 60%),var(--bg2)}
+.bundle{position:relative;border-radius:34px;padding:2px;background:conic-gradient(from var(--a,0deg),var(--gold),#6b4a1f,var(--gold2),#6b4a1f,var(--gold));animation:spin 8s linear infinite}
+@property --a{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes spin{to{--a:360deg}}
+.bundle-in{background:var(--bg);border-radius:32px;padding:clamp(24px,5vw,60px);display:grid;gap:36px;align-items:center}
+@media(min-width:900px){.bundle-in{grid-template-columns:1.05fr .95fr}}
+.thumbs{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:20px;border:1px solid var(--line)}
+.thumbs img:nth-child(even){transform:translateY(22px)}
+.bundle h2{font-size:clamp(2.1rem,4.6vw,3.8rem);margin:14px 0}
+.bundle .inc{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.bundle .inc span{font-size:.84rem;border:1px solid var(--line);border-radius:999px;padding:6px 14px;color:var(--gold2)}
+.bundle .price b{font-size:3rem}
+.save{display:inline-block;margin:10px 0 24px;color:var(--ink);background:var(--gold2);font-weight:600;border-radius:999px;padding:6px 16px;font-size:.9rem}
+
+/* Momentos */
+.moments{padding-block:clamp(56px,7vw,90px);overflow:hidden}
+.moments .sec-head{margin-inline:auto;text-align:center;justify-items:center}
+.m-track{display:flex;gap:16px;width:max-content;animation:slide 70s linear infinite}
+.m-track:hover{animation-play-state:paused}
+.m-track img{width:clamp(200px,24vw,300px);aspect-ratio:3/4;object-fit:cover;border-radius:22px;border:1px solid var(--line);flex:none}
+
+/* Pasos, garantías */
+.steps{display:grid;gap:20px}
+@media(min-width:800px){.steps{grid-template-columns:repeat(3,1fr)}}
+.step{border-top:1px solid var(--gold);padding-top:22px;display:grid;gap:10px}
+.step b{font:italic 500 3.4rem/1 var(--f-d);color:var(--gold)}
+.step h3{font-size:1.5rem}
+.step p{color:var(--mut)}
+.guar{display:grid;gap:18px}
+@media(min-width:800px){.guar{grid-template-columns:repeat(3,1fr)}}
+.gbox{border:1px solid var(--line);border-radius:22px;padding:28px;background:var(--card);display:grid;gap:8px}
+.gbox h3{font:600 1.2rem var(--f-b);letter-spacing:.02em;color:var(--gold2)}
+.gbox p{color:var(--mut);font-size:.96rem}
+
+/* FAQ */
+.faq{max-width:820px;display:grid;gap:12px}
+details{border:1px solid var(--line);border-radius:18px;background:var(--card);overflow:hidden}
+summary{list-style:none;cursor:pointer;padding:20px 24px;font-weight:500;font-size:1.05rem;display:flex;justify-content:space-between;gap:16px;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font:300 1.8rem/1 var(--f-b);color:var(--gold);transition:transform .3s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{padding:0 24px 22px;color:var(--mut)}
+
+/* CTA final */
+.final{position:relative;text-align:center;overflow:hidden;isolation:isolate}
+.final>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+.final::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,var(--bg),rgba(12,8,6,.78) 30%,rgba(12,8,6,.78) 70%,var(--bg))}
+.final h2{font-size:clamp(2.4rem,6vw,5rem);max-width:900px;margin-inline:auto}
+.final p{color:var(--mut);font-size:1.15rem;margin:18px auto 32px;max-width:560px}
+.final .ends{margin:0 auto 32px}
+footer{border-top:1px solid var(--line);padding-block:40px calc(40px + 70px);color:var(--mut);font-size:.88rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between;align-items:center}
+
+/* Carrito */
+.veil{position:fixed;inset:0;z-index:79;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .35s}
+.veil.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;z-index:80;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--bg2);border-left:1px solid var(--line);transform:translateX(102%);transition:transform .45s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
+.drawer.on{transform:none}
+.d-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--line)}
+.d-head h3{font-size:1.6rem}
+.x{background:transparent;border:1px solid var(--line);border-radius:50%;width:38px;height:38px;cursor:pointer;font-size:1.1rem;line-height:1}
+.goal{padding:16px 24px;border-bottom:1px solid var(--line);font-size:.86rem;display:grid;gap:8px;color:var(--gold2)}
+.goal .bar i{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.d-body{flex:1;overflow:auto;padding:12px 24px;display:grid;align-content:start}
+.empty{color:var(--mut);padding:40px 0;text-align:center}
+.line{display:grid;grid-template-columns:74px 1fr auto;gap:14px;padding:16px 0;border-bottom:1px solid var(--line);align-items:center}
+.line img{width:74px;height:74px;border-radius:14px;object-fit:cover}
+.line h4{margin:0 0 2px;font:500 1rem var(--f-b)}
+.line small{color:var(--mut)}
+.qty{display:flex;align-items:center;gap:10px;margin-top:8px}
+.qty button{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:transparent;cursor:pointer}
+.line .lp{font-weight:600;font-variant-numeric:tabular-nums}
+.d-foot{padding:20px 24px;border-top:1px solid var(--line);display:grid;gap:10px;background:var(--bg)}
+.row{display:flex;justify-content:space-between;color:var(--mut);font-size:.94rem;font-variant-numeric:tabular-nums}
+.row.tot{color:var(--fg);font:600 1.5rem var(--f-d)}
+.row.dsc{color:#9fd8a4}
+.note{font-size:.8rem;color:#f6b79d;text-align:center}
+
+/* Pop-up, sticky, toast */
+.pop{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .35s}
+.pop.on{opacity:1;pointer-events:auto}
+.pop-card{position:relative;width:min(480px,100%);background:var(--bg2);border:1px solid var(--gold);border-radius:28px;padding:40px 30px 30px;text-align:center;display:grid;gap:14px;transform:scale(.92);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.pop.on .pop-card{transform:none}
+.pop-card .x{position:absolute;top:14px;right:14px}
+.pop-card h3{font-size:2.3rem}
+.pop-card p{color:var(--mut)}
+.code{font:600 1.5rem/1 var(--f-b);letter-spacing:.3em;border:1px dashed var(--gold);border-radius:14px;padding:16px;color:var(--gold2)}
+.skip{background:none;border:0;color:var(--mut);cursor:pointer;text-decoration:underline;font-size:.86rem}
+.sticky{position:fixed;z-index:55;left:0;right:0;bottom:0;display:flex;gap:14px;align-items:center;justify-content:space-between;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:rgba(12,8,6,.92);backdrop-filter:blur(14px);border-top:1px solid var(--gold);transform:translateY(110%);transition:transform .45s}
+.sticky.on{transform:none}
+.sticky small{display:block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.sticky b{font:600 1.4rem/1 var(--f-d)}
+.sticky .btn{padding:14px 24px;font-size:.92rem}
+.toast{position:fixed;z-index:100;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);background:var(--gold2);color:var(--ink);font-weight:600;padding:12px 22px;border-radius:999px;opacity:0;pointer-events:none;transition:all .4s;max-width:calc(100% - 32px);text-align:center;font-size:.92rem}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+#fx{position:fixed;inset:0;z-index:70;pointer-events:none;width:100%;height:100%}
+.glow{position:fixed;z-index:1;width:420px;height:420px;margin:-210px 0 0 -210px;border-radius:50%;background:radial-gradient(circle,rgba(216,178,110,.13),transparent 65%);pointer-events:none;left:0;top:0;display:none}
+@media(hover:hover) and (pointer:fine){.glow{display:block}}
+@media(min-width:900px){.sticky{display:none}footer{padding-bottom:40px}}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  .rv{opacity:1;transform:none}
+}
+</style>
+
+<div class="glow" id="glow"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<div class="ticker" aria-label="Info">
+  <div class="ticker-track" id="ticker"></div>
+</div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#top">Atelier <b>Crema</b></a>
+    <nav class="nav-links">
+      <a href="#productos" data-i18n="nav_prod"></a>
+      <a href="#set" data-i18n="nav_set"></a>
+      <a href="#faq" data-i18n="nav_faq"></a>
+    </nav>
+    <div class="nav-r">
+      <select class="lang" id="lang" aria-label="Language">
+        <option value="es">Español</option><option value="en">English</option><option value="pt">Português</option>
+        <option value="fr">Français</option><option value="de">Deutsch</option><option value="it">Italiano</option>
+      </select>
+      <button class="cartbtn" id="openCart" type="button"><span data-i18n="cart"></span><i id="cartN">0</i></button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="pill" data-i18n="h_eye"></span>
+      <h1 data-i18n-html="h_title"></h1>
+      <p class="lead" data-i18n="h_sub"></p>
+      <div class="cta-row">
+        <button class="btn pulse" type="button" data-addset><span data-i18n="h_cta"></span> →</button>
+        <a class="btn ghost" href="#productos" data-i18n="h_cta2"></a>
+      </div>
+      <div class="ends">
+        <small data-i18n="h_ends"></small>
+        <div class="cd" data-cd>
+          <div class="cdb"><b data-h>00</b><span data-i18n="cd_h"></span></div>
+          <div class="cdb"><b data-m>00</b><span data-i18n="cd_m"></span></div>
+          <div class="cdb"><b data-s>00</b><span data-i18n="cd_s"></span></div>
+        </div>
+      </div>
+      <div class="trust"><span data-i18n="tr1"></span><span data-i18n="tr2"></span><span data-i18n="tr3"></span></div>
+    </div>
+    <div class="cols" aria-hidden="true" id="cols"></div>
+  </div>
+</section>
+
+<div class="big-marq" aria-hidden="true"><div class="big-track" id="bigTrack"></div></div>
+
+<section id="productos">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow" data-i18n="p_eye"></span>
+      <h2 data-i18n="p_title"></h2>
+      <p data-i18n="p_sub"></p>
+    </div>
+    <div class="grid3" id="pgrid"></div>
+  </div>
+</section>
+
+<section style="padding-top:0" id="video360">
+  <div class="wrap">
+    <div class="story rv">
+      <div class="vwrap"><div class="vframe"><video id="vid360" muted loop playsinline preload="metadata" aria-label="Mini cafetera rosa girando en 360 grados"></video>
+        <button class="vsnd" id="vsnd" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="w" d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12"/><path class="x" d="M16 9l5 6M21 9l-5 6"/></svg></button></div></div>
+      <div><span class="eyebrow" data-i18n="vid_e"></span><h2 data-i18n="vid_t"></h2><p data-i18n="vid_p"></p>
+        <ul class="ticks"><li data-i18n="vid_1"></li><li data-i18n="vid_2"></li><li data-i18n="vid_3"></li></ul>
+        <div style="margin-top:28px"><button class="btn pulse" type="button" data-addcol="rosa"><span data-i18n="vid_cta"></span> →</button></div></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0" id="colores">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow" data-i18n="col_e"></span><h2 data-i18n="col_t"></h2><p data-i18n="col_p"></p></div>
+    <div class="grid3" id="colors"></div>
+  </div>
+</section>
+
+<section style="padding-top:0" id="tazas">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow" data-i18n="cup_e"></span><h2 data-i18n="cup_t"></h2><p data-i18n="cup_p"></p></div>
+    <div class="grid3" id="cups"></div>
+    <figure class="pack rv"><img src="img/tz-pack.jpg" alt="Colección de llaveros barista: tres tazas latte art y un vaso para llevar" loading="lazy"><figcaption data-i18n="pk_cap"></figcaption></figure>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="story rv">
+      <div class="story-img"><img data-par src="img/pen-feather.jpg" alt="Latte Art Pen dibujando una hoja de cacao sobre la espuma" loading="lazy"></div>
+      <div><span class="eyebrow" data-i18n="s1_e"></span><h2 data-i18n-html="s1_t"></h2><p data-i18n="s1_p"></p>
+        <ul class="ticks"><li data-i18n="s1_1"></li><li data-i18n="s1_2"></li><li data-i18n="s1_3"></li></ul></div>
+    </div>
+    <div class="story flip rv">
+      <div class="story-img"><img data-par src="img/drip-drop.jpg" alt="Dripper plegable de silicona sobre una taza" loading="lazy"></div>
+      <div><span class="eyebrow" data-i18n="s2_e"></span><h2 data-i18n-html="s2_t"></h2><p data-i18n="s2_p"></p>
+        <ul class="ticks"><li data-i18n="s2_1"></li><li data-i18n="s2_2"></li><li data-i18n="s2_3"></li></ul></div>
+    </div>
+    <div class="story rv">
+      <div class="story-img"><img data-par src="img/mach-pack.jpg" alt="Llavero mini cafetera colgado de una mochila junto a un latte" loading="lazy"></div>
+      <div><span class="eyebrow" data-i18n="s3_e"></span><h2 data-i18n-html="s3_t"></h2><p data-i18n="s3_p"></p>
+        <ul class="ticks"><li data-i18n="s3_1"></li><li data-i18n="s3_2"></li><li data-i18n="s3_3"></li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="bundle-sec" id="set">
+  <div class="wrap">
+    <div class="bundle rv"><div class="bundle-in">
+      <div class="thumbs">
+        <img src="img/pen-flower.jpg" alt="" loading="lazy"><img src="img/drip-balcony.jpg" alt="" loading="lazy">
+        <img src="img/mach-hand.jpg" alt="" loading="lazy"><img src="img/cup-hand.jpg" alt="" loading="lazy">
+      </div>
+      <div>
+        <span class="pill" data-i18n="b_eye"></span>
+        <h2 data-i18n-html="b_title"></h2>
+        <p style="color:var(--mut)" data-i18n="b_sub"></p>
+        <div class="inc" id="inc"></div>
+        <div class="vars" id="bpick" style="margin-bottom:20px"></div>
+        <div class="price" id="bprice"></div>
+        <span class="save" id="bsave"></span>
+        <div class="stock" id="bstock"></div>
+        <div style="height:22px"></div>
+        <button class="btn block pulse" type="button" data-addset><span data-i18n="b_cta"></span> →</button>
+      </div>
+    </div></div>
+  </div>
+</section>
+
+<section class="moments">
+  <div class="wrap"><div class="sec-head rv"><span class="eyebrow" data-i18n="m_e"></span><h2 data-i18n="m_t"></h2></div></div>
+  <div class="m-track" id="mTrack" aria-hidden="true"></div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head rv"><h2 data-i18n="st_t"></h2></div>
+    <div class="steps">
+      <div class="step rv"><b>1</b><h3 data-i18n="st1_t"></h3><p data-i18n="st1_p"></p></div>
+      <div class="step rv"><b>2</b><h3 data-i18n="st2_t"></h3><p data-i18n="st2_p"></p></div>
+      <div class="step rv"><b>3</b><h3 data-i18n="st3_t"></h3><p data-i18n="st3_p"></p></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap guar">
+    <div class="gbox rv"><h3 data-i18n="g1_t"></h3><p data-i18n="g1_p"></p></div>
+    <div class="gbox rv"><h3 data-i18n="g2_t"></h3><p data-i18n="g2_p"></p></div>
+    <div class="gbox rv"><h3 data-i18n="g3_t"></h3><p data-i18n="g3_p"></p></div>
+  </div>
+</section>
+
+<section id="faq" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><h2 data-i18n="q_t"></h2></div>
+    <div class="faq rv">
+      <details open><summary data-i18n="q1"></summary><p data-i18n="a1"></p></details>
+      <details><summary data-i18n="q2"></summary><p data-i18n="a2"></p></details>
+      <details><summary data-i18n="q3"></summary><p data-i18n="a3"></p></details>
+      <details><summary data-i18n="q4"></summary><p data-i18n="a4"></p></details>
+      <details><summary data-i18n="q5"></summary><p data-i18n="a5"></p></details>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <img src="img/pen-heart.jpg" alt="" loading="lazy">
+  <div class="wrap">
+    <h2 class="rv" data-i18n-html="f_t"></h2>
+    <p class="rv" data-i18n="f_p"></p>
+    <div class="ends" data-cd-wrap>
+      <small data-i18n="h_ends"></small>
+      <div class="cd" data-cd>
+        <div class="cdb"><b data-h>00</b><span data-i18n="cd_h"></span></div>
+        <div class="cdb"><b data-m>00</b><span data-i18n="cd_m"></span></div>
+        <div class="cdb"><b data-s>00</b><span data-i18n="cd_s"></span></div>
+      </div>
+    </div>
+    <button class="btn pulse" type="button" data-addset><span data-i18n="f_cta"></span> →</button>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap"><span class="logo">Atelier <b>Crema</b></span><span data-i18n="ft_cur"></span><span>© 2026 Atelier Crema</span></div>
+</footer>
+
+<div class="sticky" id="sticky">
+  <div><small data-i18n="sticky_t"></small><b id="stickyP"></b></div>
+  <button class="btn" type="button" data-addset><span data-i18n="sticky_cta"></span></button>
+</div>
+
+<a class="wa" id="wa" href="#" target="_blank" rel="noopener" hidden data-i18n="wa_t"></a>
+<div class="veil" id="veil"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="cartT">
+  <div class="d-head"><h3 id="cartT" data-i18n="c_t"></h3><button class="x" type="button" id="closeCart" aria-label="Close">✕</button></div>
+  <div class="goal"><span id="goalTxt"></span><div class="bar"><i id="goalBar" style="width:0"></i></div></div>
+  <div class="d-body" id="dbody"></div>
+  <div class="d-foot">
+    <div class="row"><span data-i18n="c_sub"></span><span id="cSub">$0</span></div>
+    <div class="row dsc" id="cDiscRow" hidden><span id="cDiscL"></span><span id="cDisc"></span></div>
+    <div class="row"><span data-i18n="c_ship"></span><span id="cShip"></span></div>
+    <div class="row tot"><span data-i18n="c_tot"></span><span id="cTot">$0</span></div>
+    <a class="btn block" id="go" href="#" target="_blank" rel="noopener"><span data-i18n="c_go"></span> →</a>
+    <p class="note" id="goNote" hidden></p>
+  </div>
+</aside>
+
+<div class="pop" id="pop">
+  <div class="pop-card" role="dialog" aria-modal="true">
+    <button class="x" type="button" id="popX" aria-label="Close">✕</button>
+    <span class="eyebrow" data-i18n="x_e"></span>
+    <h3 data-i18n-html="x_t"></h3>
+    <p data-i18n="x_p"></p>
+    <div class="code" id="codeBox"></div>
+    <button class="btn block" type="button" id="popGo"><span data-i18n="x_cta"></span></button>
+    <button class="skip" type="button" id="popNo" data-i18n="x_no"></button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ========== CONFIGURACIÓN (edita aquí) ========== */
+const CONFIG = {
+  checkoutUrl: '',          // URL de tu checkout (Shopify, Stripe Payment Link, etc.)
+  whatsapp: '',             // Número internacional sin +, ej. 56912345678. Si lo pones, el pedido llega por WhatsApp.
+  freeShipFrom: 49,         // USD
+  discountCode: 'ATELIER10',
+  discountPct: 10,
+  stock: { pen: 23, drip: 31, key: 46, set: 17 },  // unidades reales del lote
+  // Links de pago por producto (Stripe, Shopify, Mercado Pago, etc.). Vacío = el botón agrega al carrito.
+  payLinks: { pen:'', drip:'', 'key-cafe':'', 'key-verde':'', 'key-rosa':'', 'key-cup':'', 'key-tzc':'', 'key-tzh':'', 'key-tzm':'', set:'' },
+  popup: true,
+  // Modo Shopify: el carrito agrega estas variantes y lleva al checkout de la tienda.
+  shopify: { enabled: false, variants: {
+    pen:'68244271071469', drip:'68244271104237',
+    'key-cafe':'68244271169773', 'key-verde':'68244271202541', 'key-rosa':'68244271235309', 'key-cup':'68244271268077',
+    'key-tzc':'68244272578797', 'key-tzh':'68244272611565', 'key-tzm':'68244272644333',
+    'set-cafe':'68244271300845', 'set-verde':'68244271333613', 'set-rosa':'68244271366381' } }
+};
+const P = {
+  pen:  { price: 29.90, was: 44.90, img: ['pen-flower','pen-heart'] },
+  drip: { price: 19.90, was: 29.90, img: ['drip-drop','drip-balcony'] },
+  key:  { price: 12.90, was: 18.90, v: { cafe: ['mach-cafe','mach-hand'], verde: ['mach-verde','mach-verde'], rosa: ['mach-rosa','mach-rosa'], cup: ['cup-palm','cup-hand'], tzc: ['tz-heart','tz-pack'], tzh: ['tz-leaf','tz-pack'], tzm: ['tz-marsh','tz-pack'] } },
+  set:  { price: 59.90, img: ['pen-flower'] }
+};
+const SET_REF = P.pen.price + P.drip.price + P.key.price * 2;
+
+/* ========== TRADUCCIONES ========== */
+const I18N = {
+es:{
+ tb1:"Envío gratis desde US$49",tb2:"Garantía de 30 días",tb3:"Lote de lanzamiento: quedan pocas unidades",tb4:"Pago 100% seguro",
+ nav_prod:"Productos",nav_set:"Set Atelier",nav_faq:"Preguntas",cart:"Carrito",
+ h_eye:"Edición limitada · Café de autor en casa",
+ h_title:"Convierte cada taza en una <em>obra de arte</em>.",
+ h_sub:"Dibuja sobre la espuma, filtra como barista y lleva tu café colgado del llavero. Tres piezas, una sola obsesión.",
+ h_cta:"Quiero mi set",h_cta2:"Ver productos",h_ends:"La oferta de lanzamiento termina hoy en",cd_h:"horas",cd_m:"min",cd_s:"seg",
+ tr1:"Envío gratis desde US$49",tr2:"30 días de garantía",tr3:"Pago 100% seguro",
+ p_eye:"La colección",p_title:"Tres piezas. Cero excusas para un café aburrido.",p_sub:"Elige una o llévate el set completo al mejor precio.",
+ pen_n:"Latte Art Pen",pen_t:"Dibuja sobre la espuma",pen_d:"El lápiz que convierte tu latte en una pieza digna de fotografiar.",
+ drip_n:"Dripper Plegable",drip_t:"Pour over portátil",drip_d:"Silicona plegable con base estable. Café filtrado sobre cualquier taza.",
+ key_n:"Llavero Barista",key_t:"Miniaturas coleccionables",key_d:"Mini cafetera o mini vaso con cadena. Elige tu diseño.",
+ v_mach:"Cafetera",v_cup:"Vaso",v_cafe:"Café",v_verde:"Verde",v_rosa:"Rosa",add:"Agregar al carrito",left:"Quedan {n} en este lote",tagl:"Edición limitada",
+ col_e:"Variantes",col_t:"Tres colores. Una sola favorita.",col_p:"La mini cafetera llega en café, verde salvia y rosa. Elige la que combine con tus llaves.",col_btn:"Lo quiero",b_mach:"Cafetera (café, verde o rosa)",buy:"Comprar ahora",pay:"Pagar",c_multi:"Paga cada producto con su botón Pagar.",wa_t:"¿Dudas? Escríbenos",q5:"¿Qué colores tiene la cafetera?",a5:"Café, verde y rosa. Elige tu favorita en la tarjeta del producto o en la sección de colores.",
+ v_tzc:"Taza corazón",v_tzh:"Taza hoja",v_tzm:"Taza malvavisco",cup_e:"Tazas latte art",cup_t:"Tres tazas. Tres diseños.",cup_p:"Corazón, hoja y malvavisco. Mini tazas con arte latte para colgar en tus llaves.",pk_cap:"Cuatro llaveros, una colección.",b_color:"Color de la cafetera",
+ c_err:"No pudimos abrir el pago. Inténtalo de nuevo.",
+ vid_e:"En 360°",vid_t:"Cada detalle, a la vista.",vid_p:"Mira girar la mini cafetera: portafiltro, manómetro y una tacita con arte latte, todo en miniatura.",vid_1:"Portafiltro y manómetro en miniatura",vid_2:"Tacita con arte latte incluida",vid_3:"Cadena y argolla para colgarla",vid_cta:"Quiero la rosa",snd:"Activar sonido",
+ s1_e:"Latte Art Pen",s1_t:"Corazones, hojas y flores. <em>Sin ser barista.</em>",s1_p:"Un toque y el cacao dibuja sobre la espuma. Tu café de siempre, con acabado de cafetería de especialidad.",
+ s1_1:"Trazos finos y precisos",s1_2:"Cabe en cualquier cajón",s1_3:"El regalo que sorprende",
+ s2_e:"Dripper Plegable",s2_t:"Café de especialidad, <em>plegado en tu mochila.</em>",s2_p:"Se aplana para viajar y se abre en segundos sobre cualquier taza. Filtrado lento, sabor limpio.",
+ s2_1:"Silicona flexible que se pliega",s2_2:"Base estable sobre la taza",s2_3:"Gota a gota, sin complicarte",
+ s3_e:"Llavero Barista",s3_t:"Una cafetería entera <em>en tu llavero.</em>",s3_p:"Mini cafetera y mini vaso para llaves, mochila o bolso. El detalle por el que todos te van a preguntar.",
+ s3_1:"Miniaturas llenas de detalle",s3_2:"Argolla y cadena incluidas",s3_3:"Dos diseños para coleccionar",
+ b_eye:"Set Atelier · Mejor precio",b_title:"Las cuatro piezas. <em>Un solo pedido.</em>",b_sub:"Latte Art Pen, Dripper Plegable y los dos llaveros. Tu rincón de café completo.",
+ b_inc:"Incluye",b_save:"Ahorras {x} frente a comprar por separado",b_cta:"Quiero el Set Atelier",
+ m_e:"Momentos Atelier",m_t:"Así se ve un café con firma.",
+ st_t:"Del primer sorbo a tu próximo video",
+ st1_t:"Prepara",st1_p:"Filtra tu café con el dripper o el método que prefieras.",
+ st2_t:"Dibuja",st2_p:"Traza tu diseño sobre la espuma con el Latte Art Pen.",
+ st3_t:"Comparte",st3_p:"Diez segundos de video y tu café ya es contenido.",
+ g1_t:"Envío gratis desde US$49",g1_p:"Despachamos con número de seguimiento. El Set Atelier ya supera el mínimo.",
+ g2_t:"30 días de garantía",g2_p:"Si no te enamora, lo devuelves dentro de 30 días.",
+ g3_t:"Pago seguro",g3_p:"Pagas en dólares, con métodos protegidos en el checkout.",
+ q_t:"Preguntas frecuentes",
+ q1:"¿Cuánto tarda en llegar?",a1:"Despachamos en 24 a 48 horas con seguimiento. El tiempo de entrega depende de tu país.",
+ q2:"¿Puedo devolverlo?",a2:"Sí. Tienes 30 días para devolverlo si no es lo que esperabas.",
+ q3:"¿Los precios están en dólares?",a3:"Sí. Todos los precios se muestran en USD, sin importar desde dónde nos visites.",
+ q4:"¿Cómo pago?",a4:"Con los métodos disponibles en el checkout seguro, al finalizar tu pedido.",
+ f_t:"Tu próximo café merece <em>firma propia.</em>",f_p:"El lote de lanzamiento es limitado. Asegura tu Set Atelier antes de que termine la oferta.",f_cta:"Quiero mi set ahora",
+ ft_cur:"Todos los precios en dólares estadounidenses (USD)",
+ sticky_t:"Set Atelier",sticky_cta:"Comprar el set",
+ c_t:"Tu carrito",c_empty:"Tu carrito está vacío.",c_sub:"Subtotal",c_disc:"Código {c} (-{p}%)",c_ship:"Envío",c_free:"Gratis",c_calc:"Se calcula al pagar",c_tot:"Total (USD)",c_go:"Finalizar pedido",
+ c_goal:"Te faltan {x} para envío gratis",c_goal_ok:"Tienes envío gratis",c_cfg:"Conecta tu checkout en CONFIG para recibir pedidos.",
+ x_e:"Antes de irte",x_t:"Un <em>{p}% extra</em> para tu primer pedido",x_p:"Aplica este código en tu carrito y ahorra en tu set.",x_cta:"Aplicar descuento",x_no:"No, gracias",
+ t_add:"Agregado al carrito",t_code:"Código aplicado",t_lang:"Idioma ajustado a tu región"},
+en:{
+ tb1:"Free shipping over US$49",tb2:"30-day guarantee",tb3:"Launch batch: very few units left",tb4:"100% secure checkout",
+ nav_prod:"Products",nav_set:"Atelier Set",nav_faq:"FAQ",cart:"Cart",
+ h_eye:"Limited edition · Signature coffee at home",
+ h_title:"Turn every cup into a <em>work of art</em>.",
+ h_sub:"Draw on the foam, brew like a barista and carry your coffee on your keys. Three pieces, one obsession.",
+ h_cta:"Get my set",h_cta2:"See products",h_ends:"Launch offer ends today in",cd_h:"hours",cd_m:"min",cd_s:"sec",
+ tr1:"Free shipping over US$49",tr2:"30-day guarantee",tr3:"100% secure payment",
+ p_eye:"The collection",p_title:"Three pieces. Zero excuses for boring coffee.",p_sub:"Pick one or take the full set at the best price.",
+ pen_n:"Latte Art Pen",pen_t:"Draw on the foam",pen_d:"The pen that turns your latte into something worth photographing.",
+ drip_n:"Collapsible Dripper",drip_t:"Portable pour over",drip_d:"Foldable silicone with a stable base. Filtered coffee over any mug.",
+ key_n:"Barista Keychain",key_t:"Collectible miniatures",key_d:"Mini espresso machine or mini cup on a chain. Pick your design.",
+ v_mach:"Machine",v_cup:"Cup",v_cafe:"Brown",v_verde:"Green",v_rosa:"Pink",add:"Add to cart",left:"{n} left in this batch",tagl:"Limited edition",
+ col_e:"Variants",col_t:"Three colors. One favorite.",col_p:"The mini espresso machine comes in brown, sage green and pink. Pick the one that matches your keys.",col_btn:"I want this one",b_mach:"Machine (brown, green or pink)",buy:"Buy now",pay:"Pay",c_multi:"Pay for each product with its Pay button.",wa_t:"Questions? Message us",q5:"What colors does the machine come in?",a5:"Brown, green and pink. Pick your favorite on the product card or in the colors section.",
+ v_tzc:"Heart cup",v_tzh:"Leaf cup",v_tzm:"Marshmallow cup",cup_e:"Latte art cups",cup_t:"Three cups. Three designs.",cup_p:"Heart, leaf and marshmallow. Mini latte art cups for your keys.",pk_cap:"Four keychains, one collection.",b_color:"Machine color",
+ c_err:"We couldn't open the checkout. Please try again.",
+ vid_e:"In 360°",vid_t:"Every detail, in view.",vid_p:"Watch the mini espresso machine turn: portafilter, pressure gauge and a tiny latte art cup, all in miniature.",vid_1:"Miniature portafilter and gauge",vid_2:"Tiny latte art cup included",vid_3:"Chain and ring to hang it",vid_cta:"I want the pink one",snd:"Turn sound on",
+ s1_e:"Latte Art Pen",s1_t:"Hearts, leaves and flowers. <em>No barista skills needed.</em>",s1_p:"One touch and cocoa draws across the foam. Your usual coffee, with a specialty-café finish.",
+ s1_1:"Fine, precise lines",s1_2:"Fits in any drawer",s1_3:"The gift that surprises",
+ s2_e:"Collapsible Dripper",s2_t:"Specialty coffee, <em>folded into your bag.</em>",s2_p:"It flattens for travel and opens in seconds over any mug. Slow filter, clean flavor.",
+ s2_1:"Flexible silicone that folds flat",s2_2:"Stable base on the mug",s2_3:"Drop by drop, no fuss",
+ s3_e:"Barista Keychain",s3_t:"A whole café <em>on your keys.</em>",s3_p:"A mini espresso machine and a mini cup for your keys, backpack or bag. The detail everyone will ask about.",
+ s3_1:"Miniatures full of detail",s3_2:"Ring and chain included",s3_3:"Two designs to collect",
+ b_eye:"Atelier Set · Best price",b_title:"All four pieces. <em>One order.</em>",b_sub:"Latte Art Pen, Collapsible Dripper and both keychains. Your complete coffee corner.",
+ b_inc:"Includes",b_save:"You save {x} vs. buying separately",b_cta:"Get the Atelier Set",
+ m_e:"Atelier moments",m_t:"This is what signature coffee looks like.",
+ st_t:"From the first sip to your next video",
+ st1_t:"Brew",st1_p:"Filter your coffee with the dripper or your favorite method.",
+ st2_t:"Draw",st2_p:"Trace your design on the foam with the Latte Art Pen.",
+ st3_t:"Share",st3_p:"Ten seconds of video and your coffee is content.",
+ g1_t:"Free shipping over US$49",g1_p:"Shipped with tracking. The Atelier Set already clears the minimum.",
+ g2_t:"30-day guarantee",g2_p:"If you don't love it, send it back within 30 days.",
+ g3_t:"Secure payment",g3_p:"Pay in US dollars with protected methods at checkout.",
+ q_t:"Frequently asked questions",
+ q1:"How long does delivery take?",a1:"We ship within 24 to 48 hours with tracking. Delivery time depends on your country.",
+ q2:"Can I return it?",a2:"Yes. You have 30 days to return it if it isn't what you expected.",
+ q3:"Are prices in US dollars?",a3:"Yes. Every price is shown in USD, wherever you visit from.",
+ q4:"How do I pay?",a4:"With the methods available in the secure checkout when you finish your order.",
+ f_t:"Your next coffee deserves <em>its own signature.</em>",f_p:"The launch batch is limited. Secure your Atelier Set before the offer ends.",f_cta:"Get my set now",
+ ft_cur:"All prices in US dollars (USD)",
+ sticky_t:"Atelier Set",sticky_cta:"Buy the set",
+ c_t:"Your cart",c_empty:"Your cart is empty.",c_sub:"Subtotal",c_disc:"Code {c} (-{p}%)",c_ship:"Shipping",c_free:"Free",c_calc:"Calculated at checkout",c_tot:"Total (USD)",c_go:"Checkout",
+ c_goal:"{x} away from free shipping",c_goal_ok:"You've got free shipping",c_cfg:"Connect your checkout in CONFIG to receive orders.",
+ x_e:"Before you go",x_t:"An <em>extra {p}% off</em> your first order",x_p:"Apply this code in your cart and save on your set.",x_cta:"Apply discount",x_no:"No, thanks",
+ t_add:"Added to cart",t_code:"Code applied",t_lang:"Language adjusted to your region"},
+pt:{
+ tb1:"Frete grátis acima de US$49",tb2:"Garantia de 30 dias",tb3:"Lote de lançamento: restam poucas unidades",tb4:"Pagamento 100% seguro",
+ nav_prod:"Produtos",nav_set:"Set Atelier",nav_faq:"Dúvidas",cart:"Carrinho",
+ h_eye:"Edição limitada · Café de autor em casa",
+ h_title:"Transforme cada xícara em uma <em>obra de arte</em>.",
+ h_sub:"Desenhe na espuma, coe como barista e leve seu café no chaveiro. Três peças, uma obsessão.",
+ h_cta:"Quero meu set",h_cta2:"Ver produtos",h_ends:"A oferta de lançamento termina hoje em",cd_h:"horas",cd_m:"min",cd_s:"seg",
+ tr1:"Frete grátis acima de US$49",tr2:"30 dias de garantia",tr3:"Pagamento 100% seguro",
+ p_eye:"A coleção",p_title:"Três peças. Zero desculpas para um café sem graça.",p_sub:"Escolha uma ou leve o set completo pelo melhor preço.",
+ pen_n:"Latte Art Pen",pen_t:"Desenhe na espuma",pen_d:"A caneta que transforma seu latte em algo digno de foto.",
+ drip_n:"Dripper Dobrável",drip_t:"Pour over portátil",drip_d:"Silicone dobrável com base estável. Café coado em qualquer caneca.",
+ key_n:"Chaveiro Barista",key_t:"Miniaturas colecionáveis",key_d:"Mini cafeteira ou mini copo com corrente. Escolha seu design.",
+ v_mach:"Cafeteira",v_cup:"Copo",v_cafe:"Marrom",v_verde:"Verde",v_rosa:"Rosa",add:"Adicionar ao carrinho",left:"Restam {n} neste lote",tagl:"Edição limitada",
+ col_e:"Variantes",col_t:"Três cores. Uma favorita.",col_p:"A mini cafeteira vem em marrom, verde sálvia e rosa. Escolha a que combina com suas chaves.",col_btn:"Quero este",b_mach:"Cafeteira (marrom, verde ou rosa)",buy:"Comprar agora",pay:"Pagar",c_multi:"Pague cada produto com seu botão Pagar.",wa_t:"Dúvidas? Fale conosco",q5:"Quais cores a cafeteira tem?",a5:"Marrom, verde e rosa. Escolha sua favorita no cartão do produto ou na seção de cores.",
+ v_tzc:"Xícara coração",v_tzh:"Xícara folha",v_tzm:"Xícara marshmallow",cup_e:"Xícaras latte art",cup_t:"Três xícaras. Três designs.",cup_p:"Coração, folha e marshmallow. Mini xícaras com arte latte para pendurar nas chaves.",pk_cap:"Quatro chaveiros, uma coleção.",b_color:"Cor da cafeteira",
+ c_err:"Não foi possível abrir o pagamento. Tente novamente.",
+ vid_e:"Em 360°",vid_t:"Cada detalhe à vista.",vid_p:"Veja a mini cafeteira girar: porta-filtro, manômetro e uma xícara com arte latte, tudo em miniatura.",vid_1:"Porta-filtro e manômetro em miniatura",vid_2:"Xícara com arte latte incluída",vid_3:"Corrente e argola para pendurar",vid_cta:"Quero a rosa",snd:"Ativar som",
+ s1_e:"Latte Art Pen",s1_t:"Corações, folhas e flores. <em>Sem ser barista.</em>",s1_p:"Um toque e o cacau desenha na espuma. Seu café de sempre, com acabamento de cafeteria especial.",
+ s1_1:"Traços finos e precisos",s1_2:"Cabe em qualquer gaveta",s1_3:"O presente que surpreende",
+ s2_e:"Dripper Dobrável",s2_t:"Café especial, <em>dobrado na sua mochila.</em>",s2_p:"Achata para viajar e abre em segundos sobre qualquer caneca. Coado lento, sabor limpo.",
+ s2_1:"Silicone flexível que dobra",s2_2:"Base estável sobre a caneca",s2_3:"Gota a gota, sem complicação",
+ s3_e:"Chaveiro Barista",s3_t:"Uma cafeteria inteira <em>no seu chaveiro.</em>",s3_p:"Mini cafeteira e mini copo para chaves, mochila ou bolsa. O detalhe que todo mundo vai perguntar.",
+ s3_1:"Miniaturas cheias de detalhe",s3_2:"Argola e corrente incluídas",s3_3:"Dois designs para colecionar",
+ b_eye:"Set Atelier · Melhor preço",b_title:"As quatro peças. <em>Um só pedido.</em>",b_sub:"Latte Art Pen, Dripper Dobrável e os dois chaveiros. Seu cantinho de café completo.",
+ b_inc:"Inclui",b_save:"Você economiza {x} frente à compra separada",b_cta:"Quero o Set Atelier",
+ m_e:"Momentos Atelier",m_t:"É assim que um café com assinatura parece.",
+ st_t:"Do primeiro gole ao seu próximo vídeo",
+ st1_t:"Prepare",st1_p:"Coe seu café com o dripper ou o método que preferir.",
+ st2_t:"Desenhe",st2_p:"Trace seu desenho na espuma com o Latte Art Pen.",
+ st3_t:"Compartilhe",st3_p:"Dez segundos de vídeo e seu café vira conteúdo.",
+ g1_t:"Frete grátis acima de US$49",g1_p:"Enviamos com código de rastreio. O Set Atelier já passa do mínimo.",
+ g2_t:"30 dias de garantia",g2_p:"Se não amar, devolva em até 30 dias.",
+ g3_t:"Pagamento seguro",g3_p:"Você paga em dólares, com métodos protegidos no checkout.",
+ q_t:"Perguntas frequentes",
+ q1:"Quanto tempo leva para chegar?",a1:"Enviamos em 24 a 48 horas com rastreio. O prazo de entrega depende do seu país.",
+ q2:"Posso devolver?",a2:"Sim. Você tem 30 dias para devolver se não for o que esperava.",
+ q3:"Os preços são em dólares?",a3:"Sim. Todos os preços aparecem em USD, de onde quer que você nos visite.",
+ q4:"Como pago?",a4:"Com os métodos disponíveis no checkout seguro, ao finalizar o pedido.",
+ f_t:"Seu próximo café merece <em>assinatura própria.</em>",f_p:"O lote de lançamento é limitado. Garanta seu Set Atelier antes que a oferta acabe.",f_cta:"Quero meu set agora",
+ ft_cur:"Todos os preços em dólares americanos (USD)",
+ sticky_t:"Set Atelier",sticky_cta:"Comprar o set",
+ c_t:"Seu carrinho",c_empty:"Seu carrinho está vazio.",c_sub:"Subtotal",c_disc:"Código {c} (-{p}%)",c_ship:"Frete",c_free:"Grátis",c_calc:"Calculado no pagamento",c_tot:"Total (USD)",c_go:"Finalizar pedido",
+ c_goal:"Faltam {x} para frete grátis",c_goal_ok:"Você tem frete grátis",c_cfg:"Conecte seu checkout em CONFIG para receber pedidos.",
+ x_e:"Antes de ir",x_t:"<em>{p}% extra</em> no seu primeiro pedido",x_p:"Aplique este código no carrinho e economize no seu set.",x_cta:"Aplicar desconto",x_no:"Não, obrigado",
+ t_add:"Adicionado ao carrinho",t_code:"Código aplicado",t_lang:"Idioma ajustado à sua região"},
+fr:{
+ tb1:"Livraison offerte dès 49 US$",tb2:"Garantie 30 jours",tb3:"Lot de lancement : il reste peu d'unités",tb4:"Paiement 100 % sécurisé",
+ nav_prod:"Produits",nav_set:"Set Atelier",nav_faq:"FAQ",cart:"Panier",
+ h_eye:"Édition limitée · Le café signature chez vous",
+ h_title:"Transformez chaque tasse en <em>œuvre d'art</em>.",
+ h_sub:"Dessinez sur la mousse, filtrez comme un barista et emportez votre café au porte-clés. Trois pièces, une obsession.",
+ h_cta:"Je veux mon set",h_cta2:"Voir les produits",h_ends:"L'offre de lancement se termine dans",cd_h:"heures",cd_m:"min",cd_s:"sec",
+ tr1:"Livraison offerte dès 49 US$",tr2:"Garantie 30 jours",tr3:"Paiement 100 % sécurisé",
+ p_eye:"La collection",p_title:"Trois pièces. Plus d'excuse pour un café fade.",p_sub:"Choisissez-en une ou prenez le set complet au meilleur prix.",
+ pen_n:"Latte Art Pen",pen_t:"Dessinez sur la mousse",pen_d:"Le stylo qui transforme votre latte en pièce à photographier.",
+ drip_n:"Dripper Pliable",drip_t:"Pour over nomade",drip_d:"Silicone pliable à base stable. Café filtré sur n'importe quelle tasse.",
+ key_n:"Porte-clés Barista",key_t:"Miniatures de collection",key_d:"Mini machine à café ou mini gobelet avec chaîne. Choisissez votre modèle.",
+ v_mach:"Machine",v_cup:"Gobelet",v_cafe:"Marron",v_verde:"Vert",v_rosa:"Rose",add:"Ajouter au panier",left:"Plus que {n} dans ce lot",tagl:"Édition limitée",
+ col_e:"Variantes",col_t:"Trois couleurs. Une seule favorite.",col_p:"La mini machine existe en marron, vert sauge et rose. Choisissez celle qui va avec vos clés.",col_btn:"Je le veux",b_mach:"Machine (marron, vert ou rose)",buy:"Acheter maintenant",pay:"Payer",c_multi:"Payez chaque produit avec son bouton Payer.",wa_t:"Une question ? Écrivez-nous",q5:"Quelles couleurs pour la machine ?",a5:"Marron, vert et rose. Choisissez votre favorite sur la fiche produit ou dans la section couleurs.",
+ v_tzc:"Tasse cœur",v_tzh:"Tasse feuille",v_tzm:"Tasse guimauve",cup_e:"Tasses latte art",cup_t:"Trois tasses. Trois modèles.",cup_p:"Cœur, feuille et guimauve. Mini tasses latte art à accrocher à vos clés.",pk_cap:"Quatre porte-clés, une collection.",b_color:"Couleur de la machine",
+ c_err:"Impossible d'ouvrir le paiement. Réessayez.",
+ vid_e:"En 360°",vid_t:"Chaque détail, sous vos yeux.",vid_p:"Regardez tourner la mini machine : porte-filtre, manomètre et une petite tasse latte art, le tout en miniature.",vid_1:"Porte-filtre et manomètre miniatures",vid_2:"Petite tasse latte art incluse",vid_3:"Chaîne et anneau pour l'accrocher",vid_cta:"Je veux la rose",snd:"Activer le son",
+ s1_e:"Latte Art Pen",s1_t:"Cœurs, feuilles et fleurs. <em>Sans être barista.</em>",s1_p:"Un geste et le cacao dessine sur la mousse. Votre café habituel, avec la finition d'un café de spécialité.",
+ s1_1:"Traits fins et précis",s1_2:"Se glisse dans n'importe quel tiroir",s1_3:"Le cadeau qui surprend",
+ s2_e:"Dripper Pliable",s2_t:"Un café de spécialité, <em>plié dans votre sac.</em>",s2_p:"Il s'aplatit pour voyager et s'ouvre en secondes sur n'importe quelle tasse. Filtration lente, goût net.",
+ s2_1:"Silicone souple qui se plie",s2_2:"Base stable sur la tasse",s2_3:"Goutte à goutte, sans effort",
+ s3_e:"Porte-clés Barista",s3_t:"Tout un café <em>au bout de vos clés.</em>",s3_p:"Une mini machine et un mini gobelet pour vos clés, sac à dos ou sac à main. Le détail dont tout le monde parlera.",
+ s3_1:"Miniatures riches en détails",s3_2:"Anneau et chaîne inclus",s3_3:"Deux modèles à collectionner",
+ b_eye:"Set Atelier · Meilleur prix",b_title:"Les quatre pièces. <em>Une seule commande.</em>",b_sub:"Latte Art Pen, Dripper Pliable et les deux porte-clés. Votre coin café complet.",
+ b_inc:"Inclus",b_save:"Vous économisez {x} par rapport à l'achat séparé",b_cta:"Je veux le Set Atelier",
+ m_e:"Moments Atelier",m_t:"Voilà à quoi ressemble un café signature.",
+ st_t:"De la première gorgée à votre prochaine vidéo",
+ st1_t:"Préparez",st1_p:"Filtrez votre café avec le dripper ou votre méthode préférée.",
+ st2_t:"Dessinez",st2_p:"Tracez votre motif sur la mousse avec le Latte Art Pen.",
+ st3_t:"Partagez",st3_p:"Dix secondes de vidéo et votre café devient un contenu.",
+ g1_t:"Livraison offerte dès 49 US$",g1_p:"Expédition avec suivi. Le Set Atelier dépasse déjà le minimum.",
+ g2_t:"Garantie 30 jours",g2_p:"Si vous n'êtes pas conquis, renvoyez-le sous 30 jours.",
+ g3_t:"Paiement sécurisé",g3_p:"Vous payez en dollars américains, avec des moyens protégés à la caisse.",
+ q_t:"Questions fréquentes",
+ q1:"Quel est le délai de livraison ?",a1:"Nous expédions sous 24 à 48 heures avec suivi. Le délai dépend de votre pays.",
+ q2:"Puis-je le retourner ?",a2:"Oui. Vous avez 30 jours pour le retourner s'il ne vous convient pas.",
+ q3:"Les prix sont-ils en dollars ?",a3:"Oui. Tous les prix sont affichés en USD, d'où que vous nous visitiez.",
+ q4:"Comment payer ?",a4:"Avec les moyens disponibles dans la caisse sécurisée, en finalisant votre commande.",
+ f_t:"Votre prochain café mérite <em>sa propre signature.</em>",f_p:"Le lot de lancement est limité. Réservez votre Set Atelier avant la fin de l'offre.",f_cta:"Je veux mon set maintenant",
+ ft_cur:"Tous les prix sont en dollars américains (USD)",
+ sticky_t:"Set Atelier",sticky_cta:"Acheter le set",
+ c_t:"Votre panier",c_empty:"Votre panier est vide.",c_sub:"Sous-total",c_disc:"Code {c} (-{p} %)",c_ship:"Livraison",c_free:"Offerte",c_calc:"Calculée au paiement",c_tot:"Total (USD)",c_go:"Finaliser la commande",
+ c_goal:"Plus que {x} pour la livraison offerte",c_goal_ok:"Livraison offerte",c_cfg:"Connectez votre caisse dans CONFIG pour recevoir des commandes.",
+ x_e:"Avant de partir",x_t:"<em>{p} % de plus</em> sur votre première commande",x_p:"Appliquez ce code dans votre panier et économisez sur votre set.",x_cta:"Appliquer la remise",x_no:"Non merci",
+ t_add:"Ajouté au panier",t_code:"Code appliqué",t_lang:"Langue adaptée à votre région"},
+de:{
+ tb1:"Gratis Versand ab 49 US$",tb2:"30 Tage Garantie",tb3:"Startcharge: nur noch wenige Stück",tb4:"100 % sicher bezahlen",
+ nav_prod:"Produkte",nav_set:"Atelier-Set",nav_faq:"FAQ",cart:"Warenkorb",
+ h_eye:"Limitierte Edition · Signature-Kaffee für zu Hause",
+ h_title:"Mach jede Tasse zu einem <em>Kunstwerk</em>.",
+ h_sub:"Zeichne auf den Milchschaum, brühe wie ein Barista und trage deinen Kaffee am Schlüsselbund. Drei Teile, eine Leidenschaft.",
+ h_cta:"Mein Set sichern",h_cta2:"Produkte ansehen",h_ends:"Das Startangebot endet heute in",cd_h:"Std",cd_m:"Min",cd_s:"Sek",
+ tr1:"Gratis Versand ab 49 US$",tr2:"30 Tage Garantie",tr3:"100 % sichere Zahlung",
+ p_eye:"Die Kollektion",p_title:"Drei Teile. Keine Ausrede für langweiligen Kaffee.",p_sub:"Wähle eines oder nimm das komplette Set zum besten Preis.",
+ pen_n:"Latte Art Pen",pen_t:"Zeichne auf den Schaum",pen_d:"Der Stift, der deinen Latte zum Fotomotiv macht.",
+ drip_n:"Faltbarer Dripper",drip_t:"Pour Over für unterwegs",drip_d:"Faltbares Silikon mit stabilem Fuß. Filterkaffee über jeder Tasse.",
+ key_n:"Barista-Schlüsselanhänger",key_t:"Sammelbare Miniaturen",key_d:"Mini-Espressomaschine oder Mini-Becher mit Kette. Wähle dein Design.",
+ v_mach:"Maschine",v_cup:"Becher",v_cafe:"Braun",v_verde:"Grün",v_rosa:"Rosa",add:"In den Warenkorb",left:"Nur noch {n} in dieser Charge",tagl:"Limitierte Edition",
+ col_e:"Varianten",col_t:"Drei Farben. Eine Favoritin.",col_p:"Die Mini-Espressomaschine gibt es in Braun, Salbeigrün und Rosa. Wähle die passend zu deinen Schlüsseln.",col_btn:"Das will ich",b_mach:"Maschine (braun, grün oder rosa)",buy:"Jetzt kaufen",pay:"Bezahlen",c_multi:"Bezahle jedes Produkt mit seinem Bezahlen-Button.",wa_t:"Fragen? Schreib uns",q5:"In welchen Farben gibt es die Maschine?",a5:"Braun, Grün und Rosa. Wähle deine Favoritin auf der Produktkarte oder im Farbbereich.",
+ v_tzc:"Herz-Tasse",v_tzh:"Blatt-Tasse",v_tzm:"Marshmallow-Tasse",cup_e:"Latte-Art-Tassen",cup_t:"Drei Tassen. Drei Designs.",cup_p:"Herz, Blatt und Marshmallow. Mini-Latte-Art-Tassen für deinen Schlüsselbund.",pk_cap:"Vier Anhänger, eine Kollektion.",b_color:"Farbe der Maschine",
+ c_err:"Die Kasse ließ sich nicht öffnen. Bitte erneut versuchen.",
+ vid_e:"In 360°",vid_t:"Jedes Detail im Blick.",vid_p:"Sieh die Mini-Espressomaschine rotieren: Siebträger, Manometer und eine winzige Latte-Art-Tasse, alles in Miniatur.",vid_1:"Siebträger und Manometer in Miniatur",vid_2:"Winzige Latte-Art-Tasse inklusive",vid_3:"Kette und Ring zum Aufhängen",vid_cta:"Ich will die rosa",snd:"Ton einschalten",
+ s1_e:"Latte Art Pen",s1_t:"Herzen, Blätter und Blumen. <em>Ganz ohne Barista-Training.</em>",s1_p:"Ein Tipp und Kakao zeichnet auf den Schaum. Dein gewohnter Kaffee mit dem Finish eines Specialty-Cafés.",
+ s1_1:"Feine, präzise Linien",s1_2:"Passt in jede Schublade",s1_3:"Das Geschenk, das überrascht",
+ s2_e:"Faltbarer Dripper",s2_t:"Specialty-Kaffee, <em>flach in deiner Tasche.</em>",s2_p:"Zum Reisen flach gefaltet, in Sekunden auf jeder Tasse aufgebaut. Langsam gefiltert, klarer Geschmack.",
+ s2_1:"Flexibles Silikon, das sich faltet",s2_2:"Stabiler Stand auf der Tasse",s2_3:"Tropfen für Tropfen, ohne Aufwand",
+ s3_e:"Barista-Schlüsselanhänger",s3_t:"Ein ganzes Café <em>an deinem Schlüsselbund.</em>",s3_p:"Mini-Espressomaschine und Mini-Becher für Schlüssel, Rucksack oder Tasche. Das Detail, nach dem alle fragen.",
+ s3_1:"Miniaturen voller Details",s3_2:"Ring und Kette inklusive",s3_3:"Zwei Designs zum Sammeln",
+ b_eye:"Atelier-Set · Bester Preis",b_title:"Alle vier Teile. <em>Eine Bestellung.</em>",b_sub:"Latte Art Pen, faltbarer Dripper und beide Anhänger. Deine komplette Kaffeeecke.",
+ b_inc:"Enthält",b_save:"Du sparst {x} gegenüber Einzelkauf",b_cta:"Atelier-Set sichern",
+ m_e:"Atelier-Momente",m_t:"So sieht Signature-Kaffee aus.",
+ st_t:"Vom ersten Schluck bis zu deinem nächsten Video",
+ st1_t:"Brühen",st1_p:"Filtere deinen Kaffee mit dem Dripper oder deiner Lieblingsmethode.",
+ st2_t:"Zeichnen",st2_p:"Zeichne dein Motiv mit dem Latte Art Pen auf den Schaum.",
+ st3_t:"Teilen",st3_p:"Zehn Sekunden Video und dein Kaffee wird zum Content.",
+ g1_t:"Gratis Versand ab 49 US$",g1_p:"Versand mit Sendungsverfolgung. Das Atelier-Set erreicht den Mindestwert bereits.",
+ g2_t:"30 Tage Garantie",g2_p:"Gefällt es dir nicht, schickst du es innerhalb von 30 Tagen zurück.",
+ g3_t:"Sichere Zahlung",g3_p:"Du zahlst in US-Dollar mit geschützten Zahlungsarten an der Kasse.",
+ q_t:"Häufige Fragen",
+ q1:"Wie lange dauert die Lieferung?",a1:"Wir versenden innerhalb von 24 bis 48 Stunden mit Tracking. Die Lieferzeit hängt von deinem Land ab.",
+ q2:"Kann ich es zurückgeben?",a2:"Ja. Du hast 30 Tage Zeit, falls es nicht deinen Erwartungen entspricht.",
+ q3:"Sind die Preise in Dollar?",a3:"Ja. Alle Preise werden in USD angezeigt, egal von wo du uns besuchst.",
+ q4:"Wie bezahle ich?",a4:"Mit den Zahlungsarten der sicheren Kasse, wenn du deine Bestellung abschließt.",
+ f_t:"Dein nächster Kaffee verdient <em>seine eigene Signatur.</em>",f_p:"Die Startcharge ist limitiert. Sichere dir dein Atelier-Set, bevor das Angebot endet.",f_cta:"Jetzt mein Set sichern",
+ ft_cur:"Alle Preise in US-Dollar (USD)",
+ sticky_t:"Atelier-Set",sticky_cta:"Set kaufen",
+ c_t:"Dein Warenkorb",c_empty:"Dein Warenkorb ist leer.",c_sub:"Zwischensumme",c_disc:"Code {c} (-{p} %)",c_ship:"Versand",c_free:"Gratis",c_calc:"Wird an der Kasse berechnet",c_tot:"Gesamt (USD)",c_go:"Zur Kasse",
+ c_goal:"Noch {x} bis zum Gratisversand",c_goal_ok:"Du hast Gratisversand",c_cfg:"Verbinde deine Kasse in CONFIG, um Bestellungen zu erhalten.",
+ x_e:"Bevor du gehst",x_t:"<em>{p} % extra</em> auf deine erste Bestellung",x_p:"Wende diesen Code im Warenkorb an und spare bei deinem Set.",x_cta:"Rabatt anwenden",x_no:"Nein, danke",
+ t_add:"Zum Warenkorb hinzugefügt",t_code:"Code angewendet",t_lang:"Sprache an deine Region angepasst"},
+it:{
+ tb1:"Spedizione gratuita da 49 US$",tb2:"Garanzia di 30 giorni",tb3:"Lotto di lancio: pochi pezzi rimasti",tb4:"Pagamento 100% sicuro",
+ nav_prod:"Prodotti",nav_set:"Set Atelier",nav_faq:"FAQ",cart:"Carrello",
+ h_eye:"Edizione limitata · Il caffè d'autore a casa tua",
+ h_title:"Trasforma ogni tazza in un'<em>opera d'arte</em>.",
+ h_sub:"Disegna sulla schiuma, filtra come un barista e porta il tuo caffè sul portachiavi. Tre pezzi, un'unica ossessione.",
+ h_cta:"Voglio il mio set",h_cta2:"Vedi i prodotti",h_ends:"L'offerta di lancio termina oggi tra",cd_h:"ore",cd_m:"min",cd_s:"sec",
+ tr1:"Spedizione gratuita da 49 US$",tr2:"Garanzia di 30 giorni",tr3:"Pagamento 100% sicuro",
+ p_eye:"La collezione",p_title:"Tre pezzi. Nessuna scusa per un caffè noioso.",p_sub:"Scegline uno o prendi il set completo al miglior prezzo.",
+ pen_n:"Latte Art Pen",pen_t:"Disegna sulla schiuma",pen_d:"La penna che trasforma il tuo latte in qualcosa da fotografare.",
+ drip_n:"Dripper Pieghevole",drip_t:"Pour over portatile",drip_d:"Silicone pieghevole con base stabile. Caffè filtrato su qualsiasi tazza.",
+ key_n:"Portachiavi Barista",key_t:"Miniature da collezione",key_d:"Mini macchina del caffè o mini bicchiere con catenella. Scegli il tuo design.",
+ v_mach:"Macchina",v_cup:"Bicchiere",v_cafe:"Marrone",v_verde:"Verde",v_rosa:"Rosa",add:"Aggiungi al carrello",left:"Ne restano {n} in questo lotto",tagl:"Edizione limitata",
+ col_e:"Varianti",col_t:"Tre colori. Una sola preferita.",col_p:"La mini macchina del caffè è disponibile in marrone, verde salvia e rosa. Scegli quella che si abbina alle tue chiavi.",col_btn:"Lo voglio",b_mach:"Macchina (marrone, verde o rosa)",buy:"Acquista ora",pay:"Paga",c_multi:"Paga ogni prodotto con il suo pulsante Paga.",wa_t:"Dubbi? Scrivici",q5:"Di che colori è la macchina?",a5:"Marrone, verde e rosa. Scegli la tua preferita nella scheda prodotto o nella sezione colori.",
+ v_tzc:"Tazza cuore",v_tzh:"Tazza foglia",v_tzm:"Tazza marshmallow",cup_e:"Tazze latte art",cup_t:"Tre tazze. Tre design.",cup_p:"Cuore, foglia e marshmallow. Mini tazze latte art da appendere alle chiavi.",pk_cap:"Quattro portachiavi, una collezione.",b_color:"Colore della macchina",
+ c_err:"Impossibile aprire il pagamento. Riprova.",
+ vid_e:"A 360°",vid_t:"Ogni dettaglio in vista.",vid_p:"Guarda girare la mini macchina: portafiltro, manometro e una tazzina con latte art, tutto in miniatura.",vid_1:"Portafiltro e manometro in miniatura",vid_2:"Tazzina con latte art inclusa",vid_3:"Catenella e anello per appenderla",vid_cta:"Voglio quella rosa",snd:"Attiva l'audio",
+ s1_e:"Latte Art Pen",s1_t:"Cuori, foglie e fiori. <em>Senza essere un barista.</em>",s1_p:"Un tocco e il cacao disegna sulla schiuma. Il tuo caffè di sempre, con la finitura di una caffetteria specialty.",
+ s1_1:"Tratti sottili e precisi",s1_2:"Sta in qualsiasi cassetto",s1_3:"Il regalo che sorprende",
+ s2_e:"Dripper Pieghevole",s2_t:"Caffè specialty, <em>ripiegato nello zaino.</em>",s2_p:"Si appiattisce per viaggiare e si apre in pochi secondi su qualsiasi tazza. Filtrazione lenta, gusto pulito.",
+ s2_1:"Silicone flessibile che si piega",s2_2:"Base stabile sulla tazza",s2_3:"Goccia dopo goccia, senza fatica",
+ s3_e:"Portachiavi Barista",s3_t:"Un'intera caffetteria <em>sulle tue chiavi.</em>",s3_p:"Mini macchina del caffè e mini bicchiere per chiavi, zaino o borsa. Il dettaglio di cui tutti ti chiederanno.",
+ s3_1:"Miniature ricche di dettagli",s3_2:"Anello e catenella inclusi",s3_3:"Due design da collezionare",
+ b_eye:"Set Atelier · Miglior prezzo",b_title:"Tutti e quattro i pezzi. <em>Un solo ordine.</em>",b_sub:"Latte Art Pen, Dripper Pieghevole e i due portachiavi. Il tuo angolo caffè completo.",
+ b_inc:"Include",b_save:"Risparmi {x} rispetto all'acquisto separato",b_cta:"Voglio il Set Atelier",
+ m_e:"Momenti Atelier",m_t:"Ecco com'è un caffè d'autore.",
+ st_t:"Dal primo sorso al tuo prossimo video",
+ st1_t:"Prepara",st1_p:"Filtra il caffè con il dripper o il metodo che preferisci.",
+ st2_t:"Disegna",st2_p:"Traccia il tuo disegno sulla schiuma con il Latte Art Pen.",
+ st3_t:"Condividi",st3_p:"Dieci secondi di video e il tuo caffè diventa contenuto.",
+ g1_t:"Spedizione gratuita da 49 US$",g1_p:"Spediamo con tracking. Il Set Atelier supera già il minimo.",
+ g2_t:"Garanzia di 30 giorni",g2_p:"Se non ti conquista, lo restituisci entro 30 giorni.",
+ g3_t:"Pagamento sicuro",g3_p:"Paghi in dollari USA con metodi protetti al checkout.",
+ q_t:"Domande frequenti",
+ q1:"Quanto ci mette ad arrivare?",a1:"Spediamo entro 24-48 ore con tracking. I tempi di consegna dipendono dal tuo paese.",
+ q2:"Posso restituirlo?",a2:"Sì. Hai 30 giorni per restituirlo se non è come ti aspettavi.",
+ q3:"I prezzi sono in dollari?",a3:"Sì. Tutti i prezzi sono in USD, da qualunque paese tu ci visiti.",
+ q4:"Come pago?",a4:"Con i metodi disponibili nel checkout sicuro, al termine dell'ordine.",
+ f_t:"Il tuo prossimo caffè merita <em>una firma tutta sua.</em>",f_p:"Il lotto di lancio è limitato. Assicurati il tuo Set Atelier prima che l'offerta finisca.",f_cta:"Voglio il mio set ora",
+ ft_cur:"Tutti i prezzi in dollari statunitensi (USD)",
+ sticky_t:"Set Atelier",sticky_cta:"Acquista il set",
+ c_t:"Il tuo carrello",c_empty:"Il tuo carrello è vuoto.",c_sub:"Subtotale",c_disc:"Codice {c} (-{p}%)",c_ship:"Spedizione",c_free:"Gratis",c_calc:"Calcolata al pagamento",c_tot:"Totale (USD)",c_go:"Concludi l'ordine",
+ c_goal:"Mancano {x} alla spedizione gratuita",c_goal_ok:"Hai la spedizione gratuita",c_cfg:"Collega il tuo checkout in CONFIG per ricevere ordini.",
+ x_e:"Prima di andare",x_t:"Un <em>{p}% extra</em> sul tuo primo ordine",x_p:"Applica questo codice nel carrello e risparmia sul tuo set.",x_cta:"Applica lo sconto",x_no:"No, grazie",
+ t_add:"Aggiunto al carrello",t_code:"Codice applicato",t_lang:"Lingua adattata alla tua regione"}
+};
+const LOCALE = {es:'es',en:'en-US',pt:'pt-BR',fr:'fr-FR',de:'de-DE',it:'it-IT'};
+
+/* ========== IDIOMA POR IP ========== */
+const CC_LANG = (()=>{ const m={};
+  'ES MX AR CL CO PE VE EC GT CU BO DO HN PY SV NI CR PA UY PR GQ'.split(' ').forEach(c=>m[c]='es');
+  'BR PT AO MZ CV'.split(' ').forEach(c=>m[c]='pt');
+  'FR BE LU MC SN CI CM HT'.split(' ').forEach(c=>m[c]='fr');
+  'DE AT LI CH'.split(' ').forEach(c=>m[c]='de');
+  'IT SM VA'.split(' ').forEach(c=>m[c]='it'); return m })();
+const ls = { get(k){ try{return localStorage.getItem(k)}catch(e){return null} }, set(k,v){ try{localStorage.setItem(k,v)}catch(e){} } };
+const ss = { get(k){ try{return sessionStorage.getItem(k)}catch(e){return null} }, set(k,v){ try{sessionStorage.setItem(k,v)}catch(e){} } };
+function browserLang(){ const l=(navigator.languages&&navigator.languages[0])||navigator.language||'en'; const b=l.slice(0,2).toLowerCase(); return I18N[b]?b:'en' }
+async function ipCountry(){
+  const urls=[['https://ipapi.co/json/','country_code'],['https://ipwho.is/','country_code']];
+  for(const [u,k] of urls){
+    try{ const c=new AbortController(); const t=setTimeout(()=>c.abort(),2500);
+      const r=await fetch(u,{signal:c.signal}); clearTimeout(t); const j=await r.json(); if(j&&j[k]) return String(j[k]).toUpperCase(); }catch(e){}
+  } return null;
+}
+
+/* ========== ESTADO ========== */
+let lang = 'en';
+const $ = (s,r=document)=>r.querySelector(s), $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const fmt = n => new Intl.NumberFormat(LOCALE[lang],{style:'currency',currency:'USD'}).format(n);
+const t = (k,v={}) => { let s=(I18N[lang]&&I18N[lang][k])??I18N.en[k]??k; for(const x in v) s=s.split('{'+x+'}').join(v[x]); return s };
+let cart = []; try{ cart = JSON.parse(ls.get('ac_cart')||'[]').filter(i=>P[i.id] && (i.id!=='key'||P.key.v[i.v])).map(i=>(i.id==='set'&&!i.v)?{...i,v:'cafe'}:i) }catch(e){ cart=[] }
+let discount = ls.get('ac_code')===CONFIG.discountCode;
+const varSel = { key:'cafe', set:'cafe' };
+const SW = { cafe:'#8a5a3b', verde:'#8fae85', rosa:'#efb8c0' };
+const payKey = (id,v)=> id==='key' ? 'key-'+v : id;
+const payUrl = (id,v)=> (CONFIG.payLinks&&CONFIG.payLinks[payKey(id,v)])||'';
+
+/* ========== RENDER ========== */
+function applyI18n(){
+  document.documentElement.lang = lang;
+  $$('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));
+  $$('[data-i18n-html]').forEach(e=>e.innerHTML=t(e.dataset.i18nHtml,{p:CONFIG.discountPct}));
+  $('#lang').value = lang;
+  const tk=['tb1','tb2','tb3','tb4'].map(k=>`<span>${t(k)}</span>`).join('');
+  $('#ticker').innerHTML = tk+tk+tk+tk;
+  $('#codeBox').textContent = CONFIG.discountCode;
+  const sb=$('#vsnd'); if(sb) sb.setAttribute('aria-label',t('snd'));
+  renderProducts(); renderColors(); renderBundle(); renderCart(); tick(); $('#wa').hidden=!CONFIG.whatsapp; if(CONFIG.whatsapp) $('#wa').href='https://wa.me/'+CONFIG.whatsapp;
+}
+function pct(p){ return Math.round((1-p.price/p.was)*100) }
+function stockHtml(id){ const n=CONFIG.stock[id]; return `<span>${t('left',{n})}</span><div class="bar"><i style="width:${Math.min(100,Math.round(n/60*100))}%"></i></div>` }
+function renderProducts(){
+  const card=(id,nameK,subK,descK)=>{
+    const p=P[id]; const imgs = id==='key'? p.v[varSel.key] : p.img;
+    const vars = id==='key' ? `<div class="vars" role="group">${['cafe','verde','rosa','tzc','tzh','tzm','cup'].map(v=>`<button type="button" data-var="${v}" aria-pressed="${varSel.key===v}">${SW[v]?`<i class="sw" style="background:${SW[v]}"></i>`:''}${t('v_'+v)}</button>`).join('')}</div>` : '';
+    return `<article class="pcard tilt rv in" data-id="${id}">
+      <div class="pimg"><span class="badge">-${pct(p)}%</span><span class="tag">${t('tagl')}</span>
+        <img src="img/${imgs[0]}.jpg" alt="${t(nameK)}" loading="lazy"><img src="img/${imgs[1]}.jpg" alt="" loading="lazy"></div>
+      <div class="pbody"><span class="sub">${t(subK)}</span><h3>${t(nameK)}</h3><p>${t(descK)}</p>${vars}
+        <div class="price"><b>${fmt(p.price)}</b><s>${fmt(p.was)}</s><em>USD</em></div>
+        <div class="stock">${stockHtml(id)}</div>
+        <a class="btn block" data-buy="${id}" href="${payUrl(id,varSel.key)||'#'}" ${payUrl(id,varSel.key)?'target="_blank" rel="noopener"':''}>${t('buy')} →</a>
+        <button class="btn ghost block" type="button" data-add="${id}">${t('add')}</button></div></article>`;
+  };
+  $('#pgrid').innerHTML = card('pen','pen_n','pen_t','pen_d')+card('drip','drip_n','drip_t','drip_d')+card('key','key_n','key_t','key_d');
+}
+function variantGrid(sel,list){
+  $(sel).innerHTML = list.map(v=>`<article class="ccard rv in"><img src="img/${P.key.v[v][0]}.jpg" alt="${t('key_n')} ${t('v_'+v)}" loading="lazy"><div class="cinfo"><h3>${SW[v]?`<i class="sw" style="background:${SW[v]}"></i>`:''}${t('v_'+v)}</h3><div class="price"><b>${fmt(P.key.price)}</b><s>${fmt(P.key.was)}</s></div><button class="btn block" type="button" data-addcol="${v}">${t('col_btn')}</button></div></article>`).join('');
+}
+function renderColors(){ variantGrid('#colors',['cafe','verde','rosa']); variantGrid('#cups',['tzc','tzh','tzm']) }
+function renderBundle(){
+  $('#inc').innerHTML = [t('pen_n'),t('drip_n'),t('key_n')+' · '+t('b_mach'),t('key_n')+' · '+t('v_cup')].map(x=>`<span>${x}</span>`).join('');
+  $('#bprice').innerHTML = `<b>${fmt(P.set.price)}</b><s>${fmt(SET_REF)}</s><em>USD</em>`;
+  $('#bsave').textContent = t('b_save',{x:fmt(SET_REF-P.set.price)});
+  $('#bstock').innerHTML = stockHtml('set');
+  $('#bpick').innerHTML = `<span style="color:var(--mut);font-size:.86rem;width:100%">${t('b_color')}</span>`+['cafe','verde','rosa'].map(v=>`<button type="button" data-setcol="${v}" aria-pressed="${varSel.set===v}"><i class="sw" style="background:${SW[v]}"></i>${t('v_'+v)}</button>`).join('');
+  $('#stickyP').textContent = fmt(P.set.price);
+}
+function lineInfo(i){
+  if(i.id==='set') return {name:'Atelier Set', sub:t('v_mach')+' · '+t('v_'+i.v), img:'pen-flower'};
+  if(i.id==='key') return {name:t('key_n'), sub:(['cafe','verde','rosa'].includes(i.v)?t('v_mach')+' · ':'')+t('v_'+i.v), img:P.key.v[i.v][0]};
+  return {name:t(i.id+'_n'), sub:'', img:P[i.id].img[0]};
+}
+function totals(){
+  const sub = cart.reduce((a,i)=>a+P[i.id].price*i.qty,0);
+  const d = discount ? sub*CONFIG.discountPct/100 : 0;
+  return {sub, d, tot: sub-d};
+}
+function renderCart(){
+  const n = cart.reduce((a,i)=>a+i.qty,0); $('#cartN').textContent=n;
+  const body=$('#dbody');
+  body.innerHTML = cart.length ? cart.map((i,ix)=>{ const L=lineInfo(i); return `<div class="line"><img src="img/${L.img}.jpg" alt=""><div><h4>${L.name}</h4><small>${L.sub}</small><div class="qty"><button type="button" data-q="${ix}" data-d="-1" aria-label="-">−</button><span>${i.qty}</span><button type="button" data-q="${ix}" data-d="1" aria-label="+">+</button></div></div><div class="lp">${fmt(P[i.id].price*i.qty)}${payUrl(i.id,i.v)?`<a class="pl" href="${payUrl(i.id,i.v)}" target="_blank" rel="noopener">${t('pay')} →</a>`:''}</div></div>` }).join('') : `<div class="empty">${t('c_empty')}</div>`;
+  const T=totals(); const left=Math.max(0,CONFIG.freeShipFrom-T.sub);
+  $('#cSub').textContent=fmt(T.sub);
+  $('#cDiscRow').hidden = !(discount && cart.length);
+  $('#cDiscL').textContent=t('c_disc',{c:CONFIG.discountCode,p:CONFIG.discountPct}); $('#cDisc').textContent='−'+fmt(T.d);
+  $('#cTot').textContent=fmt(T.tot);
+  const free = T.sub>=CONFIG.freeShipFrom && cart.length;
+  $('#cShip').textContent = cart.length ? (free ? t('c_free') : t('c_calc')) : '—';
+  $('#goalTxt').textContent = free ? t('c_goal_ok') : t('c_goal',{x:fmt(left)});
+  $('#goalBar').style.width = Math.min(100,T.sub/CONFIG.freeShipFrom*100)+'%';
+  const go=$('#go'), note=$('#goNote'); let url='';
+  const text = `Atelier Crema\n`+cart.map(i=>{const L=lineInfo(i);return `${i.qty}x ${L.name}${L.sub&&i.id!=='set'?' ('+L.sub+')':''}`}).join('\n')+`\nTotal: ${fmt(T.tot)} USD`+(discount?`\nCode: ${CONFIG.discountCode}`:'');
+  const single = cart.length===1 ? payUrl(cart[0].id,cart[0].v) : '';
+  if(CONFIG.checkoutUrl) url=CONFIG.checkoutUrl; else if(single) url=single; else if(CONFIG.whatsapp) url='https://wa.me/'+CONFIG.whatsapp+'?text='+encodeURIComponent(text);
+  if(CONFIG.shopify&&CONFIG.shopify.enabled) url='#shopify';
+  go.dataset.url=url; go.setAttribute('href',url||'#');
+  go.style.opacity = cart.length?1:.45; go.style.pointerEvents = cart.length?'auto':'none';
+  const anyLink = cart.some(i=>payUrl(i.id,i.v)); note.hidden = !!url || !cart.length; note.textContent=t(anyLink?'c_multi':'c_cfg');
+  ls.set('ac_cart',JSON.stringify(cart));
+}
+function add(id,v){
+  const vv = id==='key' ? (v||varSel.key) : id==='set' ? (v||varSel.set) : null;
+  const ex = cart.find(i=>i.id===id && i.v===vv);
+  if(ex) ex.qty++; else cart.push(vv?{id,v:vv,qty:1}:{id,qty:1});
+  renderCart(); toast(t('t_add'));
+}
+const shopVar = i => CONFIG.shopify.variants[i.id==='set' ? 'set-'+(i.v||'cafe') : i.id==='key' ? 'key-'+i.v : i.id];
+async function shopifyCheckout(){
+  const go=$('#go'); go.style.opacity=.6;
+  try{
+    const origin=(()=>{try{return top.location.origin}catch(e){return location.origin}})();
+    const items=cart.map(i=>({id:Number(shopVar(i)),quantity:i.qty}));
+    const r=await fetch(origin+'/cart/add.js',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items})});
+    if(!r.ok) throw new Error('cart');
+    try{ top.location.href=origin+'/checkout' }catch(e){ location.href=origin+'/checkout' }
+  }catch(e){ go.style.opacity=1; toast(t('c_err')) }
+}
+$('#go').addEventListener('click',e=>{ if(CONFIG.shopify&&CONFIG.shopify.enabled){ e.preventDefault(); if(cart.length) shopifyCheckout(); return } if(!$('#go').dataset.url){ e.preventDefault(); $('#goNote').hidden=false } });
+
+/* ========== INTERACCIONES ========== */
+function openCart(){ $('#drawer').classList.add('on'); $('#veil').classList.add('on') }
+function closeCart(){ $('#drawer').classList.remove('on'); $('#veil').classList.remove('on') }
+$('#openCart').onclick=openCart; $('#closeCart').onclick=closeCart; $('#veil').onclick=closeCart;
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeCart(); closePop() } });
+$('#lang').onchange=e=>{ lang=e.target.value; ls.set('ac_lang',lang); applyI18n() };
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-add]'); if(a){ add(a.dataset.add); burst(e.clientX,e.clientY); setTimeout(openCart,450); return }
+  const s=e.target.closest('[data-addset]'); if(s){ add('set'); burst(e.clientX,e.clientY); setTimeout(openCart,450); return }
+  const by=e.target.closest('[data-buy]'); if(by){ if(!payUrl(by.dataset.buy,varSel.key)){ e.preventDefault(); add(by.dataset.buy); burst(e.clientX,e.clientY); setTimeout(openCart,450) } return }
+  const sc=e.target.closest('[data-setcol]'); if(sc){ varSel.set=sc.dataset.setcol; renderBundle(); return }
+  const ac=e.target.closest('[data-addcol]'); if(ac){ add('key',ac.dataset.addcol); burst(e.clientX,e.clientY); setTimeout(openCart,450); return }
+  const v=e.target.closest('[data-var]'); if(v){ varSel.key=v.dataset.var; const c=v.closest('.pcard'); $$('[data-var]',c).forEach(b=>b.setAttribute('aria-pressed',b===v)); const im=$$('.pimg img',c); P.key.v[varSel.key].forEach((n,i)=>{ im[i].src='img/'+n+'.jpg' }); const bl=$('[data-buy="key"]',c), u=payUrl('key',varSel.key); if(bl){ bl.setAttribute('href',u||'#'); if(u){ bl.target='_blank'; bl.rel='noopener' } else { bl.removeAttribute('target') } } return }
+  const q=e.target.closest('[data-q]'); if(q){ const i=cart[+q.dataset.q]; i.qty+=+q.dataset.d; if(i.qty<1) cart.splice(+q.dataset.q,1); renderCart() }
+});
+
+function toast(msg){ const el=$('#toast'); el.textContent=msg; el.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('on'),2200) }
+
+/* Cuenta regresiva hasta la medianoche local */
+function tick(){
+  const n=new Date(), end=new Date(n); end.setHours(24,0,0,0); let s=Math.max(0,Math.floor((end-n)/1000));
+  const h=String(Math.floor(s/3600)).padStart(2,'0'), m=String(Math.floor(s%3600/60)).padStart(2,'0'), x=String(s%60).padStart(2,'0');
+  $$('[data-cd]').forEach(c=>{ $('[data-h]',c).textContent=h; $('[data-m]',c).textContent=m; $('[data-s]',c).textContent=x });
+}
+setInterval(tick,1000);
+
+/* Pop-up de salida */
+function showPop(){ if(!CONFIG.popup||ss.get('ac_pop')||discount) return; ss.set('ac_pop','1'); $('#pop').classList.add('on') }
+function closePop(){ $('#pop').classList.remove('on') }
+$('#popX').onclick=closePop; $('#popNo').onclick=closePop; $('#pop').addEventListener('click',e=>{ if(e.target.id==='pop') closePop() });
+$('#popGo').onclick=()=>{ discount=true; ls.set('ac_code',CONFIG.discountCode); closePop(); renderCart(); toast(t('t_code')); setTimeout(openCart,500) };
+document.addEventListener('mouseout',e=>{ if(!e.relatedTarget && e.clientY<=0) showPop() });
+setTimeout(showPop,38000);
+
+/* Barra fija móvil */
+const hero=$('.hero');
+function onScroll(){
+  const y=scrollY; $('#sticky').classList.toggle('on', y>hero.offsetHeight*.7);
+  $$('[data-par]').forEach(im=>{ const r=im.parentElement.getBoundingClientRect(); if(r.bottom<0||r.top>innerHeight) return; const k=(r.top+r.height/2-innerHeight/2)/innerHeight; im.style.transform=`translateY(${(k*-7).toFixed(2)}%)` });
+}
+addEventListener('scroll',()=>requestAnimationFrame(onScroll),{passive:true}); onScroll();
+
+/* Revelado al hacer scroll */
+const io = 'IntersectionObserver' in window ? new IntersectionObserver(es=>es.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target) } }),{threshold:.12}) : null;
+$$('.rv').forEach(e=>{ io ? io.observe(e) : e.classList.add('in') });
+setTimeout(()=>$$('.rv').forEach(e=>e.classList.add('in')),6000);
+
+/* Inclinación 3D de tarjetas (solo puntero fino) */
+if(matchMedia('(hover:hover) and (pointer:fine)').matches && !matchMedia('(prefers-reduced-motion:reduce)').matches){
+  document.addEventListener('pointermove',e=>{
+    const g=$('#glow'); g.style.transform=`translate(${e.clientX}px,${e.clientY}px)`;
+    const c=e.target.closest&&e.target.closest('.tilt');
+    $$('.tilt').forEach(x=>{ if(x!==c) x.style.transform='' });
+    if(c){ const r=c.getBoundingClientRect(), px=(e.clientX-r.left)/r.width-.5, py=(e.clientY-r.top)/r.height-.5; c.style.transform=`perspective(1000px) rotateY(${px*7}deg) rotateX(${-py*7}deg) translateY(-4px)` }
+  });
+}
+
+/* Granos de café al agregar */
+const cv=$('#fx'), cx=cv.getContext('2d'); let beans=[], raf=0;
+function fit(){ cv.width=innerWidth*devicePixelRatio; cv.height=innerHeight*devicePixelRatio; cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0) }
+fit(); addEventListener('resize',fit);
+function burst(x,y){
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  for(let i=0;i<30;i++){ const a=Math.random()*Math.PI*2, s=4+Math.random()*7; beans.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-5,r:Math.random()*6,vr:(Math.random()-.5)*.4,l:1,c:['#5a3520','#7a4a2a','#d8b26e','#3b2214'][i%4]}) }
+  if(!raf) raf=requestAnimationFrame(loop);
+}
+function loop(){
+  cx.clearRect(0,0,innerWidth,innerHeight);
+  beans=beans.filter(b=>b.l>0);
+  beans.forEach(b=>{ b.x+=b.vx; b.y+=b.vy; b.vy+=.38; b.vx*=.985; b.r+=b.vr; b.l-=.014; cx.save(); cx.globalAlpha=Math.max(0,b.l); cx.translate(b.x,b.y); cx.rotate(b.r); cx.fillStyle=b.c; cx.beginPath(); cx.ellipse(0,0,8,5,0,0,7); cx.fill(); cx.strokeStyle='rgba(0,0,0,.45)'; cx.lineWidth=1.2; cx.beginPath(); cx.moveTo(-6,0); cx.quadraticCurveTo(0,-2.5,6,0); cx.stroke(); cx.restore() });
+  raf = beans.length ? requestAnimationFrame(loop) : 0;
+}
+
+/* Galerías animadas */
+const colSets=[['pen-flower','mach-hand','drip-balcony','cup-hand'],['mach-market','pen-heart','cup-press','drip-drop'],['cup-press','pen-feather','mach-pack','drip-flat']];
+const VIDEO_URL='vid/rosa-360.mp4';
+const vposter=()=>typeof IM==='function'?IM('rosa-poster'):'img/rosa-poster.jpg';
+colSets[1].splice(1,0,'@video');
+$('#cols').innerHTML = colSets.map(c=>`<div class="col">${[...c,...c].map(n=>n==='@video'?`<video class="hv" src="${VIDEO_URL}" poster="${vposter()}" muted loop playsinline autoplay preload="metadata"></video>`:`<img src="img/${n}.jpg" alt="" ${'loading="eager"'} decoding="async">`).join('')}</div>`).join('');
+const v360=$('#vid360'); v360.poster=vposter(); v360.src=VIDEO_URL;
+if('IntersectionObserver' in window){ new IntersectionObserver(es=>es.forEach(en=>{ if(en.isIntersecting){ v360.play().catch(()=>{}) } else v360.pause() }),{threshold:.35}).observe(v360) } else { v360.autoplay=true; v360.play().catch(()=>{}) }
+$('#vsnd').onclick=()=>{ v360.muted=!v360.muted; $('#vsnd').setAttribute('aria-pressed',String(!v360.muted)) };
+$$('.hv').forEach(v=>v.play().catch(()=>{}));
+const words=['Latte Art','Pour Over','Barista','Signature','Mini Café','Crema'];
+$('#bigTrack').innerHTML = [...words,...words,...words,...words].map(w=>`<span>${w}</span>`).join('');
+const all=['tz-pack','tz-heart','tz-leaf','tz-marsh','mach-cafe','mach-verde','mach-rosa','pen-flower','mach-market','drip-balcony','cup-finger','pen-feather','mach-hand','drip-flat','cup-hand','pen-heart','drip-drop','mach-pack','cup-press'];
+$('#mTrack').innerHTML = [...all,...all].map(n=>`<img src="img/${n}.jpg" alt="" loading="lazy">`).join('');
+
+/* ========== ARRANQUE ========== */
+(function(){
+  const saved=ls.get('ac_lang');
+  lang = (saved&&I18N[saved]) ? saved : browserLang();
+  applyI18n();
+  if(!saved){
+    ipCountry().then(cc=>{
+      if(!cc) return; const l=CC_LANG[cc]||'en';
+      if(l!==lang){ lang=l; applyI18n(); toast(t('t_lang')) }
+    });
+  }
+})();
+</script>
