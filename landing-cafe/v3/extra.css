@@ -139,3 +139,5 @@ section{padding-block:clamp(40px,6vw,96px)}
 @media(min-width:700px) and (max-width:999px){.tiles{grid-template-columns:repeat(2,1fr)}}
 @media(min-width:1000px){.tiles{grid-template-columns:repeat(4,1fr)}}
 .bb-info .save{margin:0;width:fit-content}
+
+.hint{margin:0;font-size:.84rem;color:var(--mut);font-style:italic}

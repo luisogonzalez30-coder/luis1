@@ -5,7 +5,8 @@ const VIDEO_URL = '@@VIDEO@@';
 const CONFIG = {
   freeShipFrom: 49,                  // USD
   payLinks: {   // Links de pago de PayPal (USD). Vacío = el botón muestra "Próximamente".
-    pen:'', drip:'',
+    'pen-white':'https://www.paypal.com/ncp/payment/NL8T3HS2HEGNA', 'pen-red':'https://www.paypal.com/ncp/payment/NL8T3HS2HEGNA', 'pen-yellow':'https://www.paypal.com/ncp/payment/NL8T3HS2HEGNA', 'pen-pink':'https://www.paypal.com/ncp/payment/NL8T3HS2HEGNA',   // mismo link por ahora: PayPal no recibe el color
+    drip:'',
     'key-cafe':'https://www.paypal.com/ncp/payment/YTAR8N83UWPGU',
     'key-verde':'https://www.paypal.com/ncp/payment/MLT6HDJVKTXEA',
     'key-rosa':'https://www.paypal.com/ncp/payment/KC9TY6SXHVRP2',
@@ -21,13 +22,13 @@ const CONFIG = {
 const PAGES = { hub:'cafe-atelier', pen:'atelier-pen', drip:'atelier-dripper', key:'atelier-llavero', trio:'atelier-trio' };
 const FILES = { hub:'index.html', pen:'pen.html', drip:'drip.html', key:'key.html', trio:'trio.html' };
 const P = {
-  pen:  { price: 29.90, img: ['pen-flower','pen-heart','pen-feather'] },
+  pen:  { price: 22.99, img: ['pen-flower','pen-heart','pen-feather'] },
   drip: { price: 19.90, img: ['drip-drop','drip-balcony','drip-flat'] },
   key:  { price: 14.99, v: { cafe:['mach-cafe','mach-hand'], verde:['mach-verde'], rosa:['mach-rosa'], tzc:['tz-heart'], tzh:['tz-leaf'], tzm:['tz-marsh'], cup:['cup-palm','cup-hand'] } },
   trio: { price: 29.99, was: 44.97, img: ['trio','mach-cafe','mach-verde','mach-rosa'] }
 };
-const VARS = { key:['cafe','verde','rosa','tzc','tzh','tzm','cup'] };
-const SW = { cafe:'#8a5a3b', verde:'#8fae85', rosa:'#efb8c0' };
+const VARS = { key:['cafe','verde','rosa','tzc','tzh','tzm','cup'], pen:['white','red','yellow','pink'] };
+const SW = { cafe:'#8a5a3b', verde:'#8fae85', rosa:'#efb8c0', white:'#f2efe9', red:'#c8312b', yellow:'#f0c63a', pink:'#c2457f' };
 const THUMB = { trio:'trio', pen:'pen-flower', drip:'drip-drop', 'key:cafe':'mach-cafe', 'key:verde':'mach-verde', 'key:rosa':'mach-rosa', 'key:cup':'cup-palm', 'key:tzc':'tz-heart', 'key:tzh':'tz-leaf', 'key:tzm':'tz-marsh' };
 
 /* ========== TRADUCCIONES ========== */
@@ -53,7 +54,7 @@ let lang='en';
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const fmt=n=>new Intl.NumberFormat(LOCALE[lang],{style:'currency',currency:'USD'}).format(n);
 const t=(k,v={})=>{ let s=(I18N[lang]&&I18N[lang][k])??I18N.en[k]??k; for(const x in v) s=s.split('{'+x+'}').join(v[x]); return s };
-const varSel={ key:'cafe' };
+const varSel={ key:'cafe', pen:'white' };
 let cart=[]; try{ cart=JSON.parse(ls.get('ac_cart2')||'[]').filter(i=>P[i.id]&&(i.id==='pen'||i.id==='drip'||(VARS[i.id]||[]).includes(i.v))) }catch(e){ cart=[] }
 const origin=()=>{ try{ return parent.location.origin }catch(e){ return location.origin } };
 const hrefOf=k=>PAGE_MODE==='shopify' ? '/pages/'+PAGES[k] : FILES[k];
@@ -63,7 +64,7 @@ function navTo(href){
   try{ const base=parent.location, u=new URL(href,base.href); if(base.search&&!u.search) u.search=base.search; url=u.href }catch(e){}
   try{ parent.location.assign(url) }catch(e){ try{ window.open(url,'_top') }catch(e2){ location.href=url } }
 }
-const payKey=(id,v)=>id==='key'?'key-'+v:id;
+const payKey=(id,v)=>VARS[id]?id+'-'+v:id;
 const payUrl=(id,v)=>(CONFIG.payLinks&&CONFIG.payLinks[payKey(id,v)])||'';
 const pct=p=>p.was?Math.round((1-p.price/p.was)*100):0;
 const names={pen:'pen_n',drip:'drip_n',key:'key_n',trio:'trio_n'};
@@ -141,8 +142,9 @@ function closeCart(){ $('#drawer').classList.remove('on'); $('#veil').classList.
 function swatch(v){ return SW[v]?`<i class="sw" style="background:${SW[v]}"></i>`:'' }
 function buybox(id){
   const p=P[id], gal=gallery(id), main=gi.main>=gal.length?0:gi.main;
-  const vars=VARS[id]?`<div class="opt"><span class="lbl">${t('pick')}</span><div class="vars" role="group">${VARS[id].map(v=>`<button type="button" data-pv="${v}" aria-pressed="${varSel[id]===v}">${swatch(v)}${t('v_'+v)}</button>`).join('')}</div></div>`:'';
+  const vars=VARS[id]?`<div class="opt"><span class="lbl">${t(id==='pen'?'pick_c':'pick')}</span><div class="vars" role="group">${VARS[id].map(v=>`<button type="button" data-pv="${v}" aria-pressed="${varSel[id]===v}">${swatch(v)}${t('v_'+v)}</button>`).join('')}</div></div>`:'';
   const link=payUrl(id,varSel[id]);
+  const penNote=(id==='pen'&&varSel.pen!=='white')?`<p class="hint">${t('pen_note')}</p>`:'';
   const buyBtn=link?`<a class="btn block pulse" id="buyBtn" data-buy="${id}" href="${link}" target="_blank" rel="noopener">${t('buy')} →</a>`:`<button class="btn block soon" type="button" disabled>${t('soon')}</button>`;
   const trioNote=id==='trio'?`<p class="save">${t('trio_save',{x:fmt(p.was-p.price),p:pct(p)})}</p>`:'';
   const upsell=(id==='key'&&['cafe','verde','rosa'].includes(varSel.key))?`<a class="upsell" href="${hrefOf('trio')}"${tgt}><img src="${IM('th-trio')}" alt=""><div><b>${t('up_t')}</b><span>${t('up_p',{a:fmt(P.trio.price),b:fmt(P.trio.was)})}</span></div><i>${t('up_cta')} →</i></a>`:'';
@@ -155,7 +157,7 @@ function buybox(id){
       <h1>${pName(id)}</h1>
       <p class="lead">${pDesc(id)}</p>
       <div class="price"><b>${fmt(p.price)}</b>${p.was?`<s>${fmt(p.was)}</s>`:''}<em>USD</em></div>${trioNote}
-      ${incl}${vars}
+      ${incl}${vars}${penNote}
       <div class="ends"><small>${t('h_ends')}</small>${cdHtml()}</div>
       <div class="stock">${stockHtml(id)}</div>
       ${upsell}
