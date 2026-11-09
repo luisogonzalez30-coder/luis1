@@ -25,7 +25,7 @@ const P = {
   pen:  { price: 22.99, img: ['pen-flower','pen-heart','pen-feather'] },
   drip: { price: 23.00, img: ['drip-balcony','drip-drop','drip-flat','drip-kit','filt-hands'] },
   key:  { price: 14.99, v: { cafe:['mach-cafe','mach-hand'], verde:['mach-verde'], rosa:['mach-rosa'] } },
-  cups: { price: 14.99, pv: { pack: { price: 44.99, was: 59.96 } }, v: { pack:['tz-pack','tz-heart','tz-leaf','tz-marsh','cup-palm'], heart:['tz-heart','tz-pack'], leaf:['tz-leaf','tz-pack'], marsh:['tz-marsh','tz-marsh-w','tz-pack'], togo:['cup-palm','cup-hand','cup-finger','cup-press'] } },
+  cups: { price: 14.99, pv: { pack: { price: 24.99, was: 59.96 } }, v: { pack:['tz-pack','tz-heart','tz-leaf','tz-marsh','cup-palm'], heart:['tz-heart','tz-pack'], leaf:['tz-leaf','tz-pack'], marsh:['tz-marsh','tz-marsh-w','tz-pack'], togo:['cup-palm','cup-hand','cup-finger','cup-press'] } },
   trio: { price: 29.99, was: 44.97, img: ['trio','mach-cafe','mach-verde','mach-rosa'] }
 };
 const VARS = { key:['cafe','verde','rosa'], cups:['pack','heart','leaf','marsh','togo'], pen:['white','red','yellow','pink'] };
