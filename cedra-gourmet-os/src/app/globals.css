@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-crema text-cacao antialiased;
+  }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  h1, h2, h3 {
+    @apply font-titulo tracking-tight;
+    font-variation-settings: "opsz" 96, "SOFT" 50;
+  }
+  input, select, textarea {
+    @apply rounded-md border border-crema-3 bg-white px-2.5 py-1.5 text-sm text-cacao outline-none transition;
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
+    @apply ring-2 ring-oro/60 ring-offset-1 ring-offset-crema;
+  }
+  /* Sin esto, un texto truncado dentro de una grilla ensancha la página en el teléfono. */
+  .grid > *, .flex > * {
+    min-width: 0;
+  }
+  input:disabled {
+    @apply bg-crema-2 text-cacao-3;
+  }
+}
+
+@layer components {
+  .cifra {
+    @apply font-cifra tabular-nums tracking-tight;
+  }
+  .rotulo {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-cacao-3;
+  }
+  .filete {
+    background: linear-gradient(90deg, theme("colors.oro.DEFAULT"), transparent);
+    height: 1px;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  html, body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .hoja {
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .evitar-corte {
+    break-inside: avoid;
+  }
+}
